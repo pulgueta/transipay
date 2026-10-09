@@ -29,6 +29,27 @@
       "when": 1791577610908,
       "tag": "0003_composite_domain_constraints",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791577656830,
+      "tag": "0004_impersonation_cascade",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791577657972,
+      "tag": "0005_app_role_and_audit_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791580298984,
+      "tag": "0006_revoke_impersonation_on_admin_loss",
+      "breakpoints": true
     }
   ]
 }

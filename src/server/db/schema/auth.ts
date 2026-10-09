@@ -41,7 +41,8 @@ export const session = authSchema.table(
     userId: uuid()
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    impersonatedBy: uuid().references(() => user.id, { onDelete: "set null" }),
+    // When the admin is deleted, the database also deletes the sessions that the admin opened as other users.
+    impersonatedBy: uuid().references(() => user.id, { onDelete: "cascade" }),
     ...timestamps(),
   },
   (table) => [
