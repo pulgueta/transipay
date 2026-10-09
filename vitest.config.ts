@@ -32,6 +32,15 @@ export default defineConfig({
       },
       {
         test: {
+          name: "unit-dom",
+          env: authTestEnv,
+          environment: "jsdom",
+          include: ["src/**/*.test.tsx"],
+          exclude: ["src/**/*.db.test.tsx"],
+        },
+      },
+      {
+        test: {
           name: "db",
           env: authTestEnv,
           environment: "node",
