@@ -4,6 +4,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
 import { useFieldContext } from "./form-context";
+import { normalizeFieldErrors } from "./normalize-field-errors";
 
 type TextFieldProps = { label: string } & Omit<
   ComponentProps<typeof Input>,
@@ -29,7 +30,9 @@ export const TextField = ({ label, ...props }: TextFieldProps) => {
         }}
         value={field.state.value}
       />
-      {isInvalid ? <FieldError errors={field.state.meta.errors} /> : null}
+      {isInvalid ? (
+        <FieldError errors={normalizeFieldErrors(field.state.meta.errors)} />
+      ) : null}
     </Field>
   );
 };
