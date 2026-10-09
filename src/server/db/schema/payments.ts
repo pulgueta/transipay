@@ -112,7 +112,10 @@ export const installment = pgTable(
   ]
 );
 
-/** One payment attempt through the gateway. We only record the result that Wompi reports. */
+/**
+ * One payment intent for an obligation or an installment. Its attempts (`payment_attempt`) are the Wompi transactions.
+ * `provider_transaction_id` is the attempt that set the current status.
+ */
 export const payment = pgTable(
   "payment",
   {
@@ -157,17 +160,85 @@ export const payment = pgTable(
   ]
 );
 
-/** Ledger of gateway webhooks. The unique checksum makes event processing idempotent. */
-export const paymentEvent = pgTable("payment_event", {
-  id: id(),
-  provider: text().notNull().default("wompi"),
-  eventType: text().notNull(),
-  // Signature checksum that Wompi sends with each event.
-  checksum: text().notNull().unique("payment_event_checksum_key"),
-  payload: jsonb().notNull(),
-  receivedAt: timestamptz().notNull().defaultNow(),
-  processedAt: timestamptz(),
-});
+/** Why staff must examine an attempt. The money effect waits for their decision. */
+export const PAYMENT_ATTEMPT_REVIEW_REASONS = [
+  // A second transaction is approved for a payment that is approved (possible overpayment).
+  "second_approval",
+  // The transaction is approved, but the obligation or installment is not payable now (possible refund).
+  "target_not_payable",
+] as const;
+export type PaymentAttemptReviewReason =
+  (typeof PAYMENT_ATTEMPT_REVIEW_REASONS)[number];
+
+/**
+ * One Wompi transaction for a payment. Wompi can use the payment reference again
+ * for a new transaction after a decline, so one payment can have more than one attempt.
+ * The unique transaction id makes a money effect happen at most one time.
+ */
+export const paymentAttempt = pgTable(
+  "payment_attempt",
+  {
+    id: id(),
+    paymentId: uuid()
+      .notNull()
+      .references(() => payment.id, { onDelete: "restrict" }),
+    providerTransactionId: text()
+      .notNull()
+      .unique("payment_attempt_provider_transaction_id_key"),
+    status: text().$type<PaymentStatus>().notNull(),
+    amountInCents: bigint({ mode: "number" }).notNull(),
+    currency: char({ length: 3 }).notNull(),
+    paymentMethodType: text(),
+    // Not null when staff must examine the attempt.
+    reviewReason: text().$type<PaymentAttemptReviewReason>(),
+    finalizedAt: timestamptz(),
+    ...timestamps(),
+  },
+  (table) => [
+    index("payment_attempt_payment_id_idx").on(table.paymentId),
+    checkIn("payment_attempt_status_check", table.status, PAYMENT_STATUSES),
+    checkIn(
+      "payment_attempt_review_reason_check",
+      table.reviewReason,
+      PAYMENT_ATTEMPT_REVIEW_REASONS
+    ),
+    check(
+      "payment_attempt_amount_in_cents_check",
+      sql`${table.amountInCents} > 0`
+    ),
+    check(
+      "payment_attempt_finalized_at_check",
+      sql`(${table.status} = 'pending') = (${table.finalizedAt} is null)`
+    ),
+  ]
+);
+
+/**
+ * Inbox of gateway webhooks, for payments and payouts.
+ * `integration` names the account that signed the event. The unique (integration, checksum) drops a repeated delivery.
+ * A row with `processed_at` null needs review or failed. A new delivery of that event processes it again.
+ */
+export const paymentEvent = pgTable(
+  "payment_event",
+  {
+    id: id(),
+    provider: text().notNull().default("wompi"),
+    // Provider and account, from trusted server configuration. Never from the event body.
+    integration: text().notNull(),
+    eventType: text().notNull(),
+    // Signature checksum that Wompi sends with each event.
+    checksum: text().notNull(),
+    payload: jsonb().notNull(),
+    receivedAt: timestamptz().notNull().defaultNow(),
+    processedAt: timestamptz(),
+  },
+  (table) => [
+    unique("payment_event_integration_checksum_key").on(
+      table.integration,
+      table.checksum
+    ),
+  ]
+);
 
 /** Dispersion of collected money to an entity through Wompi payouts. */
 export const payout = pgTable(

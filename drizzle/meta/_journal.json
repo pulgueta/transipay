@@ -50,6 +50,20 @@
       "when": 1791580298984,
       "tag": "0006_revoke_impersonation_on_admin_loss",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791581663613,
+      "tag": "0007_payment_attempt_and_event_integration",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791581672025,
+      "tag": "0008_payment_attempt_audit_and_backfill",
+      "breakpoints": true
     }
   ]
 }

@@ -4,11 +4,13 @@ import type { ObligationStatus } from "@/server/db/schema/obligations";
 import type {
   AgreementStatus,
   InstallmentStatus,
+  PaymentAttemptReviewReason,
   PaymentStatus,
 } from "@/server/db/schema/payments";
 
 /** The payment and the current state of what it pays. The caller locks these rows. */
 export interface PaymentSnapshot {
+  id: string;
   reference: string;
   amountInCents: number;
   currency: string;
@@ -23,6 +25,12 @@ export interface PaymentSnapshot {
   } | null;
 }
 
+/** The attempt row that has the transaction id of the event. The caller locks it. */
+export interface AttemptSnapshot {
+  paymentId: string;
+  status: PaymentStatus;
+  reviewReason: PaymentAttemptReviewReason | null;
+}
 export type TransactionSnapshot = Pick<
   Transaction,
   | "id"
@@ -39,21 +47,37 @@ export interface PaymentEffects {
   agreementCompleted: boolean;
 }
 
+export interface PaymentChange {
+  status: PaymentStatus;
+  providerTransactionId: string;
+  paymentMethodType: string | null;
+}
+
 export type TransactionUpdate =
   | {
       kind: "rejected";
-      reason: "reference_mismatch" | "amount_mismatch" | "currency_mismatch";
+      reason:
+        | "reference_mismatch"
+        | "amount_mismatch"
+        | "currency_mismatch"
+        | "attempt_of_other_payment";
     }
   | { kind: "unchanged" }
-  // The payment is final and the event reports another result. Staff must examine it.
-  | { kind: "needs_review"; reason: "final_status_conflict" }
+  // The attempt is final and the event reports another result, or the attempt waits for review. Staff must examine it.
+  | {
+      kind: "needs_review";
+      reason: "final_status_conflict" | PaymentAttemptReviewReason;
+    }
   | {
       kind: "applied";
-      status: PaymentStatus;
-      providerTransactionId: string;
-      paymentMethodType: string | null;
-      // "needs_review": the money is collected, but the target is not payable now (possible refund).
-      effects: PaymentEffects | "needs_review";
+      // The caller inserts the attempt or moves it from 'pending'. A review reason keeps the event unprocessed.
+      attempt: {
+        status: PaymentStatus;
+        reviewReason: PaymentAttemptReviewReason | null;
+      };
+      // Null when the payment does not change.
+      payment: PaymentChange | null;
+      effects: PaymentEffects;
     };
 
 const STATUS_BY_WOMPI_STATUS: Record<TransactionStatus, PaymentStatus> = {
@@ -96,13 +120,22 @@ const effectsOf = (
   };
 };
 
+const applied = (
+  attempt: Extract<TransactionUpdate, { kind: "applied" }>["attempt"],
+  payment: PaymentChange | null,
+  effects: PaymentEffects = NO_EFFECTS
+): TransactionUpdate => ({ kind: "applied", attempt, payment, effects });
+
 /**
- * Decides what a Wompi `transaction.updated` event does to our payment.
- * The payment changes only once, from `pending` to a final status. An exact repeat has no effect.
- * A pending event never changes the payment, because events can arrive out of order.
+ * Decides what a Wompi transaction does to our payment and to its attempt.
+ * - An attempt changes one time, from 'pending' to a final status. A repeat has no effect.
+ * - A pending transaction never changes the payment, because events can arrive out of order.
+ * - An approved attempt approves a payment that is not approved (also after a decline: Wompi retries with the same reference).
+ * - A second approved attempt for an approved payment goes to review. It never pays two times.
  */
 export const resolveTransactionUpdate = (
   payment: PaymentSnapshot,
+  attempt: AttemptSnapshot | null,
   transaction: TransactionSnapshot
 ): TransactionUpdate => {
   if (transaction.reference !== payment.reference) {
@@ -114,25 +147,53 @@ export const resolveTransactionUpdate = (
   if (transaction.currency !== payment.currency) {
     return { kind: "rejected", reason: "currency_mismatch" };
   }
+  if (attempt && attempt.paymentId !== payment.id) {
+    return { kind: "rejected", reason: "attempt_of_other_payment" };
+  }
 
   const status = STATUS_BY_WOMPI_STATUS[transaction.status];
-  if (status === "pending") {
-    return { kind: "unchanged" };
-  }
-  if (payment.status !== "pending") {
-    const isRepeat =
-      payment.status === status &&
-      payment.providerTransactionId === transaction.id;
-    return isRepeat
+
+  if (attempt && attempt.status !== "pending") {
+    if (status !== attempt.status && status !== "pending") {
+      return { kind: "needs_review", reason: "final_status_conflict" };
+    }
+    return attempt.reviewReason === null
       ? { kind: "unchanged" }
-      : { kind: "needs_review", reason: "final_status_conflict" };
+      : { kind: "needs_review", reason: attempt.reviewReason };
   }
 
-  return {
-    kind: "applied",
+  if (status === "pending") {
+    return attempt
+      ? { kind: "unchanged" }
+      : applied({ status, reviewReason: null }, null);
+  }
+
+  const change: PaymentChange = {
     status,
     providerTransactionId: transaction.id,
     paymentMethodType: transaction.payment_method_type ?? null,
-    effects: status === "approved" ? effectsOf(payment) : NO_EFFECTS,
   };
+
+  if (payment.status === "approved") {
+    // The payment keeps its approval. Only a second approval can be a second collection.
+    const isSecondApproval =
+      status === "approved" && payment.providerTransactionId !== transaction.id;
+    return applied(
+      {
+        status,
+        reviewReason: isSecondApproval ? "second_approval" : null,
+      },
+      null
+    );
+  }
+
+  if (status !== "approved") {
+    return applied({ status, reviewReason: null }, change);
+  }
+
+  // The money is collected. If the target is not payable now, staff decide about a refund.
+  const effects = effectsOf(payment);
+  return effects === "needs_review"
+    ? applied({ status, reviewReason: "target_not_payable" }, change)
+    : applied({ status, reviewReason: null }, change, effects);
 };

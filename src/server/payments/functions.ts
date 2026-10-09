@@ -13,10 +13,11 @@ import {
   paymentAgreement,
 } from "@/server/db/schema/payments";
 import { withActor } from "@/server/db/with-actor";
-import { httpError } from "@/server/http-error";
+import { httpError, throwNotFound } from "@/server/http-error";
 import { authMiddleware, requirePermission } from "@/server/middleware/auth";
 import { getWompi } from "@/server/wompi";
 
+import { canReadPayment } from "./access";
 import { resolveAmountDue } from "./amount";
 import type { AmountDueError } from "./amount";
 import { checkoutExpiresAt, findReusablePayment } from "./checkout";
@@ -195,7 +196,10 @@ export const createCheckoutFn = createServerFn({ method: "POST" })
     return { paymentId: checkout.id, checkoutUrl };
   });
 
-/** Returns one payment of the signed-in citizen. */
+/**
+ * Returns the status of one payment. The owner citizen and staff with `payment:read` can read it.
+ * Other users get 404, so they cannot find out if the payment exists.
+ */
 export const getPaymentFn = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .validator(z.object({ paymentId: z.uuid() }))
@@ -212,16 +216,18 @@ export const getPaymentFn = createServerFn({ method: "GET" })
         paymentMethodType: payment.paymentMethodType,
         finalizedAt: payment.finalizedAt,
         createdAt: payment.createdAt,
+        ownerUserId: citizen.userId,
       })
       .from(payment)
       .innerJoin(citizen, eq(citizen.id, payment.citizenId))
-      .where(
-        and(eq(payment.id, data.paymentId), eq(citizen.userId, context.user.id))
-      );
-
+      .where(eq(payment.id, data.paymentId));
     const row = rows.at(0);
-    if (!row) {
-      throw httpError(404, "We cannot find this payment.");
+
+    const isOwner = row !== undefined && row.ownerUserId === context.user.id;
+    if (!row || !canReadPayment({ isOwner, role: context.user.role })) {
+      return throwNotFound();
     }
-    return row;
+
+    const { ownerUserId: _ownerUserId, ...result } = row;
+    return { ...result, isOwner };
   });

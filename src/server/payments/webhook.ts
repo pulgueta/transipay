@@ -1,20 +1,24 @@
 import "@tanstack/react-start/server-only";
-import {
-  isTransactionUpdatedEvent,
-  verifyWebhookEvent,
-} from "@pulgueta/wompi/server";
+import type {
+  Result,
+  Transaction as WompiTransaction,
+} from "@pulgueta/wompi/schemas";
+import { verifyWebhookEvent } from "@pulgueta/wompi/server";
 import { and, eq, ne } from "drizzle-orm";
+import { z } from "zod";
 
 import { serverEnv } from "@/env/server";
 import { db } from "@/server/db/client";
-import type { Transaction } from "@/server/db/client";
+import type { Database, Transaction } from "@/server/db/client";
 import { obligation } from "@/server/db/schema/obligations";
 import {
   installment,
   payment,
   paymentAgreement,
-  paymentEvent,
+  paymentAttempt,
 } from "@/server/db/schema/payments";
+import { claimEvent, markEventProcessed } from "@/server/webhook-inbox";
+import { getWompi } from "@/server/wompi";
 
 import { resolveTransactionUpdate } from "./transition";
 import type { TransactionSnapshot } from "./transition";
@@ -63,15 +67,22 @@ const lockInstallment = async (tx: Transaction, installmentId: string) => {
   };
 };
 
+/** Stops the transaction when a conditional update finds no row. Nothing commits, and Wompi sends the event again. */
+const expectOneRow = (rows: unknown[]) => {
+  if (rows.length !== 1) {
+    throw new Error("The payment changed during the update. Try again.");
+  }
+};
+
 /**
- * Applies a verified transaction update. Returns false when staff must examine the event:
- * it does not match a payment of ours, it conflicts with a final payment, or it collected money for a target that is not payable.
+ * Applies a transaction that we got from the Wompi API. Returns false when staff must examine the event:
+ * it does not match a payment of ours, it conflicts with a final attempt, or the attempt is flagged for review.
  */
 const applyTransactionUpdate = async (
   tx: Transaction,
   transaction: TransactionSnapshot
 ) => {
-  // Lock order: payment, obligation, agreement, installment. The checkout uses the same order.
+  // Lock order: payment, obligation, agreement, installment, attempt. The checkout uses the same order.
   const rows = await tx
     .select({
       id: payment.id,
@@ -109,12 +120,24 @@ const applyTransactionUpdate = async (
     }
   }
 
+  const attempts = await tx
+    .select({
+      paymentId: paymentAttempt.paymentId,
+      status: paymentAttempt.status,
+      reviewReason: paymentAttempt.reviewReason,
+    })
+    .from(paymentAttempt)
+    .where(eq(paymentAttempt.providerTransactionId, transaction.id))
+    .for("update");
+  const attempt = attempts.at(0) ?? null;
+
   const update = resolveTransactionUpdate(
     {
       ...current,
       obligationStatus: target.status,
       installment: installmentState,
     },
+    attempt,
     transaction
   );
   if (update.kind === "rejected" || update.kind === "needs_review") {
@@ -124,28 +147,67 @@ const applyTransactionUpdate = async (
     return true;
   }
 
-  await tx
-    .update(payment)
-    .set({
-      status: update.status,
-      providerTransactionId: update.providerTransactionId,
-      paymentMethodType: update.paymentMethodType,
-      finalizedAt: new Date(),
-    })
-    .where(eq(payment.id, current.id));
+  const now = new Date();
+  const finalizedAt = update.attempt.status === "pending" ? null : now;
+  if (attempt) {
+    // Conditional: only a pending attempt changes.
+    expectOneRow(
+      await tx
+        .update(paymentAttempt)
+        .set({
+          status: update.attempt.status,
+          reviewReason: update.attempt.reviewReason,
+          paymentMethodType: transaction.payment_method_type ?? null,
+          finalizedAt,
+        })
+        .where(
+          and(
+            eq(paymentAttempt.providerTransactionId, transaction.id),
+            eq(paymentAttempt.status, "pending")
+          )
+        )
+        .returning({ id: paymentAttempt.id })
+    );
+  } else {
+    // The unique transaction id stops a second row for the same transaction.
+    await tx.insert(paymentAttempt).values({
+      paymentId: current.id,
+      providerTransactionId: transaction.id,
+      status: update.attempt.status,
+      amountInCents: current.amountInCents,
+      currency: current.currency,
+      paymentMethodType: transaction.payment_method_type ?? null,
+      reviewReason: update.attempt.reviewReason,
+      finalizedAt,
+    });
+  }
 
-  // The money is collected, but the obligation state does not change. Staff decide about a refund.
-  if (update.effects === "needs_review") {
+  if (update.payment) {
+    // Conditional: the payment changes only from the status that the decision used.
+    expectOneRow(
+      await tx
+        .update(payment)
+        .set({ ...update.payment, finalizedAt: now })
+        .where(
+          and(eq(payment.id, current.id), eq(payment.status, current.status))
+        )
+        .returning({ id: payment.id })
+    );
+  }
+
+  // The attempt waits for staff. For an approval, staff decide about a refund.
+  if (update.attempt.reviewReason !== null) {
     return false;
   }
 
-  if (update.effects.installmentPaid && current.installmentId !== null) {
+  const { effects } = update;
+  if (effects.installmentPaid && current.installmentId !== null) {
     await tx
       .update(installment)
       .set({ status: "paid" })
       .where(eq(installment.id, current.installmentId));
 
-    if (update.effects.agreementCompleted && installmentState) {
+    if (effects.agreementCompleted && installmentState) {
       await tx
         .update(paymentAgreement)
         .set({ status: "completed" })
@@ -153,7 +215,7 @@ const applyTransactionUpdate = async (
     }
   }
 
-  if (update.effects.obligationPaid) {
+  if (effects.obligationPaid) {
     await tx
       .update(obligation)
       .set({ status: "paid" })
@@ -164,44 +226,88 @@ const applyTransactionUpdate = async (
 };
 
 /**
+ * The only event that we use. It checks only the fields that we read: the event name and the transaction id.
+ * The SDK guard also requires fields that the signature does not cover (for example `reference`),
+ * and we read these fields from the Wompi API.
+ */
+const transactionUpdatedEvent = z.object({
+  event: z.literal("transaction.updated"),
+  data: z.object({ transaction: z.object({ id: z.string() }) }),
+});
+
+/** Names the Wompi merchant account. The public key includes the environment (`pub_test_` or `pub_prod_`). */
+export const paymentIntegration = (publicKey: string) => `wompi:${publicKey}`;
+
+export interface PaymentWebhookDeps {
+  database: Database;
+  eventsKey: string;
+  /** The account that signs the events (see `paymentIntegration`). */
+  integration: string;
+  /** Gets one transaction from the Wompi API. */
+  getTransaction: (id: string) => Promise<Result<WompiTransaction>>;
+}
+
+/**
  * Handles a Wompi payments event and returns the HTTP status for the response.
- * The event row and its effects commit in one transaction. If processing fails, nothing commits,
- * we answer 500, and Wompi sends the event again.
+ * The event signature covers only some fields, so we use only the signed transaction id.
+ * We get the transaction from the Wompi API with that id and use its reference, status, and amount.
+ * The event row and its effects commit in one transaction. If the API or the processing fails,
+ * nothing commits, we answer 5xx, and Wompi sends the event again.
  * The audit actor is null: the gateway, not a user, makes these changes.
  */
-export const handlePaymentWebhook = async (rawBody: string) => {
+export const processPaymentWebhook = async (
+  rawBody: string,
+  deps: PaymentWebhookDeps
+) => {
   const [error, event] = await verifyWebhookEvent(rawBody, {
-    eventsKey: serverEnv.WOMPI_EVENTS_KEY,
+    eventsKey: deps.eventsKey,
   });
   if (error) {
     return 401;
   }
 
-  await db.transaction(async (tx) => {
-    const inserted = await tx
-      .insert(paymentEvent)
-      .values({
-        eventType: event.event,
-        checksum: event.signature.checksum,
-        payload: event,
-      })
-      .onConflictDoNothing({ target: paymentEvent.checksum })
-      .returning({ id: paymentEvent.id });
-    const recorded = inserted.at(0);
+  // The signature does not cover the event name. Thus we do not write an inbox row for an event that we do not use:
+  // a changed copy with the same checksum must not make the real event a duplicate.
+  const supported = transactionUpdatedEvent.safeParse(event);
+  if (!supported.success) {
+    return 200;
+  }
+  if (!event.signature.properties.includes("transaction.id")) {
+    return 401;
+  }
+  const transactionId = supported.data.data.transaction.id;
 
-    // No row: we already have this event.
-    if (!recorded || !isTransactionUpdatedEvent(event)) {
+  const [fetchError, transaction] = await deps.getTransaction(transactionId);
+  if (fetchError || transaction.id !== transactionId) {
+    return 502;
+  }
+
+  const inboxEvent = {
+    integration: deps.integration,
+    eventType: event.event,
+    checksum: event.signature.checksum,
+    payload: event,
+  };
+  await deps.database.transaction(async (tx) => {
+    const eventId = await claimEvent(tx, inboxEvent);
+    // Null: we already processed this event.
+    if (eventId === null) {
       return;
     }
-
     // An event that needs review keeps processed_at null, so that staff can find it.
-    if (await applyTransactionUpdate(tx, event.data.transaction)) {
-      await tx
-        .update(paymentEvent)
-        .set({ processedAt: new Date() })
-        .where(eq(paymentEvent.id, recorded.id));
+    if (await applyTransactionUpdate(tx, transaction)) {
+      await markEventProcessed(tx, eventId);
     }
   });
 
   return 200;
 };
+
+export const handlePaymentWebhook = async (rawBody: string) =>
+  await processPaymentWebhook(rawBody, {
+    database: db,
+    eventsKey: serverEnv.WOMPI_EVENTS_KEY,
+    integration: paymentIntegration(serverEnv.WOMPI_PUBLIC_KEY),
+    getTransaction: async (id) =>
+      await getWompi().transactions.getTransaction(id),
+  });
