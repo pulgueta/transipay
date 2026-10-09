@@ -2,6 +2,7 @@ import { createMiddleware } from "@tanstack/react-start";
 import {
   getRequestHeaders,
   setResponseStatus,
+  setResponseHeader,
 } from "@tanstack/react-start/server";
 import { eq } from "drizzle-orm";
 
@@ -18,6 +19,7 @@ import { canImpersonate } from "./impersonation";
  */
 export const authMiddleware = createMiddleware({ type: "function" }).server(
   async ({ next }) => {
+    setResponseHeader("Cache-Control", "private, no-store");
     const result = await auth.api.getSession({ headers: getRequestHeaders() });
 
     if (!result) {
