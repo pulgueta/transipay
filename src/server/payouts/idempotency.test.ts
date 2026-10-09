@@ -7,31 +7,25 @@ const request = {
   amountInCents: 5_000_000,
 };
 
-const existing = {
-  ...request,
-  status: "pending" as const,
-  providerPayoutId: null,
-};
+const existing = { ...request, status: "queued" as const };
 
 describe(resolveExistingPayout, () => {
-  it("sends the payout again when Wompi has not confirmed it", () => {
-    expect(resolveExistingPayout(existing, request)).toBe("retry");
+  it("dispatches a queued payout, because no send started", () => {
+    expect(resolveExistingPayout(existing, request)).toBe("dispatch");
   });
 
-  it("returns the payout when Wompi has its id", () => {
-    expect(
-      resolveExistingPayout({ ...existing, providerPayoutId: "po_1" }, request)
-    ).toBe("existing");
+  it.each([
+    "draft",
+    "submitting",
+    "submitted",
+    "uncertain",
+    "paid",
+    "failed",
+  ] as const)("returns a %s payout without a new send", (status) => {
+    expect(resolveExistingPayout({ ...existing, status }, request)).toBe(
+      "existing"
+    );
   });
-
-  it.each(["processing", "paid", "failed"] as const)(
-    "returns a %s payout without a new Wompi call",
-    (status) => {
-      expect(resolveExistingPayout({ ...existing, status }, request)).toBe(
-        "existing"
-      );
-    }
-  );
 
   it("refuses a key that another payout request used", () => {
     expect(

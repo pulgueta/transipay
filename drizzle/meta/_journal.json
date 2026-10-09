@@ -64,6 +64,34 @@
       "when": 1791581672025,
       "tag": "0008_payment_attempt_audit_and_backfill",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791583053862,
+      "tag": "0009_payout_state_machine",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791583090753,
+      "tag": "0010_payout_keep_command",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791584223414,
+      "tag": "0011_payout_reconcile_schedule",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791584226991,
+      "tag": "0012_payout_reconcile_trigger",
+      "breakpoints": true
     }
   ]
 }

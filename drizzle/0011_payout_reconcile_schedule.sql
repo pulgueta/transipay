@@ -1,0 +1,2 @@
+ALTER TABLE "payout" ADD COLUMN "next_reconcile_at" timestamp with time zone;--> statement-breakpoint
+CREATE INDEX "payout_next_reconcile_at_idx" ON "payout" USING btree ("next_reconcile_at") WHERE "payout"."next_reconcile_at" is not null;

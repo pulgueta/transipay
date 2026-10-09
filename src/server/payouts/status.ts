@@ -1,9 +1,15 @@
 import type {
   PayoutStatus as WompiPayoutStatus,
-  WompiErrorResult,
+  PayoutTransactionStatus as WompiTransactionStatus,
 } from "@pulgueta/wompi/schemas";
 
 import type { PayoutStatus } from "@/server/db/schema/payments";
+
+/** The statuses that Wompi can give to a payout that it received. */
+export type FinancialStatus = Extract<
+  PayoutStatus,
+  "submitted" | "paid" | "failed"
+>;
 
 export const FINAL_PAYOUT_STATUSES: readonly PayoutStatus[] = [
   "paid",
@@ -11,76 +17,82 @@ export const FINAL_PAYOUT_STATUSES: readonly PayoutStatus[] = [
 ];
 
 // Our payout batches hold one transaction, so a partial payment is not final: it needs a later event.
-// Events can carry statuses that are not documented, so the lookup key is a plain string.
-const STATUS_BY_WOMPI_STATUS = new Map<string, PayoutStatus>(
+// Wompi can send statuses that are not documented, so the lookup key is a plain string.
+const STATUS_BY_WOMPI_PAYOUT = new Map<string, FinancialStatus>(
   Object.entries({
     TOTAL_PAYMENT: "paid",
     REJECTED: "failed",
     NOT_APPROVED: "failed",
     AFE_REJECTED: "failed",
-    PENDING: "processing",
-    PENDING_APPROVAL: "processing",
-    AFE_ON_HOLD: "processing",
-    PARTIAL_PAYMENT: "processing",
-  } satisfies Record<WompiPayoutStatus, PayoutStatus>)
+    PENDING: "submitted",
+    PENDING_APPROVAL: "submitted",
+    AFE_ON_HOLD: "submitted",
+    PARTIAL_PAYMENT: "submitted",
+  } satisfies Record<WompiPayoutStatus, FinancialStatus>)
 );
+
+const STATUS_BY_WOMPI_TRANSACTION = new Map<string, FinancialStatus>(
+  Object.entries({
+    APPROVED: "paid",
+    REJECTED: "failed",
+    FAILED: "failed",
+    CANCELLED: "failed",
+    PENDING: "submitted",
+    PROCESSING: "submitted",
+    READY_TO_FILE: "submitted",
+    ADDED_TO_FILE: "submitted",
+  } satisfies Record<WompiTransactionStatus, FinancialStatus>)
+);
+
+/** Our status for a Wompi payout batch status. Undefined for a status that is not documented. */
+export const statusFromWompiPayout = (wompiStatus: string) =>
+  STATUS_BY_WOMPI_PAYOUT.get(wompiStatus);
+
+/** Our status for a Wompi payout transaction status. Undefined for a status that is not documented. */
+export const statusFromWompiTransaction = (wompiStatus: string) =>
+  STATUS_BY_WOMPI_TRANSACTION.get(wompiStatus);
 
 export type PayoutUpdate =
   | { kind: "unchanged" }
-  | { kind: "applied"; status: PayoutStatus };
+  | { kind: "applied"; status: FinancialStatus };
 
 /**
- * Decides what a Wompi payout status does to our payout. A final payout does not change again,
- * but a failed payout becomes paid: Wompi moved the money, so the local failure was not correct.
+ * Decides what a status from Wompi (webhook or reconciliation) does to our payout.
+ * A final payout does not change again, but a failed payout becomes paid: Wompi moved the money,
+ * so the local failure was not correct. A draft was never sent, so Wompi cannot change it.
  */
 export const resolvePayoutUpdate = (
   current: PayoutStatus,
-  wompiStatus: string
+  target: FinancialStatus
 ): PayoutUpdate => {
-  const status = STATUS_BY_WOMPI_STATUS.get(wompiStatus);
-
-  if (current === "failed" && status === "paid") {
-    return { kind: "applied", status };
+  if (current === "failed" && target === "paid") {
+    return { kind: "applied", status: target };
   }
-
   if (
-    status === undefined ||
-    status === current ||
+    target === current ||
+    current === "draft" ||
     FINAL_PAYOUT_STATUSES.includes(current)
   ) {
     return { kind: "unchanged" };
   }
-
-  return { kind: "applied", status };
+  return { kind: "applied", status: target };
 };
 
-/**
- * True when Wompi refused the payout request, so no money moves.
- * A network error, a timeout, a 5xx, or an invalid success body gives no known result:
- * the payout can exist at Wompi, so it must stay open until a webhook event arrives.
- * A 409 (used reference or idempotency key) and any error on a retry also give no known result,
- * because an earlier request can have created the payout.
- */
-export const isDefiniteRejection = (
-  error: WompiErrorResult,
-  { retry }: { retry: boolean }
-) => {
-  if (retry) {
-    return false;
-  }
-  if ("type" in error) {
-    if (error.type === "NOT_FOUND_ERROR") {
-      return true;
-    }
-    if (error.type === "INPUT_VALIDATION_ERROR") {
-      return true;
-    }
-  }
+export type SubmissionCertainty = "accepted" | "rejected" | "unknown";
 
-  return (
-    "statusCode" in error &&
-    error.statusCode >= 400 &&
-    error.statusCode < 500 &&
-    error.statusCode !== 409
-  );
+/**
+ * The status after a send. A rejection is final only on the first send:
+ * on a later send, an earlier send with the same key can exist at Wompi.
+ */
+export const statusAfterSubmission = (
+  certainty: SubmissionCertainty,
+  { firstDispatch }: { firstDispatch: boolean }
+): PayoutStatus => {
+  if (certainty === "accepted") {
+    return "submitted";
+  }
+  if (certainty === "rejected" && firstDispatch) {
+    return "failed";
+  }
+  return "uncertain";
 };

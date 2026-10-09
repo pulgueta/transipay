@@ -7,13 +7,13 @@ interface PayoutRequest {
 
 interface StoredPayout extends PayoutRequest {
   status: PayoutStatus;
-  providerPayoutId: string | null;
 }
 
 /**
  * Decides what a repeated payout request does when a payout with the same idempotency key exists.
- * "retry": Wompi did not confirm the payout, so send it again with the same key and reference.
- * "existing": return the stored payout. "conflict": the key belongs to another request.
+ * "dispatch": the payout is queued and no send started, so send it from its stored command.
+ * "existing": return the stored payout. An uncertain payout is not sent again: only reconciliation can do that.
+ * "conflict": the key belongs to another request.
  */
 export const resolveExistingPayout = (
   existing: StoredPayout,
@@ -25,7 +25,7 @@ export const resolveExistingPayout = (
   ) {
     return "conflict" as const;
   }
-  return existing.status === "pending" && existing.providerPayoutId === null
-    ? ("retry" as const)
+  return existing.status === "queued"
+    ? ("dispatch" as const)
     : ("existing" as const);
 };

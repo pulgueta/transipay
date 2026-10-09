@@ -1,100 +1,113 @@
-import {
-  WompiError,
-  WompiNotFoundError,
-  WompiPayoutApiError,
-  WompiRequestError,
-  WompiServiceUnavailableError,
-  WompiValidationError,
-} from "@pulgueta/wompi/schemas";
 import { describe, expect, it } from "vitest";
 
-import { isDefiniteRejection, resolvePayoutUpdate } from "./status";
+import {
+  resolvePayoutUpdate,
+  statusAfterSubmission,
+  statusFromWompiPayout,
+  statusFromWompiTransaction,
+} from "./status";
 
-describe(resolvePayoutUpdate, () => {
+describe(statusFromWompiPayout, () => {
   it.each([
     ["TOTAL_PAYMENT", "paid"],
     ["REJECTED", "failed"],
     ["NOT_APPROVED", "failed"],
     ["AFE_REJECTED", "failed"],
-    ["PENDING", "processing"],
-    ["PENDING_APPROVAL", "processing"],
-    ["AFE_ON_HOLD", "processing"],
-    ["PARTIAL_PAYMENT", "processing"],
-  ] as const)("maps %s to %s", (wompiStatus, status) => {
-    expect(resolvePayoutUpdate("pending", wompiStatus)).toStrictEqual({
+    ["PENDING", "submitted"],
+    ["PENDING_APPROVAL", "submitted"],
+    ["AFE_ON_HOLD", "submitted"],
+    ["PARTIAL_PAYMENT", "submitted"],
+  ] as const)("maps the batch status %s to %s", (wompiStatus, status) => {
+    expect(statusFromWompiPayout(wompiStatus)).toBe(status);
+  });
+
+  it("gives no status for a status that is not documented", () => {
+    expect(statusFromWompiPayout("SOMETHING_NEW")).toBeUndefined();
+  });
+});
+
+describe(statusFromWompiTransaction, () => {
+  it.each([
+    ["APPROVED", "paid"],
+    ["REJECTED", "failed"],
+    ["FAILED", "failed"],
+    ["CANCELLED", "failed"],
+    ["PENDING", "submitted"],
+    ["PROCESSING", "submitted"],
+    ["READY_TO_FILE", "submitted"],
+    ["ADDED_TO_FILE", "submitted"],
+  ] as const)("maps the transaction status %s to %s", (wompiStatus, status) => {
+    expect(statusFromWompiTransaction(wompiStatus)).toBe(status);
+  });
+
+  it("gives no status for a status that is not documented", () => {
+    expect(statusFromWompiTransaction("SOMETHING_NEW")).toBeUndefined();
+  });
+});
+
+describe(resolvePayoutUpdate, () => {
+  it.each([
+    ["queued", "submitted"],
+    ["submitting", "submitted"],
+    ["submitting", "paid"],
+    ["uncertain", "submitted"],
+    ["uncertain", "paid"],
+    ["uncertain", "failed"],
+    ["submitted", "paid"],
+    ["submitted", "failed"],
+  ] as const)("moves a %s payout to %s", (current, target) => {
+    expect(resolvePayoutUpdate(current, target)).toStrictEqual({
       kind: "applied",
-      status,
+      status: target,
     });
   });
 
-  it("does nothing for an unknown status", () => {
-    expect(resolvePayoutUpdate("processing", "SOMETHING_NEW")).toStrictEqual({
+  it.each([
+    ["submitted", "submitted"],
+    ["paid", "failed"],
+    ["paid", "submitted"],
+    ["failed", "submitted"],
+    ["failed", "failed"],
+    ["draft", "paid"],
+  ] as const)("does not change a %s payout to %s", (current, target) => {
+    expect(resolvePayoutUpdate(current, target)).toStrictEqual({
       kind: "unchanged",
     });
   });
-
-  it("does nothing when the status does not change", () => {
-    expect(resolvePayoutUpdate("processing", "PENDING")).toStrictEqual({
-      kind: "unchanged",
-    });
-  });
-
-  it.each(["paid", "failed"] as const)(
-    "does nothing when the payout is already %s",
-    (current) => {
-      expect(resolvePayoutUpdate(current, "REJECTED")).toStrictEqual({
-        kind: "unchanged",
-      });
-    }
-  );
 
   it("marks a failed payout as paid, because Wompi moved the money", () => {
-    expect(resolvePayoutUpdate("failed", "TOTAL_PAYMENT")).toStrictEqual({
+    expect(resolvePayoutUpdate("failed", "paid")).toStrictEqual({
       kind: "applied",
       status: "paid",
     });
   });
 });
 
-describe(isDefiniteRejection, () => {
-  it.each([
-    ["a 4xx request error", new WompiRequestError(400, {})],
-    [
-      "a payout API error",
-      new WompiPayoutApiError(422, { code: "EXC_001", message: "Invalid" }),
-    ],
-    [
-      "a validation error",
-      new WompiValidationError({
-        error: { type: "INPUT_VALIDATION_ERROR", messages: { amount: ["x"] } },
-      }),
-    ],
-    [
-      "a not-found error",
-      new WompiNotFoundError({
-        error: { type: "NOT_FOUND_ERROR", reason: "No account" },
-      }),
-    ],
-  ])("is true for %s", (_name, error) => {
-    expect(isDefiniteRejection(error, { retry: false })).toBeTruthy();
+describe(statusAfterSubmission, () => {
+  it("moves an accepted payout to submitted", () => {
+    expect(statusAfterSubmission("accepted", { firstDispatch: true })).toBe(
+      "submitted"
+    );
   });
 
-  it.each([
-    ["a network error or timeout", new WompiRequestError(0, "Network error")],
-    ["a gateway error", new WompiServiceUnavailableError(503, null)],
-    ["a 5xx request error", new WompiRequestError(500, {})],
-    ["an invalid success response", new WompiError("Response validation")],
-    [
-      "a conflict, such as a used reference or idempotency key",
-      new WompiPayoutApiError(409, { code: "EXC_001", message: "Duplicated" }),
-    ],
-  ])("is false for %s, because the result is not known", (_name, error) => {
-    expect(isDefiniteRejection(error, { retry: false })).toBeFalsy();
+  it("moves a payout that Wompi rejected on the first send to failed", () => {
+    expect(statusAfterSubmission("rejected", { firstDispatch: true })).toBe(
+      "failed"
+    );
   });
 
-  it("is false for any error on a retry, because the first request can have created the payout", () => {
-    expect(
-      isDefiniteRejection(new WompiRequestError(400, {}), { retry: true })
-    ).toBeFalsy();
+  it("moves a rejection on a later send to uncertain, because an earlier send can exist", () => {
+    expect(statusAfterSubmission("rejected", { firstDispatch: false })).toBe(
+      "uncertain"
+    );
   });
+
+  it.each([true, false])(
+    "moves an unknown result to uncertain (first send: %s)",
+    (firstDispatch) => {
+      expect(statusAfterSubmission("unknown", { firstDispatch })).toBe(
+        "uncertain"
+      );
+    }
+  );
 });
