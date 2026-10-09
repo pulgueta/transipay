@@ -1,3 +1,4 @@
+import { isFunction } from "@tanstack/react-table";
 import type { ReactTable, RowData, TableFeatures } from "@tanstack/react-table";
 
 import {
@@ -19,6 +20,7 @@ interface DataTableProps<
 
 /**
  * Renders a v9 table instance. It owns markup only, not state.
+ * Visibility APIs require `columnVisibilityFeature`. A core-only table shows all columns.
  *
  * Usage: keep `features` and `columns` at module scope and `data` stable. Give each table
  * a unique `key`, so that the Table devtools panel can show it (development only).
@@ -43,11 +45,17 @@ export const DataTable = <
   emptyMessage = "No records to show.",
 }: DataTableProps<TFeatures, TData>) => {
   const { rows } = table.getRowModel();
+  const headerGroups = table.getHeaderGroups();
+  const visibleLeafColumns =
+    "getVisibleLeafColumns" in table &&
+    isFunction<typeof table.getAllLeafColumns>(table.getVisibleLeafColumns)
+      ? table.getVisibleLeafColumns()
+      : table.getAllLeafColumns();
 
   return (
     <Table>
       <TableHeader>
-        {table.getHeaderGroups().map((group) => (
+        {headerGroups.map((group) => (
           <TableRow key={group.id}>
             {group.headers.map((header) => (
               <TableHead colSpan={header.colSpan} key={header.id}>
@@ -63,7 +71,10 @@ export const DataTable = <
         {rows.length > 0 ? (
           rows.map((row) => (
             <TableRow key={row.id}>
-              {row.getAllCells().map((cell) => (
+              {("getVisibleCells" in row
+                ? row.getVisibleCells()
+                : row.getAllCells()
+              ).map((cell) => (
                 <TableCell key={cell.id}>
                   <table.FlexRender cell={cell} />
                 </TableCell>
@@ -74,7 +85,7 @@ export const DataTable = <
           <TableRow>
             <TableCell
               className="text-muted-foreground h-24 text-center"
-              colSpan={table.getAllLeafColumns().length}
+              colSpan={visibleLeafColumns.length}
             >
               {emptyMessage}
             </TableCell>
