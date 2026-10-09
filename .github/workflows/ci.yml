@@ -11,6 +11,19 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: transipay
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: transipay
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U transipay -d transipay" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://transipay@127.0.0.1:5432/transipay
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -25,3 +38,4 @@ jobs:
       - run: pnpm build
       # The build writes the route tree. A difference means the committed tree is stale.
       - run: git diff --exit-code src/routeTree.gen.ts
+      - run: pnpm test:db

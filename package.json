@@ -10,13 +10,14 @@
     "check": "ultracite check",
     "fix": "ultracite fix",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "vitest run --project unit",
+    "test:watch": "vitest --project unit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:check": "drizzle-kit check",
-    "intent": "node ./node_modules/@tanstack/intent/dist/cli.mjs"
+    "intent": "node ./node_modules/@tanstack/intent/dist/cli.mjs",
+    "test:db": "vitest run --project db"
   },
   "dependencies": {
     "@base-ui/react": "1.9.0",
