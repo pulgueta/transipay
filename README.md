@@ -71,7 +71,11 @@ Set these URLs in the Wompi dashboard:
 | Payments | `<app URL>/api/webhooks/wompi` | `WOMPI_EVENTS_KEY` |
 | Payouts | `<app URL>/api/webhooks/wompi-payouts` | `WOMPI_PAYOUTS_EVENTS_KEY` |
 
-The webhooks check the event signature. A webhook with a bad signature gets `401`. The same event two times has no second effect.
+The webhooks check the event signature. A webhook with a bad signature gets `401`. A body larger than 64 KiB gets `413`. The webhook reads the transaction or payout from the Wompi API with the signed id. If the API does not answer, the webhook returns `502` and Wompi sends the event again. The same event two times has no second effect.
+
+## Payouts
+
+A payout goes through these states: `draft`, `queued`, `submitting`, `submitted`, then `paid` or `failed`. When the result of a send is not known, the payout goes to `uncertain`. Reconciliation (`reconcilePayoutsFn`) asks Wompi for the payout reference. It sends again only before the `retry_deadline` (23 hours after the first send). After the deadline, staff must decide.
 
 ## Scripts
 
@@ -82,11 +86,14 @@ The webhooks check the event signature. A webhook with a bad signature gets `401
 | `pnpm check`       | Lints and checks the format.                      |
 | `pnpm fix`         | Applies the safe lint and format fixes.           |
 | `pnpm typecheck`   | Checks the types.                                 |
-| `pnpm test`        | Runs the tests.                                   |
+| `pnpm test`        | Runs the unit tests without a database.           |
+| `pnpm test:db`     | Runs the database tests in a fresh database.      |
 | `pnpm db:generate` | Makes a migration from the schema.                |
 | `pnpm db:migrate`  | Applies the migrations.                           |
 | `pnpm db:studio`   | Opens Drizzle Studio.                             |
 | `pnpm intent list` | Shows the agent skills of the installed packages. |
+
+To run database tests locally, use `TEST_DATABASE_URL=postgres://transipay:transipay@127.0.0.1:5432/transipay pnpm test:db`.
 
 ## Database
 
@@ -98,12 +105,18 @@ The domain tables are in the `public` schema. The better-auth tables are in the 
 | Citizens | `citizen`, `driver_license`, `vehicle`, `vehicle_document` |
 | Obligations | `infraction`, `procedure_type`, `obligation`, `fine`, `procedure` |
 | Scheduling | `appointment`, `course_session`, `course_enrollment` |
-| Payments | `payment`, `payment_agreement`, `installment`, `payment_event`, `payout` |
+| Payments | `payment`, `payment_attempt`, `payment_agreement`, `installment`, `payment_event`, `payout` |
 | Records | `audit_log`, `notification` |
 
 Each primary key is a UUIDv7 that PostgreSQL makes with `uuidv7()`. The ids are in time order, so lists use keyset pagination on `id`.
 
 ### Database roles
+
+Run the migrations as the role that owns the tables. Run the app as a login role that is a member of `transipay_app`. This role does not own the tables and can only read `audit_log`, so the app cannot change the audit log. For example:
+
+```sql
+CREATE ROLE transipay_web LOGIN PASSWORD '<password>' IN ROLE transipay_app;
+```
 
 - The app connects as a login role that is a member of `transipay_app` (in local development, `transipay_web`). This role does not own the tables, so the protections of migration 0005 apply to it.
 - Migrations run as the table owner. drizzle-kit uses `DATABASE_OWNER_URL`. When it is not set, drizzle-kit uses `DATABASE_URL`.
