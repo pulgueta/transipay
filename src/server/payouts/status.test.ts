@@ -47,6 +47,13 @@ describe(resolvePayoutUpdate, () => {
       });
     }
   );
+
+  it("marks a failed payout as paid, because Wompi moved the money", () => {
+    expect(resolvePayoutUpdate("failed", "TOTAL_PAYMENT")).toStrictEqual({
+      kind: "applied",
+      status: "paid",
+    });
+  });
 });
 
 describe(isDefiniteRejection, () => {
@@ -54,7 +61,7 @@ describe(isDefiniteRejection, () => {
     ["a 4xx request error", new WompiRequestError(400, {})],
     [
       "a payout API error",
-      new WompiPayoutApiError(409, { code: "EXC_001", message: "Invalid" }),
+      new WompiPayoutApiError(422, { code: "EXC_001", message: "Invalid" }),
     ],
     [
       "a validation error",
@@ -69,7 +76,7 @@ describe(isDefiniteRejection, () => {
       }),
     ],
   ])("is true for %s", (_name, error) => {
-    expect(isDefiniteRejection(error)).toBeTruthy();
+    expect(isDefiniteRejection(error, { retry: false })).toBeTruthy();
   });
 
   it.each([
@@ -77,7 +84,17 @@ describe(isDefiniteRejection, () => {
     ["a gateway error", new WompiServiceUnavailableError(503, null)],
     ["a 5xx request error", new WompiRequestError(500, {})],
     ["an invalid success response", new WompiError("Response validation")],
+    [
+      "a conflict, such as a used reference or idempotency key",
+      new WompiPayoutApiError(409, { code: "EXC_001", message: "Duplicated" }),
+    ],
   ])("is false for %s, because the result is not known", (_name, error) => {
-    expect(isDefiniteRejection(error)).toBeFalsy();
+    expect(isDefiniteRejection(error, { retry: false })).toBeFalsy();
+  });
+
+  it("is false for any error on a retry, because the first request can have created the payout", () => {
+    expect(
+      isDefiniteRejection(new WompiRequestError(400, {}), { retry: true })
+    ).toBeFalsy();
   });
 });

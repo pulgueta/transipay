@@ -155,8 +155,11 @@ export const createPayoutFn = createServerFn({ method: "POST" })
       { idempotencyKey: row.idempotencyKey }
     );
 
-    // Unknown result (network error, timeout, 5xx): keep the payout pending until a webhook event arrives.
-    if (error && !isDefiniteRejection(error)) {
+    // Unknown result (network error, timeout, 5xx, conflict, or retry): keep the payout pending until a webhook event arrives.
+    if (
+      error &&
+      !isDefiniteRejection(error, { retry: stored.action === "retry" })
+    ) {
       return { payoutId: row.id, status: "pending" as const };
     }
 
