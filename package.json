@@ -12,10 +12,6 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio",
-    "db:check": "drizzle-kit check",
     "intent": "node ./node_modules/@tanstack/intent/dist/cli.mjs"
   },
   "dependencies": {
