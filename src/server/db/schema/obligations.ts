@@ -61,6 +61,8 @@ export const procedureType = pgTable(
   },
   (table) => [
     index("procedure_type_entity_id_idx").on(table.entityId),
+    // Target of the ownership foreign keys: a child row uses a procedure type of its own entity.
+    unique("procedure_type_id_entity_id_key").on(table.id, table.entityId),
     check(
       "procedure_type_amount_in_cents_check",
       sql`${table.amountInCents} >= 0`
@@ -96,6 +98,9 @@ export const obligation = pgTable(
     unique("obligation_entity_id_number_key").on(table.entityId, table.number),
     // Target of the subtype foreign keys. It makes sure a fine row points to a 'fine' obligation.
     unique("obligation_id_kind_key").on(table.id, table.kind),
+    // Targets of the ownership foreign keys: the obligation of a child row belongs to its citizen or creditor.
+    unique("obligation_id_citizen_id_key").on(table.id, table.citizenId),
+    unique("obligation_id_entity_id_key").on(table.id, table.entityId),
     index("obligation_citizen_id_id_idx").on(table.citizenId, table.id),
     index("obligation_entity_id_status_id_idx").on(
       table.entityId,
@@ -104,7 +109,11 @@ export const obligation = pgTable(
     ),
     checkIn("obligation_kind_check", table.kind, OBLIGATION_KINDS),
     checkIn("obligation_status_check", table.status, OBLIGATION_STATUSES),
-    check("obligation_amount_in_cents_check", sql`${table.amountInCents} > 0`),
+    // A procedure can have no fee. A fine always has an amount.
+    check(
+      "obligation_amount_in_cents_check",
+      sql`${table.amountInCents} > 0 or (${table.kind} = 'procedure' and ${table.amountInCents} = 0)`
+    ),
     check(
       "obligation_discount_in_cents_check",
       sql`${table.discountInCents} >= 0 and ${table.discountInCents} <= ${table.amountInCents}`
@@ -150,9 +159,9 @@ export const procedure = pgTable(
       .$type<"procedure">()
       .notNull()
       .generatedAlwaysAs(sql`'procedure'`),
-    procedureTypeId: uuid()
-      .notNull()
-      .references(() => procedureType.id, { onDelete: "restrict" }),
+    // The creditor entity. The foreign keys below make it equal to obligation.entity_id and procedure_type.entity_id.
+    entityId: uuid().notNull(),
+    procedureTypeId: uuid().notNull(),
     vehicleId: uuid().references(() => vehicle.id, { onDelete: "set null" }),
     ...timestamps(),
   },
@@ -162,6 +171,17 @@ export const procedure = pgTable(
       columns: [table.obligationId, table.kind],
       foreignColumns: [obligation.id, obligation.kind],
     }).onDelete("cascade"),
+    foreignKey({
+      name: "procedure_obligation_id_entity_id_fkey",
+      columns: [table.obligationId, table.entityId],
+      foreignColumns: [obligation.id, obligation.entityId],
+    }).onDelete("cascade"),
+    // The procedure type belongs to the obligation creditor.
+    foreignKey({
+      name: "procedure_procedure_type_id_entity_id_fkey",
+      columns: [table.procedureTypeId, table.entityId],
+      foreignColumns: [procedureType.id, procedureType.entityId],
+    }).onDelete("restrict"),
     index("procedure_procedure_type_id_idx").on(table.procedureTypeId),
     index("procedure_vehicle_id_idx").on(table.vehicleId),
   ]

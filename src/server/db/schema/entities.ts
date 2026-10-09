@@ -80,6 +80,8 @@ export const branch = pgTable(
   // The unique key starts with entity_id, so it also indexes the foreign key.
   (table) => [
     unique("branch_entity_id_name_key").on(table.entityId, table.name),
+    // Target of the ownership foreign keys: a child row refers to a branch of its own entity.
+    unique("branch_id_entity_id_key").on(table.id, table.entityId),
   ]
 );
 
@@ -102,6 +104,8 @@ export const entityBankAccount = pgTable(
     ...timestamps(),
   },
   (table) => [
+    // Target of the ownership foreign key: a payout uses an account of its own entity.
+    unique("entity_bank_account_id_entity_id_key").on(table.id, table.entityId),
     unique("entity_bank_account_entity_id_bank_id_account_number_key").on(
       table.entityId,
       table.bankId,

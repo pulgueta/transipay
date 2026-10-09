@@ -4,6 +4,7 @@ import {
   char,
   check,
   date,
+  foreignKey,
   index,
   jsonb,
   pgTable,
@@ -67,6 +68,11 @@ export const paymentAgreement = pgTable(
       .on(table.obligationId)
       .where(sql`${table.status} = 'active'`),
     index("payment_agreement_obligation_id_idx").on(table.obligationId),
+    // Target of the ownership foreign key: an installment keeps the obligation of its agreement.
+    unique("payment_agreement_id_obligation_id_key").on(
+      table.id,
+      table.obligationId
+    ),
     checkIn("payment_agreement_status_check", table.status, AGREEMENT_STATUSES),
     check(
       "payment_agreement_installment_count_check",
@@ -79,9 +85,9 @@ export const installment = pgTable(
   "installment",
   {
     id: id(),
-    paymentAgreementId: uuid()
-      .notNull()
-      .references(() => paymentAgreement.id, { onDelete: "cascade" }),
+    paymentAgreementId: uuid().notNull(),
+    // The obligation of the agreement. A payment uses it to refer to an installment of its own obligation.
+    obligationId: uuid().notNull(),
     number: smallint().notNull(),
     dueOn: date({ mode: "string" }).notNull(),
     amountInCents: bigint({ mode: "number" }).notNull(),
@@ -93,6 +99,13 @@ export const installment = pgTable(
       table.paymentAgreementId,
       table.number
     ),
+    foreignKey({
+      name: "installment_payment_agreement_id_obligation_id_fkey",
+      columns: [table.paymentAgreementId, table.obligationId],
+      foreignColumns: [paymentAgreement.id, paymentAgreement.obligationId],
+    }).onDelete("cascade"),
+    // Target of the ownership foreign key from payment.
+    unique("installment_id_obligation_id_key").on(table.id, table.obligationId),
     checkIn("installment_status_check", table.status, INSTALLMENT_STATUSES),
     check("installment_number_check", sql`${table.number} > 0`),
     check("installment_amount_in_cents_check", sql`${table.amountInCents} > 0`),
@@ -110,9 +123,8 @@ export const payment = pgTable(
     obligationId: uuid()
       .notNull()
       .references(() => obligation.id, { onDelete: "restrict" }),
-    installmentId: uuid().references(() => installment.id, {
-      onDelete: "restrict",
-    }),
+    // Optional. When it is set, the installment belongs to this obligation (see the foreign key below).
+    installmentId: uuid(),
     amountInCents: bigint({ mode: "number" }).notNull(),
     currency: char({ length: 3 }).notNull().default("COP"),
     // Our reference. We send it to Wompi.
@@ -129,6 +141,12 @@ export const payment = pgTable(
     index("payment_citizen_id_id_idx").on(table.citizenId, table.id),
     index("payment_obligation_id_idx").on(table.obligationId),
     index("payment_installment_id_idx").on(table.installmentId),
+    // MATCH SIMPLE: a payment without an installment skips this check.
+    foreignKey({
+      name: "payment_installment_id_obligation_id_fkey",
+      columns: [table.installmentId, table.obligationId],
+      foreignColumns: [installment.id, installment.obligationId],
+    }).onDelete("restrict"),
     checkIn("payment_status_check", table.status, PAYMENT_STATUSES),
     check("payment_amount_in_cents_check", sql`${table.amountInCents} > 0`),
     // A payment gets a final time only when it leaves 'pending'.
@@ -159,9 +177,8 @@ export const payout = pgTable(
     entityId: uuid()
       .notNull()
       .references(() => entity.id, { onDelete: "restrict" }),
-    entityBankAccountId: uuid()
-      .notNull()
-      .references(() => entityBankAccount.id, { onDelete: "restrict" }),
+    // The account belongs to the payout entity (see the foreign key below).
+    entityBankAccountId: uuid().notNull(),
     amountInCents: bigint({ mode: "number" }).notNull(),
     currency: char({ length: 3 }).notNull().default("COP"),
     reference: text().notNull().unique("payout_reference_key"),
@@ -174,6 +191,11 @@ export const payout = pgTable(
   (table) => [
     index("payout_entity_id_id_idx").on(table.entityId, table.id),
     index("payout_entity_bank_account_id_idx").on(table.entityBankAccountId),
+    foreignKey({
+      name: "payout_entity_bank_account_id_entity_id_fkey",
+      columns: [table.entityBankAccountId, table.entityId],
+      foreignColumns: [entityBankAccount.id, entityBankAccount.entityId],
+    }).onDelete("restrict"),
     checkIn("payout_status_check", table.status, PAYOUT_STATUSES),
     check("payout_amount_in_cents_check", sql`${table.amountInCents} > 0`),
     check(

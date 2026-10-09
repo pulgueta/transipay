@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  foreignKey,
   index,
   integer,
   pgTable,
@@ -40,15 +41,12 @@ export const appointment = pgTable(
     citizenId: uuid()
       .notNull()
       .references(() => citizen.id, { onDelete: "restrict" }),
-    branchId: uuid()
-      .notNull()
-      .references(() => branch.id, { onDelete: "restrict" }),
-    procedureTypeId: uuid()
-      .notNull()
-      .references(() => procedureType.id, { onDelete: "restrict" }),
-    obligationId: uuid().references(() => obligation.id, {
-      onDelete: "set null",
-    }),
+    // The entity of the branch and of the procedure type (see the foreign keys below).
+    entityId: uuid().notNull(),
+    branchId: uuid().notNull(),
+    procedureTypeId: uuid().notNull(),
+    // Optional. When it is set, the obligation belongs to the appointment citizen.
+    obligationId: uuid(),
     scheduledAt: timestamptz().notNull(),
     status: text().$type<AppointmentStatus>().notNull().default("scheduled"),
     ...timestamps(),
@@ -61,6 +59,22 @@ export const appointment = pgTable(
     index("appointment_citizen_id_id_idx").on(table.citizenId, table.id),
     index("appointment_procedure_type_id_idx").on(table.procedureTypeId),
     index("appointment_obligation_id_idx").on(table.obligationId),
+    foreignKey({
+      name: "appointment_branch_id_entity_id_fkey",
+      columns: [table.branchId, table.entityId],
+      foreignColumns: [branch.id, branch.entityId],
+    }).onDelete("restrict"),
+    foreignKey({
+      name: "appointment_procedure_type_id_entity_id_fkey",
+      columns: [table.procedureTypeId, table.entityId],
+      foreignColumns: [procedureType.id, procedureType.entityId],
+    }).onDelete("restrict"),
+    // RESTRICT, not SET NULL: SET NULL also clears citizen_id.
+    foreignKey({
+      name: "appointment_obligation_id_citizen_id_fkey",
+      columns: [table.obligationId, table.citizenId],
+      foreignColumns: [obligation.id, obligation.citizenId],
+    }).onDelete("restrict"),
     checkIn("appointment_status_check", table.status, APPOINTMENT_STATUSES),
   ]
 );
@@ -74,9 +88,8 @@ export const courseSession = pgTable(
     entityId: uuid()
       .notNull()
       .references(() => entity.id, { onDelete: "restrict" }),
-    branchId: uuid()
-      .notNull()
-      .references(() => branch.id, { onDelete: "restrict" }),
+    // The branch belongs to the session entity (see the foreign key below).
+    branchId: uuid().notNull(),
     startsAt: timestamptz().notNull(),
     endsAt: timestamptz().notNull(),
     capacity: integer().notNull(),
@@ -85,6 +98,11 @@ export const courseSession = pgTable(
   },
   (table) => [
     index("course_session_entity_id_idx").on(table.entityId),
+    foreignKey({
+      name: "course_session_branch_id_entity_id_fkey",
+      columns: [table.branchId, table.entityId],
+      foreignColumns: [branch.id, branch.entityId],
+    }).onDelete("restrict"),
     index("course_session_branch_id_starts_at_idx").on(
       table.branchId,
       table.startsAt
@@ -111,10 +129,14 @@ export const courseEnrollment = pgTable(
     citizenId: uuid()
       .notNull()
       .references(() => citizen.id, { onDelete: "restrict" }),
-    // The fine that gets the discount.
-    obligationId: uuid()
+    // The fine that gets the discount. It belongs to the enrolled citizen (see the foreign keys below).
+    // The course entity and the fine creditor can be different: a CEA course can discount an ITTB fine.
+    obligationId: uuid().notNull(),
+    // Constant column for the composite foreign key to obligation (id, kind).
+    obligationKind: text()
+      .$type<"fine">()
       .notNull()
-      .references(() => obligation.id, { onDelete: "restrict" }),
+      .generatedAlwaysAs(sql`'fine'`),
     status: text().$type<EnrollmentStatus>().notNull().default("enrolled"),
     attendedAt: timestamptz(),
     ...timestamps(),
@@ -131,6 +153,16 @@ export const courseEnrollment = pgTable(
     // The partial index above does not cover cancelled rows, so the foreign key needs its own index.
     index("course_enrollment_obligation_id_idx").on(table.obligationId),
     index("course_enrollment_citizen_id_idx").on(table.citizenId),
+    foreignKey({
+      name: "course_enrollment_obligation_id_citizen_id_fkey",
+      columns: [table.obligationId, table.citizenId],
+      foreignColumns: [obligation.id, obligation.citizenId],
+    }).onDelete("restrict"),
+    foreignKey({
+      name: "course_enrollment_obligation_id_obligation_kind_fkey",
+      columns: [table.obligationId, table.obligationKind],
+      foreignColumns: [obligation.id, obligation.kind],
+    }).onDelete("restrict"),
     checkIn(
       "course_enrollment_status_check",
       table.status,

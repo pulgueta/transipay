@@ -22,6 +22,13 @@
       "when": 1791510700635,
       "tag": "0002_audit_log_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791577610908,
+      "tag": "0003_composite_domain_constraints",
+      "breakpoints": true
     }
   ]
 }
