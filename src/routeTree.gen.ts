@@ -10,33 +10,70 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiWebhooksWompiRouteImport } from './routes/api/webhooks/wompi'
+import { Route as ApiWebhooksWompiPayoutsRouteImport } from './routes/api/webhooks/wompi-payouts'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWebhooksWompiRoute = ApiWebhooksWompiRouteImport.update({
+  id: '/api/webhooks/wompi',
+  path: '/api/webhooks/wompi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWebhooksWompiPayoutsRoute = ApiWebhooksWompiPayoutsRouteImport.update({
+  id: '/api/webhooks/wompi-payouts',
+  path: '/api/webhooks/wompi-payouts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/webhooks/wompi': typeof ApiWebhooksWompiRoute
+  '/api/webhooks/wompi-payouts': typeof ApiWebhooksWompiPayoutsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/webhooks/wompi': typeof ApiWebhooksWompiRoute
+  '/api/webhooks/wompi-payouts': typeof ApiWebhooksWompiPayoutsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/webhooks/wompi': typeof ApiWebhooksWompiRoute
+  '/api/webhooks/wompi-payouts': typeof ApiWebhooksWompiPayoutsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    '/' | '/api/auth/$' | '/api/webhooks/wompi' | '/api/webhooks/wompi-payouts'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    '/' | '/api/auth/$' | '/api/webhooks/wompi' | '/api/webhooks/wompi-payouts'
+  id:
+    | '__root__'
+    | '/'
+    | '/api/auth/$'
+    | '/api/webhooks/wompi'
+    | '/api/webhooks/wompi-payouts'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiWebhooksWompiRoute: typeof ApiWebhooksWompiRoute
+  ApiWebhooksWompiPayoutsRoute: typeof ApiWebhooksWompiPayoutsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +85,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/webhooks/wompi': {
+      id: '/api/webhooks/wompi'
+      path: '/api/webhooks/wompi'
+      fullPath: '/api/webhooks/wompi'
+      preLoaderRoute: typeof ApiWebhooksWompiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/webhooks/wompi-payouts': {
+      id: '/api/webhooks/wompi-payouts'
+      path: '/api/webhooks/wompi-payouts'
+      fullPath: '/api/webhooks/wompi-payouts'
+      preLoaderRoute: typeof ApiWebhooksWompiPayoutsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiWebhooksWompiRoute: ApiWebhooksWompiRoute,
+  ApiWebhooksWompiPayoutsRoute: ApiWebhooksWompiPayoutsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
