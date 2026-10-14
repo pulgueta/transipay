@@ -175,6 +175,10 @@ export const payment = pgTable(
     index("payment_citizen_id_id_idx").on(table.citizenId, table.id),
     index("payment_obligation_id_idx").on(table.obligationId),
     index("payment_installment_id_idx").on(table.installmentId),
+    // The scheduled sweep reads the pending payments in id order.
+    index("payment_pending_id_idx")
+      .on(table.id)
+      .where(sql`${table.status} = 'pending'`),
     // MATCH SIMPLE: a payment without an installment skips this check.
     foreignKey({
       name: "payment_installment_id_obligation_id_fkey",
