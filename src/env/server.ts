@@ -24,6 +24,8 @@ export const serverEnv = createEnv({
     WOMPI_PAYOUTS_EVENTS_KEY: z.string().min(1),
     // Source account for payouts (see `listAccounts`). Payouts fail until it is set.
     WOMPI_PAYOUTS_ACCOUNT_ID: z.string().min(1).optional(),
+    // Bearer secret for `POST /api/jobs/run`. When it is not set, the route is disabled (404).
+    JOBS_SECRET: z.string().min(32).optional(),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,
