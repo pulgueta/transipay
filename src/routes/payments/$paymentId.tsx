@@ -66,6 +66,13 @@ const STATUS_CONTENT: Record<PaymentStatus, StatusContent> = {
     description: "This payment was cancelled. Try again to pay the obligation.",
     canRetry: true,
   },
+  expired: {
+    icon: IconClock,
+    title: "Payment link expired",
+    description:
+      "This checkout expired, so we did not collect money. Pay again to get a new link.",
+    canRetry: true,
+  },
 };
 
 const formatAmount = (amountInCents: number, currency: string) =>

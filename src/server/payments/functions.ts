@@ -1,6 +1,6 @@
 import { buildCheckoutUrl } from "@pulgueta/wompi/server";
 import { createServerFn } from "@tanstack/react-start";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { serverEnv } from "@/env/server";
@@ -11,6 +11,7 @@ import {
   installment,
   payment,
   paymentAgreement,
+  paymentAttempt,
 } from "@/server/db/schema/payments";
 import { withActor } from "@/server/db/with-actor";
 import { httpError, throwNotFound } from "@/server/http-error";
@@ -21,6 +22,7 @@ import { canReadPayment } from "./access";
 import { resolveAmountDue } from "./amount";
 import type { AmountDueError } from "./amount";
 import { checkoutExpiresAt, findReusablePayment } from "./checkout";
+import { reconcilePaymentWithWompi } from "./reconcile";
 
 const AMOUNT_DUE_MESSAGES: Record<AmountDueError, string> = {
   obligation_not_payable: "This obligation is paid or void. You cannot pay it.",
@@ -197,37 +199,77 @@ export const createCheckoutFn = createServerFn({ method: "POST" })
   });
 
 /**
- * Returns the status of one payment. The owner citizen and staff with `payment:read` can read it.
+ * Reads one payment for the result page. The owner citizen and staff with `payment:read` can read it.
  * Other users get 404, so they cannot find out if the payment exists.
  */
+const readPaymentView = async (
+  paymentId: string,
+  user: { id: string; role?: string | null }
+) => {
+  const rows = await db
+    .select({
+      id: payment.id,
+      obligationId: payment.obligationId,
+      installmentId: payment.installmentId,
+      reference: payment.reference,
+      amountInCents: payment.amountInCents,
+      currency: payment.currency,
+      status: payment.status,
+      paymentMethodType: payment.paymentMethodType,
+      finalizedAt: payment.finalizedAt,
+      createdAt: payment.createdAt,
+      ownerUserId: citizen.userId,
+      attemptCount: db.$count(
+        paymentAttempt,
+        eq(paymentAttempt.paymentId, payment.id)
+      ),
+      // An attempt with a review reason waits for staff: a second approval or a target that is not payable.
+      needsReview: sql<boolean>`exists (select 1 from ${paymentAttempt}
+        where ${paymentAttempt.paymentId} = ${payment.id} and ${paymentAttempt.reviewReason} is not null)`,
+    })
+    .from(payment)
+    .innerJoin(citizen, eq(citizen.id, payment.citizenId))
+    .where(eq(payment.id, paymentId));
+  const row = rows.at(0);
+
+  const isOwner = row !== undefined && row.ownerUserId === user.id;
+  if (!row || !canReadPayment({ isOwner, role: user.role })) {
+    return throwNotFound();
+  }
+
+  const { ownerUserId: _ownerUserId, ...result } = row;
+  return {
+    ...result,
+    isOwner,
+    expiresAt: checkoutExpiresAt(row.createdAt),
+  };
+};
+
+/** Returns the status of one payment as it is in the database (see `readPaymentView` for the access rule). */
 export const getPaymentFn = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .validator(z.object({ paymentId: z.uuid() }))
+  .handler(
+    async ({ context, data }) =>
+      await readPaymentView(data.paymentId, context.user)
+  );
+
+/**
+ * Asks Wompi about the payment, applies what it finds, and returns the payment as it is stored after that.
+ * The result page uses it when the citizen waits for a webhook that did not arrive.
+ * The same access rule as `getPaymentFn`: the access check runs before the Wompi call.
+ */
+export const refreshPaymentFn = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(z.object({ paymentId: z.uuid() }))
   .handler(async ({ context, data }) => {
-    const rows = await db
-      .select({
-        id: payment.id,
-        obligationId: payment.obligationId,
-        installmentId: payment.installmentId,
-        reference: payment.reference,
-        amountInCents: payment.amountInCents,
-        currency: payment.currency,
-        status: payment.status,
-        paymentMethodType: payment.paymentMethodType,
-        finalizedAt: payment.finalizedAt,
-        createdAt: payment.createdAt,
-        ownerUserId: citizen.userId,
-      })
-      .from(payment)
-      .innerJoin(citizen, eq(citizen.id, payment.citizenId))
-      .where(eq(payment.id, data.paymentId));
-    const row = rows.at(0);
-
-    const isOwner = row !== undefined && row.ownerUserId === context.user.id;
-    if (!row || !canReadPayment({ isOwner, role: context.user.role })) {
-      return throwNotFound();
+    const current = await readPaymentView(data.paymentId, context.user);
+    const result = await reconcilePaymentWithWompi(current.id, context.actorId);
+    if (result.kind === "unavailable") {
+      throw httpError(
+        503,
+        "We cannot get the payment status now. Try again in a few minutes."
+      );
     }
-
-    const { ownerUserId: _ownerUserId, ...result } = row;
-    return { ...result, isOwner };
+    return await readPaymentView(current.id, context.user);
   });

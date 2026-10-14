@@ -38,13 +38,23 @@ export type AgreementStatus = (typeof AGREEMENT_STATUSES)[number];
 export const INSTALLMENT_STATUSES = ["pending", "paid", "overdue"] as const;
 export type InstallmentStatus = (typeof INSTALLMENT_STATUSES)[number];
 
-/** Wompi transaction statuses in lower case. */
-export const PAYMENT_STATUSES = [
+/** Wompi transaction statuses in lower case. An attempt has only these statuses. */
+export const PAYMENT_ATTEMPT_STATUSES = [
   "pending",
   "approved",
   "declined",
   "voided",
   "error",
+] as const;
+export type PaymentAttemptStatus = (typeof PAYMENT_ATTEMPT_STATUSES)[number];
+
+/**
+ * The attempt statuses, plus `expired`: the checkout link expired and Wompi has no transaction for it.
+ * A late transaction can still move an expired payment (see `resolveTransactionUpdate`).
+ */
+export const PAYMENT_STATUSES = [
+  ...PAYMENT_ATTEMPT_STATUSES,
+  "expired",
 ] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
@@ -206,7 +216,7 @@ export const paymentAttempt = pgTable(
     providerTransactionId: text()
       .notNull()
       .unique("payment_attempt_provider_transaction_id_key"),
-    status: text().$type<PaymentStatus>().notNull(),
+    status: text().$type<PaymentAttemptStatus>().notNull(),
     amountInCents: bigint({ mode: "number" }).notNull(),
     currency: char({ length: 3 }).notNull(),
     paymentMethodType: text(),
@@ -217,7 +227,11 @@ export const paymentAttempt = pgTable(
   },
   (table) => [
     index("payment_attempt_payment_id_idx").on(table.paymentId),
-    checkIn("payment_attempt_status_check", table.status, PAYMENT_STATUSES),
+    checkIn(
+      "payment_attempt_status_check",
+      table.status,
+      PAYMENT_ATTEMPT_STATUSES
+    ),
     checkIn(
       "payment_attempt_review_reason_check",
       table.reviewReason,

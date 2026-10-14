@@ -5,6 +5,7 @@ import type {
   AgreementStatus,
   InstallmentStatus,
   PaymentAttemptReviewReason,
+  PaymentAttemptStatus,
   PaymentStatus,
 } from "@/server/db/schema/payments";
 
@@ -28,7 +29,7 @@ export interface PaymentSnapshot {
 /** The attempt row that has the transaction id of the event. The caller locks it. */
 export interface AttemptSnapshot {
   paymentId: string;
-  status: PaymentStatus;
+  status: PaymentAttemptStatus;
   reviewReason: PaymentAttemptReviewReason | null;
 }
 export type TransactionSnapshot = Pick<
@@ -72,7 +73,7 @@ export type TransactionUpdate =
       kind: "applied";
       // The caller inserts the attempt or moves it from 'pending'. A review reason keeps the event unprocessed.
       attempt: {
-        status: PaymentStatus;
+        status: PaymentAttemptStatus;
         reviewReason: PaymentAttemptReviewReason | null;
       };
       // Null when the payment does not change.
@@ -80,13 +81,14 @@ export type TransactionUpdate =
       effects: PaymentEffects;
     };
 
-const STATUS_BY_WOMPI_STATUS: Record<TransactionStatus, PaymentStatus> = {
-  PENDING: "pending",
-  APPROVED: "approved",
-  DECLINED: "declined",
-  VOIDED: "voided",
-  ERROR: "error",
-};
+const STATUS_BY_WOMPI_STATUS: Record<TransactionStatus, PaymentAttemptStatus> =
+  {
+    PENDING: "pending",
+    APPROVED: "approved",
+    DECLINED: "declined",
+    VOIDED: "voided",
+    ERROR: "error",
+  };
 
 const NO_EFFECTS: PaymentEffects = {
   obligationPaid: false,

@@ -77,8 +77,9 @@ const expectOneRow = (rows: unknown[]) => {
 /**
  * Applies a transaction that we got from the Wompi API. Returns false when staff must examine the event:
  * it does not match a payment of ours, it conflicts with a final attempt, or the attempt is flagged for review.
+ * The webhook and the reconciliation (`reconcile.ts`) use this one path, so a transaction has the same effect from both.
  */
-const applyTransactionUpdate = async (
+export const applyTransactionUpdate = async (
   tx: Transaction,
   transaction: TransactionSnapshot
 ) => {
