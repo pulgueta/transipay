@@ -12,7 +12,7 @@ import { authMiddleware, requirePermission } from "@/server/middleware/auth";
 import { getWompi } from "@/server/wompi";
 
 import { canReadPayment } from "./access";
-import { checkoutExpiresAt } from "./checkout";
+import { canStillSettle, checkoutExpiresAt } from "./checkout";
 import { createCheckout } from "./create-checkout";
 import type { CheckoutRefusal } from "./create-checkout";
 import { reconcilePaymentWithWompi } from "./reconcile";
@@ -175,12 +175,15 @@ const readPaymentView = async (
 
   const { ownerUserId: _ownerUserId, ...result } = row;
   const expiresAt = checkoutExpiresAt(row.createdAt);
+  const now = new Date();
   return {
     ...result,
     isOwner,
     expiresAt,
     // Decided here with the server clock, so the page shows the same state on the server and in the browser.
-    checkoutExpired: expiresAt <= new Date(),
+    checkoutExpired: expiresAt <= now,
+    // True while a late Wompi transaction can still move the payment, so the page offers a refresh.
+    canStillSettle: canStillSettle(row, now),
   };
 };
 

@@ -20,6 +20,7 @@ import {
 
 import { schema } from "@/server/db/client";
 import { createIsolatedDatabase } from "@/server/db/testing";
+import { SETTLE_WINDOW_MS } from "@/server/payments/checkout";
 import {
   insertPayout,
   payoutRow,
@@ -62,8 +63,14 @@ const queryId = async (text: string, values: unknown[]) => {
   return row.id;
 };
 
-/** A pending payment for a new obligation. `ageMs` sets the start of the checkout in the past. */
-const seedPayment = async (ageMs: number) => {
+/**
+ * A payment for a new obligation. `ageMs` sets the start of the checkout in the past.
+ * A declined payment gets its declined attempt, as the webhook leaves it.
+ */
+const seedPayment = async (
+  ageMs: number,
+  { status = "pending" }: { status?: "pending" | "declined" } = {}
+) => {
   const entityId = await queryId(
     `insert into entity (kind, name, tax_id, email, phone)
      values ('transit_authority', 'Entity', $1, 'entity@example.com', '3000000000') returning id`,
@@ -81,10 +88,25 @@ const seedPayment = async (ageMs: number) => {
   );
   const reference = `tp_${unique()}`;
   const paymentId = await queryId(
-    `insert into payment (citizen_id, obligation_id, amount_in_cents, reference, created_at)
-     values ($1, $2, $3, $4, $5) returning id`,
-    [citizenId, obligationId, AMOUNT, reference, new Date(Date.now() - ageMs)]
+    `insert into payment (citizen_id, obligation_id, amount_in_cents, reference, created_at, status,
+       finalized_at)
+     values ($1, $2, $3, $4, $5, $6, case when $6 = 'pending' then null else now() end) returning id`,
+    [
+      citizenId,
+      obligationId,
+      AMOUNT,
+      reference,
+      new Date(Date.now() - ageMs),
+      status,
+    ]
   );
+  if (status === "declined") {
+    await pool.query(
+      `insert into payment_attempt (payment_id, provider_transaction_id, status, amount_in_cents, currency, finalized_at)
+       values ($1, $2, 'declined', $3, 'COP', now())`,
+      [paymentId, `${unique()}-1610641025-49201`, AMOUNT]
+    );
+  }
   return { paymentId, obligationId, reference };
 };
 
@@ -165,6 +187,10 @@ describe(runScheduledJobs, () => {
     await pool.query(
       "update payment set status = 'expired', finalized_at = now() where status = 'pending'"
     );
+    // A payment that is not approved can still settle inside the window. Move the old ones out of it.
+    await pool.query(
+      "update payment set created_at = now() - interval '2 days' where status <> 'approved'"
+    );
     sends.length = 0;
     wompiTransactions.clear();
     failingReferences.clear();
@@ -242,6 +268,41 @@ describe(runScheduledJobs, () => {
     });
     expect(lookedUp).not.toContain(reference);
     await expect(paymentStatus(paymentId)).resolves.toBe("pending");
+  });
+
+  it("reconciles a declined payment inside the settle window", async () => {
+    const { paymentId, obligationId, reference } = await seedPayment(OLD, {
+      status: "declined",
+    });
+    wompiTransactions.set(reference, [approved(reference)]);
+
+    const result = await runScheduledJobs(deps);
+
+    expect(result.payments).toStrictEqual({
+      ok: true,
+      processed: 1,
+      failed: 0,
+    });
+    await expect(paymentStatus(paymentId)).resolves.toBe("approved");
+    await expect(paidUpdates(obligationId)).resolves.toBe(1);
+  });
+
+  it("skips a declined payment after the settle window", async () => {
+    const { paymentId, reference } = await seedPayment(
+      SETTLE_WINDOW_MS + 60_000,
+      { status: "declined" }
+    );
+    wompiTransactions.set(reference, [approved(reference)]);
+
+    const result = await runScheduledJobs(deps);
+
+    expect(result.payments).toStrictEqual({
+      ok: true,
+      processed: 0,
+      failed: 0,
+    });
+    expect(lookedUp).not.toContain(reference);
+    await expect(paymentStatus(paymentId)).resolves.toBe("declined");
   });
 
   it("continues the sweep after a payment that fails", async () => {

@@ -1,21 +1,24 @@
 import "@tanstack/react-start/server-only";
-import { and, asc, eq, gt, lte } from "drizzle-orm";
+import { and, asc, gt, lte } from "drizzle-orm";
 
 import { serverEnv } from "@/env/server";
 import { db } from "@/server/db/client";
 import { payment } from "@/server/db/schema/payments";
-import { reconcilePayment } from "@/server/payments/reconcile";
+import {
+  canStillSettleFilter,
+  reconcilePayment,
+} from "@/server/payments/reconcile";
 import type { ReconcileDeps } from "@/server/payments/reconcile";
 import type { PayoutDeps } from "@/server/payouts/port";
 import { runPayoutQueue } from "@/server/payouts/queue";
 import { getWompi, getWompiPayouts } from "@/server/wompi";
 
 /**
- * The sweep reconciles a pending payment only after this time from the start of its checkout.
+ * The sweep reconciles a payment only after this time from the start of its checkout.
  * Before this time, the webhook usually arrives, and the citizen can still be on the checkout.
  */
 export const SWEEP_MIN_AGE_MS = 5 * 60 * 1000;
-/** The sweep reads the pending payments in pages of this size, with a keyset on `id`. */
+/** The sweep reads the payments in pages of this size, with a keyset on `id`. */
 export const SWEEP_PAGE_SIZE = 50;
 /** The maximum number of payments that one run reconciles. One Wompi call for each payment. */
 export const SWEEP_MAX_PAYMENTS = 200;
@@ -31,10 +34,12 @@ export interface ScheduledJobsResult {
 }
 
 /**
- * Reconciles the pending payments whose checkout started before `now - SWEEP_MIN_AGE_MS`, oldest first.
+ * Reconciles the payments that can still settle (see `canStillSettle`) whose checkout started before
+ * `now - SWEEP_MIN_AGE_MS`, oldest first. A declined payment inside the settle window is included,
+ * because Wompi can approve a retry with the same reference after the decline webhook.
  * A failed payment (Wompi does not answer, or an error) is counted, and the sweep continues with the next payment.
  */
-const sweepPendingPayments = async (deps: ReconcileDeps, now: Date) => {
+const sweepUnsettledPayments = async (deps: ReconcileDeps, now: Date) => {
   const startedBefore = new Date(now.getTime() - SWEEP_MIN_AGE_MS);
   let processed = 0;
   let failed = 0;
@@ -51,7 +56,7 @@ const sweepPendingPayments = async (deps: ReconcileDeps, now: Date) => {
       .from(payment)
       .where(
         and(
-          eq(payment.status, "pending"),
+          canStillSettleFilter(now),
           lte(payment.createdAt, startedBefore),
           cursor === null ? undefined : gt(payment.id, cursor)
         )
@@ -88,7 +93,7 @@ const sweepPendingPayments = async (deps: ReconcileDeps, now: Date) => {
 };
 
 /**
- * One scheduled run: the payout queue (`runPayoutQueue`), then the sweep of pending payments (`reconcilePayment`).
+ * One scheduled run: the payout queue (`runPayoutQueue`), then the sweep of unsettled payments (`reconcilePayment`).
  * The audit actor is null: the scheduler, not a user, makes these changes.
  * A failure in one job does not stop the other job. The result shows which job failed.
  * Two runs at the same time are safe: the payout queue claims each payout with a lease,
@@ -111,7 +116,7 @@ export const runScheduledJobs = async (
   try {
     payments = {
       ok: true,
-      ...(await sweepPendingPayments(deps.payments, now)),
+      ...(await sweepUnsettledPayments(deps.payments, now)),
     };
   } catch (error) {
     console.error("The scheduled payment sweep failed.", { error });

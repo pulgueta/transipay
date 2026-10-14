@@ -194,7 +194,8 @@ const PaymentResult = () => {
         <dd className="break-all">{payment.reference}</dd>
       </dl>
 
-      {state === "pending" ? <RefreshPayment paymentId={paymentId} /> : null}
+      {/* A declined, cancelled, or expired payment can still settle for a time: Wompi can approve a retry. */}
+      {payment.canStillSettle ? <RefreshPayment paymentId={paymentId} /> : null}
 
       {content.canRetry && payment.isOwner ? (
         <RetryPayment

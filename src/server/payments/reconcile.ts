@@ -3,7 +3,7 @@ import type {
   Result,
   Transaction as WompiTransaction,
 } from "@pulgueta/wompi/schemas";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt, inArray, or } from "drizzle-orm";
 
 import { db } from "@/server/db/client";
 import type { Database } from "@/server/db/client";
@@ -11,8 +11,22 @@ import { payment, paymentAttempt } from "@/server/db/schema/payments";
 import { runAsActor } from "@/server/db/with-actor";
 import { getWompi } from "@/server/wompi";
 
-import { checkoutExpiresAt } from "./checkout";
+import { SETTLE_WINDOW_MS, checkoutExpiresAt } from "./checkout";
 import { applyTransactionUpdate } from "./webhook";
+
+/**
+ * The `payment` rows that a late Wompi transaction can still move at `now` (see `canStillSettle`).
+ * The checkout and the scheduled sweep reconcile these rows. The partial index `payment_unsettled_created_at_idx`
+ * serves the second branch.
+ */
+export const canStillSettleFilter = (now: Date) =>
+  or(
+    eq(payment.status, "pending"),
+    and(
+      inArray(payment.status, ["declined", "voided", "error", "expired"]),
+      gt(payment.createdAt, new Date(now.getTime() - SETTLE_WINDOW_MS))
+    )
+  );
 
 export interface ReconcileDeps {
   database: Database;

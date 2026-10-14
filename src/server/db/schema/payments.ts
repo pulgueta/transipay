@@ -179,6 +179,12 @@ export const payment = pgTable(
     index("payment_pending_id_idx")
       .on(table.id)
       .where(sql`${table.status} = 'pending'`),
+    // The sweep and the checkout read the payments that left 'pending' inside the settle window (see `canStillSettle`).
+    index("payment_unsettled_created_at_idx")
+      .on(table.createdAt)
+      .where(
+        sql`${table.status} in ('declined', 'voided', 'error', 'expired')`
+      ),
     // MATCH SIMPLE: a payment without an installment skips this check.
     foreignKey({
       name: "payment_installment_id_obligation_id_fkey",

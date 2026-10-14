@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { checkoutExpiresAt, decideCheckout } from "./checkout";
+import { canStillSettle, checkoutExpiresAt, decideCheckout } from "./checkout";
 
 const createdAt = new Date("2026-10-08T12:00:00.000Z");
 const whileOpen = new Date("2026-10-08T12:10:00.000Z");
@@ -18,6 +18,34 @@ describe(checkoutExpiresAt, () => {
     expect(checkoutExpiresAt(createdAt).toISOString()).toBe(
       "2026-10-08T12:30:00.000Z"
     );
+  });
+});
+
+describe(canStillSettle, () => {
+  const oneDayLater = new Date("2026-10-09T12:00:00.000Z");
+
+  it("lets a pending payment settle at any time", () => {
+    expect(
+      canStillSettle({ status: "pending", createdAt }, oneDayLater)
+    ).toBeTruthy();
+  });
+
+  it("lets a declined payment settle inside the window after the checkout started", () => {
+    expect(
+      canStillSettle({ status: "declined", createdAt }, afterExpiry)
+    ).toBeTruthy();
+  });
+
+  it("does not let a declined payment settle after the window", () => {
+    expect(
+      canStillSettle({ status: "declined", createdAt }, oneDayLater)
+    ).toBeFalsy();
+  });
+
+  it("never reconciles an approved payment before a checkout", () => {
+    expect(
+      canStillSettle({ status: "approved", createdAt }, whileOpen)
+    ).toBeFalsy();
   });
 });
 

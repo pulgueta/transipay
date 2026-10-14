@@ -8,7 +8,7 @@ import { schema } from "@/server/db/client";
 import type { Database } from "@/server/db/client";
 import { createTestDatabase } from "@/server/db/testing";
 
-import { CHECKOUT_TTL_MS } from "./checkout";
+import { CHECKOUT_TTL_MS, SETTLE_WINDOW_MS } from "./checkout";
 import { createCheckout } from "./create-checkout";
 import type { CreateCheckoutDeps } from "./create-checkout";
 import { reconcilePayment } from "./reconcile";
@@ -89,15 +89,20 @@ const seedObligation = async () => {
 
 const seedPendingPayment = async (
   target: { citizenId: string; obligationId: string },
-  options: { amountInCents?: number; createdAt?: Date } = {}
+  options: {
+    amountInCents?: number;
+    createdAt?: Date;
+    installmentId?: string;
+  } = {}
 ) => {
   const reference = `tp_${unique()}`;
   const paymentId = await queryId(
-    `insert into payment (citizen_id, obligation_id, amount_in_cents, reference, created_at)
-     values ($1, $2, $3, $4, $5) returning id`,
+    `insert into payment (citizen_id, obligation_id, installment_id, amount_in_cents, reference, created_at)
+     values ($1, $2, $3, $4, $5, $6) returning id`,
     [
       target.citizenId,
       target.obligationId,
+      options.installmentId ?? null,
       options.amountInCents ?? AMOUNT,
       reference,
       options.createdAt ?? new Date(),
@@ -108,7 +113,8 @@ const seedPendingPayment = async (
 
 const transaction = (
   reference: string,
-  status: Transaction["status"]
+  status: Transaction["status"],
+  options: { createdAt?: string } = {}
 ): Transaction => ({
   id: `${unique()}-1610641025-49201`,
   status,
@@ -116,7 +122,65 @@ const transaction = (
   amount_in_cents: AMOUNT,
   currency: "COP",
   payment_method_type: "CARD",
+  created_at: options.createdAt,
 });
+
+/** A payment that left 'pending' with one final attempt, as the webhook leaves it. */
+const seedSettledPayment = async (
+  target: { citizenId: string; obligationId: string },
+  status: "declined" | "approved",
+  options: { createdAt?: Date } = {}
+) => {
+  const reference = `tp_${unique()}`;
+  const attempt = transaction(
+    reference,
+    status === "approved" ? "APPROVED" : "DECLINED"
+  );
+  const paymentId = await queryId(
+    `insert into payment (citizen_id, obligation_id, amount_in_cents, reference, status,
+       provider_transaction_id, finalized_at, created_at)
+     values ($1, $2, $3, $4, $5, $6, now(), $7) returning id`,
+    [
+      target.citizenId,
+      target.obligationId,
+      AMOUNT,
+      reference,
+      status,
+      attempt.id,
+      options.createdAt ?? new Date(),
+    ]
+  );
+  await database.pool.query(
+    `insert into payment_attempt (payment_id, provider_transaction_id, status, amount_in_cents, currency, finalized_at)
+     values ($1, $2, $3, $4, 'COP', now())`,
+    [paymentId, attempt.id, status, AMOUNT]
+  );
+  return { paymentId, reference, attempt };
+};
+
+/** Moves the obligation into an agreement with two installments, and returns their ids. */
+const seedInstallments = async (obligationId: string) => {
+  await database.pool.query(
+    "update obligation set status = 'in_agreement' where id = $1",
+    [obligationId]
+  );
+  const agreementId = await queryId(
+    "insert into payment_agreement (obligation_id, installment_count) values ($1, 2) returning id",
+    [obligationId]
+  );
+  const ids = [];
+  for (const number of [1, 2]) {
+    ids.push(
+      // oxlint-disable-next-line no-await-in-loop -- Two inserts in order.
+      await queryId(
+        `insert into installment (payment_agreement_id, obligation_id, number, due_on, amount_in_cents)
+         values ($1, $2, $3, '2030-01-01', $4) returning id`,
+        [agreementId, obligationId, number, AMOUNT / 2]
+      )
+    );
+  }
+  return ids;
+};
 
 const paymentsOf = async (obligationId: string) => {
   const result = await database.pool.query<{ id: string; status: string }>(
@@ -219,6 +283,53 @@ describe(createCheckout, () => {
     await expect(paymentsOf(target.obligationId)).resolves.toMatchObject([
       { id: earlier.paymentId, status: "approved" },
     ]);
+  });
+
+  it("refuses when a declined payment was approved on a Wompi retry and the webhook was lost", async () => {
+    const target = await seedObligation();
+    const earlier = await seedSettledPayment(target, "declined");
+    wompiApi.set(earlier.reference, [
+      earlier.attempt,
+      transaction(earlier.reference, "APPROVED"),
+    ]);
+
+    await expect(
+      createCheckout(target.input, withWompi())
+    ).resolves.toStrictEqual({ ok: false, reason: "obligation_not_payable" });
+    await expect(obligationStatus(target.obligationId)).resolves.toBe("paid");
+    await expect(paymentsOf(target.obligationId)).resolves.toStrictEqual([
+      { id: earlier.paymentId, status: "approved" },
+    ]);
+  });
+
+  it("does not ask Wompi about a declined payment after the settle window", async () => {
+    const target = await seedObligation();
+    await seedSettledPayment(target, "declined", {
+      createdAt: new Date(Date.now() - SETTLE_WINDOW_MS - 1000),
+    });
+    const reconciled: string[] = [];
+
+    const outcome = await createCheckout(
+      target.input,
+      withoutWompi(reconciled)
+    );
+
+    expect(outcome).toMatchObject({ ok: true });
+    expect(reconciled).toStrictEqual([]);
+  });
+
+  it("reconciles the unsettled payments of every target of the obligation", async () => {
+    const target = await seedObligation();
+    const [first, second] = await seedInstallments(target.obligationId);
+    const earlier = await seedPendingPayment(target, { installmentId: first });
+    const reconciled: string[] = [];
+
+    await createCheckout(
+      { ...target.input, installmentId: second ?? null },
+      withoutWompi(reconciled)
+    );
+
+    expect(reconciled).toStrictEqual([earlier.paymentId]);
   });
 
   it("refuses until an open link for a different amount expires", async () => {

@@ -1,0 +1,1 @@
+CREATE INDEX "payment_unsettled_created_at_idx" ON "payment" USING btree ("created_at") WHERE "payment"."status" in ('declined', 'voided', 'error', 'expired');

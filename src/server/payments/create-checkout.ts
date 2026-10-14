@@ -15,6 +15,7 @@ import { runAsActor } from "@/server/db/with-actor";
 import { resolveAmountDue } from "./amount";
 import type { AmountDueError } from "./amount";
 import { decideCheckout } from "./checkout";
+import { canStillSettleFilter } from "./reconcile";
 import type { ReconcileResult } from "./reconcile";
 
 export interface CreateCheckoutDeps {
@@ -111,10 +112,11 @@ const lockInstallment = async (
 
 /**
  * Starts a payment for an obligation or an installment, or gives the open payment again.
- * Before the decision, each pending payment of the target is reconciled with Wompi outside the lock,
- * so a lost webhook cannot let the citizen pay two times. The obligation row lock then makes
- * parallel checkouts wait, and the second one sees the payment that the first one made.
- * Lock order: obligation, agreement, installment. The payment rows are only read here.
+ * Before the decision, each payment of the obligation that can still settle (see `canStillSettle`)
+ * is reconciled with Wompi outside the lock, so a lost webhook cannot let the citizen pay two times.
+ * This includes a declined payment inside the settle window: Wompi can approve a retry with the same reference.
+ * The obligation row lock then makes parallel checkouts wait, and the second one sees the payment
+ * that the first one made. Lock order: obligation, agreement, installment. The payment rows are only read here.
  */
 export const createCheckout = async (
   input: CreateCheckoutInput,
@@ -125,7 +127,13 @@ export const createCheckout = async (
     .select({ paymentId: payment.id })
     .from(obligation)
     .innerJoin(citizen, eq(citizen.id, obligation.citizenId))
-    .leftJoin(payment, and(targetFilter(input), eq(payment.status, "pending")))
+    .leftJoin(
+      payment,
+      and(
+        eq(payment.obligationId, input.obligationId),
+        canStillSettleFilter(new Date())
+      )
+    )
     .where(
       and(
         eq(obligation.id, input.obligationId),
