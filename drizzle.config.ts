@@ -7,10 +7,18 @@ if (existsSync(".env")) {
   process.loadEnvFile(".env");
 }
 
-const databaseUrl = process.env.DATABASE_URL;
+// Migrations run as the table owner (DATABASE_OWNER_URL).
+// When DATABASE_OWNER_URL is not set, drizzle-kit uses DATABASE_URL (for example, in CI).
+const ownerUrl = process.env.DATABASE_OWNER_URL;
+const databaseUrl =
+  ownerUrl === undefined || ownerUrl === ""
+    ? process.env.DATABASE_URL
+    : ownerUrl;
 
 if (databaseUrl === undefined || databaseUrl === "") {
-  throw new Error("Set DATABASE_URL before you run drizzle-kit.");
+  throw new Error(
+    "Set DATABASE_OWNER_URL (or DATABASE_URL) before you run drizzle-kit."
+  );
 }
 
 export default defineConfig({
