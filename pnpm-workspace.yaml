@@ -1,0 +1,11 @@
+packages: []
+
+allowBuilds:
+  esbuild: true
+  lightningcss: true
+  unrs-resolver: true
+  msw: false
+
+minimumReleaseAgeExclude:
+  - vite@8.3.4
+  - drizzle-orm@0.45.4

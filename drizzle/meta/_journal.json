@@ -1,0 +1,132 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791508902105,
+      "tag": "0000_init",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791508912552,
+      "tag": "0001_audit_trigger",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791510700635,
+      "tag": "0002_audit_log_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791577610908,
+      "tag": "0003_composite_domain_constraints",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791577656830,
+      "tag": "0004_impersonation_cascade",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791577657972,
+      "tag": "0005_app_role_and_audit_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791580298984,
+      "tag": "0006_revoke_impersonation_on_admin_loss",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791581663613,
+      "tag": "0007_payment_attempt_and_event_integration",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791581672025,
+      "tag": "0008_payment_attempt_audit_and_backfill",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791583053862,
+      "tag": "0009_payout_state_machine",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791583090753,
+      "tag": "0010_payout_keep_command",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791584223414,
+      "tag": "0011_payout_reconcile_schedule",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791584226991,
+      "tag": "0012_payout_reconcile_trigger",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792008562341,
+      "tag": "0013_payment_expired_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792009635111,
+      "tag": "0014_payment_pending_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1792010901720,
+      "tag": "0015_payment_event_keep_receipt",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792011709373,
+      "tag": "0016_payment_unsettled_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792012031309,
+      "tag": "0017_payout_origin_account",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: docker.io/library/postgres:18-alpine
+    environment:
+      POSTGRES_USER: transipay
+      POSTGRES_PASSWORD: transipay
+      POSTGRES_DB: transipay
+      # Password of the app login role. docs/postgres/init/01-app-role.sh makes the role.
+      TRANSIPAY_WEB_PASSWORD: ${TRANSIPAY_WEB_PASSWORD:-transipay_web}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      # The image runs these scripts only when it makes a new data volume.
+      - ./docs/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U transipay -d transipay"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:

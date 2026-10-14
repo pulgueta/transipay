@@ -1,0 +1,1 @@
+CREATE INDEX "payment_pending_id_idx" ON "payment" USING btree ("id") WHERE "payment"."status" = 'pending';
