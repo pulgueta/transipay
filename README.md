@@ -79,6 +79,19 @@ A lost payment webhook does not block the citizen. The "Refresh the status" butt
 
 A payout goes through these states: `draft`, `queued`, `submitting`, `submitted`, then `paid` or `failed`. When the result of a send is not known, the payout goes to `uncertain`. Reconciliation (`reconcilePayoutsFn`) asks Wompi for the payout reference. It sends again only before the `retry_deadline` (23 hours after the first send). After the deadline, staff must decide.
 
+## Scheduled jobs
+
+`POST /api/jobs/run` runs the payout queue and reconciles the pending payments whose checkout started more than 5 minutes ago. Thus a lost webhook or no staff action does not keep a payout or a payment open.
+
+1. Set `JOBS_SECRET` (32 characters or more, for example `openssl rand -base64 32`). When it is not set, the route gives `404`.
+2. Call the route every 5 minutes from a scheduler (cron, a systemd timer, or the cron of your platform):
+
+   ```sh
+   curl -fsS -X POST -H "Authorization: Bearer $JOBS_SECRET" https://<host>/api/jobs/run
+   ```
+
+A missing or wrong secret gets `401`. The response gives the counts: `payouts.sent`, `payments.processed`, and `payments.failed`. When one job fails, the response is `500`, so `curl -f` fails and the scheduler shows the error. Two runs at the same time are safe.
+
 ## Scripts
 
 | Script             | What it does                                      |

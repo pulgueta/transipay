@@ -126,6 +126,16 @@ draft -> queued -> submitting -> submitted -> paid | failed
 - A server function returns the status from the database after the write.
 - An idempotency key is resolved before any other check, so a retry of a known request never fails because the default bank account changed.
 
+### Scheduled jobs
+
+- `POST /api/jobs/run` (`runScheduledJobs`) runs the payout queue (`runPayoutQueue`), then sweeps the pending payments through `reconcilePayment`. Without it, the queue runs only when staff call `reconcilePayoutsFn`, and a payment is reconciled only when the citizen refreshes the result page.
+- Call it every 5 minutes from any scheduler (cron, a systemd timer, or a platform cron): `curl -fsS -X POST -H "Authorization: Bearer $JOBS_SECRET" https://<host>/api/jobs/run`.
+- Authentication: `Authorization: Bearer <JOBS_SECRET>`. The server compares the SHA-256 digests with `timingSafeEqual`. When `JOBS_SECRET` is not set, the route gives 404 for all methods. A missing or wrong secret gets 401 with no detail. Another method gets 405. A body larger than 1 KiB gets 413.
+- The audit actor is null, as for the webhooks: the scheduler, not a user, makes the changes.
+- The sweep reads the pending payments whose checkout started more than 5 minutes ago, oldest first, with a keyset on `id` (pages of 50, not more than 200 payments in one run). A payment that fails (Wompi does not answer, or an error) is counted, and the sweep continues.
+- A failure of one job does not stop the other job. The response gives the counts and is 500 when a job failed.
+- Two runs at the same time are safe without an extra lock: the queue claims each payout with `FOR UPDATE SKIP LOCKED` and a lease, and `reconcilePayment` locks the payment row and has no second effect. Two runs can ask Wompi about the same payment two times.
+
 ## 6. Shared UI blocks have contract tests
 
 - `DataTable` renders only visible cells, and the empty row spans the visible columns.
