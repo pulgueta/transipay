@@ -22,7 +22,10 @@ export interface PayoutsPort {
 export interface PayoutDeps {
   database: Database;
   payouts: PayoutsPort;
-  /** The Wompi origin account. When it is not set, payouts stay queued. */
+  /**
+   * The Wompi origin account for a new payout. It is stored in the payout command, and a send uses the stored value.
+   * When it is not set, a new payout cannot be created; the queued payouts are still sent.
+   */
   originAccountId: string | undefined;
   /** The user for the audit log. Null for the gateway or a scheduler. */
   actorId: string | null;

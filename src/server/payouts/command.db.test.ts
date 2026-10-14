@@ -59,6 +59,7 @@ describe("payout command", () => {
     ["account_number", "account_number = '999'"],
     ["holder_legal_id", "holder_legal_id = '1'"],
     ["recipient_email", "recipient_email = 'other@example.com'"],
+    ["origin_account_id", "origin_account_id = 'acc_other'"],
     ["reference", "reference = 'tp_po_other'"],
     ["idempotency_key", "idempotency_key = 'other'"],
     ["command_hash", "command_hash = 'x'"],

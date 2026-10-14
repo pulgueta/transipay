@@ -21,7 +21,13 @@ import {
 import { schema } from "@/server/db/client";
 import { createIsolatedDatabase } from "@/server/db/testing";
 
-import { insertPayout, payoutRow, seedEntity, unique } from "./payout-testing";
+import {
+  TEST_ORIGIN_ACCOUNT,
+  insertPayout,
+  payoutRow,
+  seedEntity,
+  unique,
+} from "./payout-testing";
 import type { PayoutDeps } from "./port";
 import {
   BATCH_SIZE,
@@ -35,7 +41,7 @@ import {
 } from "./queue";
 
 const AMOUNT = 5_000_000;
-const ORIGIN_ACCOUNT = "acc_test";
+const ORIGIN_ACCOUNT = TEST_ORIGIN_ACCOUNT;
 
 let isolated: Awaited<ReturnType<typeof createIsolatedDatabase>>;
 let pool: Pool;
@@ -239,6 +245,63 @@ describe("payout queue", () => {
     await expect(payoutRow(pool, createdId(first))).resolves.toMatchObject({
       status: "submitted",
     });
+  });
+
+  it("sends the stored origin account, also after the configuration changes", async () => {
+    answer = timeout;
+    const { entityId } = await seedEntity(pool);
+    const first = await createPayout(deps, request(entityId));
+    answer = accepted;
+
+    await runPayoutQueue({ ...deps, originAccountId: "acc_other" });
+
+    expect(sends.map((send) => send.input.accountId)).toStrictEqual([
+      ORIGIN_ACCOUNT,
+      ORIGIN_ACCOUNT,
+    ]);
+    await expect(payoutRow(pool, createdId(first))).resolves.toMatchObject({
+      status: "submitted",
+    });
+  });
+
+  it("sends a queued payout with its stored origin account when the configuration is missing", async () => {
+    const seeded = await seedEntity(pool);
+    const { id } = await insertPayout(pool, { ...seeded, status: "queued" });
+
+    await runPayoutQueue({ ...deps, originAccountId: undefined });
+
+    expect(sends.map((send) => send.input.accountId)).toStrictEqual([
+      ORIGIN_ACCOUNT,
+    ]);
+    await expect(payoutRow(pool, id)).resolves.toMatchObject({
+      status: "submitted",
+    });
+  });
+
+  it("keeps a queued payout without a stored origin account for staff, and never sends it with the configuration", async () => {
+    const seeded = await seedEntity(pool);
+    const { id } = await insertPayout(pool, {
+      ...seeded,
+      status: "queued",
+      originAccountId: null,
+    });
+
+    await runPayoutQueue(deps);
+    await runPayoutQueue(deps);
+
+    expect(sends).toHaveLength(0);
+    await expect(payoutRow(pool, id)).resolves.toMatchObject({
+      status: "queued",
+      review_reason: "origin_account_missing",
+    });
+  });
+
+  it("refuses a new payout when the origin account is not configured", async () => {
+    const { entityId } = await seedEntity(pool);
+
+    await expect(
+      createPayout({ ...deps, originAccountId: undefined }, request(entityId))
+    ).resolves.toStrictEqual({ kind: "not_configured" });
   });
 
   it("keeps an uncertain payout for staff after the deadline when Wompi has no transaction", async () => {
@@ -465,7 +528,7 @@ describe("payout queue", () => {
       [id]
     );
 
-    await sendClaimed(deps, ORIGIN_ACCOUNT, claimed);
+    await sendClaimed(deps, claimed);
 
     expect(sends).toHaveLength(0);
     // The lease sweep moves it to uncertain.
@@ -488,7 +551,7 @@ describe("payout queue", () => {
     }
     await pool.query("select pg_sleep(2.5)");
 
-    await sendClaimed(deps, ORIGIN_ACCOUNT, claimed);
+    await sendClaimed(deps, claimed);
 
     expect(sends).toHaveLength(0);
   });

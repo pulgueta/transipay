@@ -74,10 +74,13 @@ export const PAYOUT_STATUSES = [
 ] as const;
 export type PayoutStatus = (typeof PAYOUT_STATUSES)[number];
 
-/** Why staff must examine an uncertain payout. The payout is not sent again until staff decide. */
+/** Why staff must examine a payout. The payout is not sent until staff decide. */
 export const PAYOUT_REVIEW_REASONS = [
-  // Wompi has no transaction for the reference, and the retry deadline is in the past.
+  // Wompi has no transaction for the reference, and the retry deadline is in the past (an uncertain payout).
   "not_found_after_deadline",
+  // The payout was queued before the origin account was stored (migration 0017). It is never sent with the current
+  // configuration, because a retry must repeat the original request.
+  "origin_account_missing",
 ] as const;
 export type PayoutReviewReason = (typeof PAYOUT_REVIEW_REASONS)[number];
 
@@ -306,6 +309,10 @@ export const payout = pgTable(
     currency: char({ length: 3 }).notNull().default("COP"),
     reference: text().notNull().unique("payout_reference_key"),
     idempotencyKey: text().notNull().unique("payout_idempotency_key_key"),
+    // The Wompi account that pays, from the configuration when the payout was queued. Part of the command:
+    // a retry with the same reference and idempotency key must debit the same account.
+    // Null only for a payout queued before migration 0017. Such a payout waits for staff (`origin_account_missing`).
+    originAccountId: text(),
     // Snapshot of the bank account and the entity email when the payout was queued.
     bankId: text(),
     accountType: text().$type<BankAccountType>(),
@@ -387,9 +394,15 @@ export const payout = pgTable(
       "payout_lease_check",
       sql`(${table.status} = 'submitting') = (${table.leaseToken} is not null and ${table.leaseExpiresAt} is not null)`
     ),
+    // A review reason holds a queued payout (the dispatcher skips it) or an uncertain payout (no new send).
     check(
       "payout_review_reason_status_check",
-      sql`${table.reviewReason} is null or ${table.status} = 'uncertain'`
+      sql`${table.reviewReason} is null or ${table.status} in ('queued', 'uncertain')`
+    ),
+    // A send always has the origin account that was stored when the payout was queued.
+    check(
+      "payout_origin_account_check",
+      sql`${table.status} <> 'submitting' or ${table.originAccountId} is not null`
     ),
   ]
 );

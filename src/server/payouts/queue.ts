@@ -1,7 +1,17 @@
 import "@tanstack/react-start/server-only";
 import { randomUUID } from "node:crypto";
 
-import { and, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import {
+  and,
+  eq,
+  gt,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 
 import type { Database } from "@/server/db/client";
 import { entity, entityBankAccount } from "@/server/db/schema/entities";
@@ -57,6 +67,8 @@ const requireValue = <T>(value: T | null): T => {
  * Claims one queued payout: `FOR UPDATE SKIP LOCKED`, then status 'submitting' with a new lease.
  * The transaction commits before the Wompi call. Returns null when no payout is free.
  * A payout after its retry deadline is not claimed (the database also refuses it).
+ * A payout that waits for staff (a review reason) or has no stored origin account is not claimed
+ * (the database also refuses a send without the origin account).
  */
 export const claimPayout = async (
   deps: Pick<PayoutDeps, "database" | "actorId">,
@@ -70,7 +82,12 @@ export const claimPayout = async (
         and(
           eq(payout.status, "queued"),
           payoutId === undefined ? undefined : eq(payout.id, payoutId),
-          or(isNull(payout.retryDeadline), gt(payout.retryDeadline, sql`now()`))
+          or(
+            isNull(payout.retryDeadline),
+            gt(payout.retryDeadline, sql`now()`)
+          ),
+          isNull(payout.reviewReason),
+          isNotNull(payout.originAccountId)
         )
       )
       .orderBy(payout.id)
@@ -122,23 +139,20 @@ const claimIsValid = async (database: Database, claimed: ClaimedPayout) => {
 
 /**
  * Sends a claimed payout to Wompi from its stored command, with its idempotency key.
+ * The origin account comes from the command, never from the configuration: a retry must repeat the original request.
  * Before the send, it checks the claim again. If the claim is not valid, it does not send:
  * the lease sweep and the reconciliation handle the payout.
  * The result changes the payout only while it is 'submitting' with the same lease,
  * so it does not overwrite a newer status from a webhook or from the lease sweep.
  */
-export const sendClaimed = async (
-  deps: PayoutDeps,
-  originAccountId: string,
-  claimed: ClaimedPayout
-) => {
+export const sendClaimed = async (deps: PayoutDeps, claimed: ClaimedPayout) => {
   if (!(await claimIsValid(deps.database, claimed))) {
     return;
   }
   const result = await deps.payouts.createPayout(
     {
       reference: claimed.reference,
-      accountId: originAccountId,
+      accountId: requireValue(claimed.originAccountId),
       paymentType: "PROVIDERS",
       transactions: [
         buildPayoutTransaction(
@@ -187,21 +201,16 @@ export const sendClaimed = async (
   });
 };
 
-/** Claims one queued payout and sends it. Returns false when no payout was claimed. */
+/** Claims one queued payout and sends it with its stored command. Returns false when no payout was claimed. */
 export const dispatchPayout = async (
   deps: PayoutDeps,
   options: { payoutId?: string } = {}
 ) => {
-  // Without an origin account, nothing can be sent. The payout stays queued.
-  const { originAccountId } = deps;
-  if (originAccountId === undefined) {
-    return false;
-  }
   const claimed = await claimPayout(deps, options);
   if (!claimed) {
     return false;
   }
-  await sendClaimed(deps, originAccountId, claimed);
+  await sendClaimed(deps, claimed);
   return true;
 };
 
@@ -218,6 +227,8 @@ export const dispatchQueuedPayouts = async (deps: PayoutDeps) => {
 /**
  * Moves a 'submitting' payout with an expired lease to 'uncertain': the send can have reached Wompi.
  * Also moves a queued payout after its retry deadline to 'uncertain', because a send is not safe then.
+ * A queued payout without a stored origin account (queued before migration 0017) goes to staff:
+ * a send with the current configuration could debit another account than the original request.
  */
 export const sweepPayouts = async (
   deps: Pick<PayoutDeps, "database" | "actorId">
@@ -236,6 +247,16 @@ export const sweepPayouts = async (
             eq(payout.status, "queued"),
             lte(payout.retryDeadline, sql`now()`)
           )
+        )
+      );
+    await tx
+      .update(payout)
+      .set({ reviewReason: "origin_account_missing" })
+      .where(
+        and(
+          eq(payout.status, "queued"),
+          isNull(payout.originAccountId),
+          isNull(payout.reviewReason)
         )
       );
   });
@@ -403,6 +424,7 @@ const resolveKnownKey = async (
  * Queues a payout to the default bank account of an entity, then sends it.
  * The idempotency key is resolved first: a known key returns the stored payout,
  * also when the entity changed its default bank account. Only a new key reads the entity.
+ * The configured origin account is stored in the command of the new payout. A later send uses the stored value.
  * The returned status comes from the database after the writes.
  */
 export const createPayout = async (
@@ -413,7 +435,8 @@ export const createPayout = async (
   if (known) {
     return known;
   }
-  if (deps.originAccountId === undefined) {
+  const { originAccountId } = deps;
+  if (originAccountId === undefined) {
     return { kind: "not_configured" };
   }
 
@@ -458,6 +481,7 @@ export const createPayout = async (
           reference: `tp_po_${randomUUID()}`,
           idempotencyKey: request.idempotencyKey,
           status: "queued",
+          originAccountId,
           bankId: account.bankId,
           accountType: account.accountType,
           accountNumber: account.accountNumber,

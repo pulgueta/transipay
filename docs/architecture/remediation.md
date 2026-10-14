@@ -118,7 +118,7 @@ draft -> queued -> submitting -> submitted -> paid | failed
                          \-> uncertain -> (reconcile) -> submitted | failed | uncertain
 ```
 
-- `queued` stores a command that does not change: bank account snapshot, amount, reference, idempotency key, hash, `first_dispatch_at`, and `retry_deadline` (first dispatch plus 23 hours).
+- `queued` stores a command that does not change: origin account, bank account snapshot, amount, reference, idempotency key, hash, `first_dispatch_at`, and `retry_deadline` (first dispatch plus 23 hours). The origin account (`origin_account_id`) comes from the configuration only when the payout is queued; a send always uses the stored value, so a retry repeats the original request also when the configuration changed. A payout queued before migration 0017 has no origin account: the dispatcher never claims it, the database refuses its send, and the sweep marks it for staff (`origin_account_missing`). A review reason on a queued payout holds it until staff clear the reason.
 - A dispatcher claims a row with `FOR UPDATE SKIP LOCKED`, writes a lease, and commits before it calls Wompi.
 - Immediately before the send, the dispatcher examines the claim again on the database clock: the same lease, the lease did not end, and `retry_deadline` did not pass. If the claim is not valid, it does not send.
 - The result has two parts: submission certainty (`accepted`, `rejected`, `unknown`) and financial status (from Wompi). HTTP 408, 429, 5xx, 409, and network errors are `unknown`.

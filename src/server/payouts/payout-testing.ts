@@ -46,6 +46,9 @@ export const signedPayoutEvent = async (
 
 export const unique = () => randomUUID().replaceAll("-", "").slice(0, 12);
 
+/** The Wompi origin account that the test payouts store. */
+export const TEST_ORIGIN_ACCOUNT = "acc_test";
+
 const queryId = async (pool: Pool, text: string, values: unknown[]) => {
   const result = await pool.query<{ id: string }>(text, values);
   const row = result.rows.at(0);
@@ -75,7 +78,8 @@ export const seedEntity = async (pool: Pool) => {
 
 /**
  * Inserts a payout with a full command. `firstDispatchAgo` sets the first dispatch in the past,
- * as for a payout that was sent before.
+ * as for a payout that was sent before. `originAccountId: null` makes a row from before the origin account
+ * was stored.
  */
 export const insertPayout = async (
   pool: Pool,
@@ -85,6 +89,7 @@ export const insertPayout = async (
     status: string;
     firstDispatchAgo?: string;
     providerPayoutId?: string;
+    originAccountId?: string | null;
   }
 ) => {
   const reference = `tp_po_${unique()}`;
@@ -93,10 +98,10 @@ export const insertPayout = async (
     `insert into payout
        (entity_id, entity_bank_account_id, amount_in_cents, reference, idempotency_key, status,
         bank_id, account_type, account_number, holder_name, holder_legal_id_type, holder_legal_id,
-        recipient_email, first_dispatch_at, provider_payout_id, finalized_at)
+        recipient_email, first_dispatch_at, provider_payout_id, finalized_at, origin_account_id)
      values ($1, $2, 5000000, $3, $4, $5, '1007', 'CORRIENTE', '123456789', 'CDA SAS', 'NIT', '900123456',
        'pagos@cda.example.com', now() - $6::interval, $7,
-       case when $5 in ('paid', 'failed') then now() end)
+       case when $5 in ('paid', 'failed') then now() end, $8)
      returning id`,
     [
       input.entityId,
@@ -106,6 +111,9 @@ export const insertPayout = async (
       input.status,
       input.firstDispatchAgo ?? null,
       input.providerPayoutId ?? null,
+      input.originAccountId === undefined
+        ? TEST_ORIGIN_ACCOUNT
+        : input.originAccountId,
     ]
   );
   return { id, reference };
