@@ -13,16 +13,26 @@ type TextFieldProps = { label: string } & Omit<
 >;
 
 /** Text input for `form.AppField`. It shows errors only after the user leaves the field. */
-export const TextField = ({ label, ...props }: TextFieldProps) => {
+export const TextField = ({
+  "aria-describedby": describedBy,
+  label,
+  ...props
+}: TextFieldProps) => {
   const field = useFieldContext<string>();
   const id = useId();
+  const errorId = `${id}-error`;
   const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+  // Screen readers read the error with the input only while the error shows.
+  const describedByIds =
+    [describedBy, isInvalid ? errorId : undefined].filter(Boolean).join(" ") ||
+    undefined;
 
   return (
     <Field data-invalid={isInvalid}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Input
         {...props}
+        aria-describedby={describedByIds}
         aria-invalid={isInvalid}
         id={id}
         name={field.name}
@@ -33,7 +43,10 @@ export const TextField = ({ label, ...props }: TextFieldProps) => {
         value={field.state.value}
       />
       {isInvalid ? (
-        <FieldError errors={normalizeFieldErrors(field.state.meta.errors)} />
+        <FieldError
+          errors={normalizeFieldErrors(field.state.meta.errors)}
+          id={errorId}
+        />
       ) : null}
     </Field>
   );

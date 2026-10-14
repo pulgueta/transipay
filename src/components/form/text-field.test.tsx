@@ -9,7 +9,13 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { useAppForm } from "./use-app-form";
 
-const FormFixture = ({ error }: { error: string | { message: string } }) => {
+const FormFixture = ({
+  describedBy,
+  error,
+}: {
+  describedBy?: string;
+  error: string | { message: string };
+}) => {
   const form = useAppForm({
     defaultValues: { name: "" },
     onSubmit: () => {},
@@ -20,10 +26,15 @@ const FormFixture = ({ error }: { error: string | { message: string } }) => {
       name="name"
       validators={{ onBlur: ({ value }) => (value ? undefined : error) }}
     >
-      {(field) => <field.TextField label="Name" />}
+      {(field) => (
+        <field.TextField aria-describedby={describedBy} label="Name" />
+      )}
     </form.AppField>
   );
 };
+
+const describedByIds = (element: HTMLElement) =>
+  (element.getAttribute("aria-describedby") ?? "").split(" ").filter(Boolean);
 
 describe("TextField validation", () => {
   afterEach(cleanup);
@@ -40,6 +51,28 @@ describe("TextField validation", () => {
     fireEvent.blur(screen.getByRole("textbox", { name: "Name" }));
 
     expect(screen.getByRole("alert").textContent).toBe("Name is required");
+  });
+
+  it("links the error to the input only while the error shows", () => {
+    render(<FormFixture error="Name is required" />);
+    const input = screen.getByRole("textbox", { name: "Name" });
+
+    expect(input.hasAttribute("aria-describedby")).toBeFalsy();
+
+    fireEvent.blur(input);
+
+    expect(describedByIds(input)).toStrictEqual([screen.getByRole("alert").id]);
+  });
+
+  it("keeps the description that the caller gives", () => {
+    render(<FormFixture describedBy="name-hint" error="Name is required" />);
+    const input = screen.getByRole("textbox", { name: "Name" });
+    fireEvent.blur(input);
+
+    expect(describedByIds(input)).toStrictEqual([
+      "name-hint",
+      screen.getByRole("alert").id,
+    ]);
   });
 });
 
