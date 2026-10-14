@@ -3,11 +3,13 @@ import {
   IconCircleCheck,
   IconCircleX,
   IconClock,
+  IconEyeSearch,
 } from "@tabler/icons-react";
 import type { Icon } from "@tabler/icons-react";
 import {
   queryOptions,
   useMutation,
+  useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
@@ -15,8 +17,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-import type { PaymentStatus } from "@/server/db/schema/payments";
-import { createCheckoutFn, getPaymentFn } from "@/server/payments/functions";
+import {
+  createCheckoutFn,
+  getPaymentFn,
+  refreshPaymentFn,
+} from "@/server/payments/functions";
+
+import { resolveResultState } from "./-result-state";
+import type { ResultState } from "./-result-state";
 
 const paymentQueryOptions = (paymentId: string) =>
   queryOptions({
@@ -32,7 +40,7 @@ interface StatusContent {
   canRetry: boolean;
 }
 
-const STATUS_CONTENT: Record<PaymentStatus, StatusContent> = {
+const STATUS_CONTENT: Record<ResultState, StatusContent> = {
   pending: {
     icon: IconClock,
     title: "Payment in progress",
@@ -72,6 +80,13 @@ const STATUS_CONTENT: Record<PaymentStatus, StatusContent> = {
     description:
       "This checkout expired, so we did not collect money. Pay again to get a new link.",
     canRetry: true,
+  },
+  review: {
+    icon: IconEyeSearch,
+    title: "Payment under review",
+    description:
+      "We received a payment, but staff must examine it before we can confirm it. Do not pay again. We will contact you.",
+    canRetry: false,
   },
 };
 
@@ -121,14 +136,47 @@ const RetryPayment = ({
   );
 };
 
+/** Asks Wompi about the payment and shows the status that is stored after that. */
+const RefreshPayment = ({ paymentId }: { paymentId: string }) => {
+  const queryClient = useQueryClient();
+  const refreshPayment = useServerFn(refreshPaymentFn);
+  const refresh = useMutation({
+    mutationFn: async () => await refreshPayment({ data: { paymentId } }),
+    onSuccess: (payment) => {
+      queryClient.setQueryData(
+        paymentQueryOptions(paymentId).queryKey,
+        payment
+      );
+    },
+  });
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Button
+        className="self-start"
+        disabled={refresh.isPending}
+        onClick={() => {
+          refresh.mutate();
+        }}
+        variant="outline"
+      >
+        {refresh.isPending ? "Getting the status…" : "Refresh the status"}
+      </Button>
+      {refresh.isError ? (
+        // A failed refresh keeps the last status on the page.
+        <p className="text-destructive text-sm" role="alert">
+          {refresh.error.message}
+        </p>
+      ) : null}
+    </div>
+  );
+};
+
 const PaymentResult = () => {
   const { paymentId } = Route.useParams();
-  const {
-    data: payment,
-    refetch,
-    isRefetching,
-  } = useSuspenseQuery(paymentQueryOptions(paymentId));
-  const content = STATUS_CONTENT[payment.status];
+  const { data: payment } = useSuspenseQuery(paymentQueryOptions(paymentId));
+  const state = resolveResultState(payment);
+  const content = STATUS_CONTENT[state];
   const StatusIcon = content.icon;
 
   return (
@@ -146,19 +194,7 @@ const PaymentResult = () => {
         <dd className="break-all">{payment.reference}</dd>
       </dl>
 
-      {payment.status === "pending" ? (
-        <Button
-          className="self-start"
-          disabled={isRefetching}
-          onClick={() => {
-            // A failed refresh keeps the last status on the page.
-            void refetch();
-          }}
-          variant="outline"
-        >
-          {isRefetching ? "Getting the status…" : "Refresh the status"}
-        </Button>
-      ) : null}
+      {state === "pending" ? <RefreshPayment paymentId={paymentId} /> : null}
 
       {content.canRetry && payment.isOwner ? (
         <RetryPayment
@@ -167,7 +203,7 @@ const PaymentResult = () => {
         />
       ) : null}
 
-      {payment.status === "approved" ? (
+      {state === "approved" ? (
         <Button
           className="self-start"
           nativeButton={false}

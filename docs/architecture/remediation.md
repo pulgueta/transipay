@@ -102,6 +102,10 @@ Wompi can create a second transaction with the same reference after a decline (p
 - An event that needs review stays unprocessed. Staff or a later run can process it again.
 - Webhook routes read at most 64 KiB of body. A larger body gets HTTP 413 before the signature check.
 - The checkout returns the citizen to `/payments/$paymentId`, which shows the payment status.
+- A webhook can be lost. Reconciliation (`reconcilePayment`) asks Wompi for the transactions of the payment reference (`GET /transactions?reference=`) and applies each one through the same path as the webhook, so an approval pays the obligation one time only and a repeat changes nothing. A transaction with another reference is ignored. The result page refresh (`refreshPaymentFn`, same access rule as `getPaymentFn`) reconciles, then returns the payment as stored. The Wompi call runs outside the database transaction.
+- A payment whose checkout link expired with no transaction becomes `expired`. A late transaction for that reference still moves the payment, because the money is collected. The result page shows "Payment link expired" and lets the citizen pay again.
+- Before a new checkout, each pending payment of the same target (obligation, or installment) is reconciled. Then, inside the obligation row lock: an approved payment makes the target not payable, so the checkout is refused; a pending Wompi transaction for the target refuses the checkout ("a payment is in progress"); an open link with the same amount is given again; an open link with a different amount refuses the checkout until it expires (the message gives the time); an expired link with no transaction does not block. When Wompi cannot answer, the checkout returns 503 and starts nothing.
+- An attempt with a `review_reason` makes the result page show "Payment under review": staff must examine it and the citizen must not pay again. The page never shows an unresolved payment as complete.
 
 ### Payouts
 

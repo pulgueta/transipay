@@ -73,6 +73,8 @@ Set these URLs in the Wompi dashboard:
 
 The webhooks check the event signature. A webhook with a bad signature gets `401`. A body larger than 64 KiB gets `413`. The webhook reads the transaction or payout from the Wompi API with the signed id. If the API does not answer, the webhook returns `502` and Wompi sends the event again. The same event two times has no second effect.
 
+A lost payment webhook does not block the citizen. The "Refresh the status" button on `/payments/$paymentId` asks Wompi for the transactions of the payment reference and applies them through the same path as the webhook. A new checkout does the same for the earlier pending payments of the obligation before it starts, so a citizen cannot pay the same obligation two times.
+
 ## Payouts
 
 A payout goes through these states: `draft`, `queued`, `submitting`, `submitted`, then `paid` or `failed`. When the result of a send is not known, the payout goes to `uncertain`. Reconciliation (`reconcilePayoutsFn`) asks Wompi for the payout reference. It sends again only before the `retry_deadline` (23 hours after the first send). After the deadline, staff must decide.

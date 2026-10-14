@@ -174,10 +174,13 @@ const readPaymentView = async (
   }
 
   const { ownerUserId: _ownerUserId, ...result } = row;
+  const expiresAt = checkoutExpiresAt(row.createdAt);
   return {
     ...result,
     isOwner,
-    expiresAt: checkoutExpiresAt(row.createdAt),
+    expiresAt,
+    // Decided here with the server clock, so the page shows the same state on the server and in the browser.
+    checkoutExpired: expiresAt <= new Date(),
   };
 };
 
