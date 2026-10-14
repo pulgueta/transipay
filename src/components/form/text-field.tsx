@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { ComponentProps } from "react";
 
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -14,15 +15,16 @@ type TextFieldProps = { label: string } & Omit<
 /** Text input for `form.AppField`. It shows errors only after the user leaves the field. */
 export const TextField = ({ label, ...props }: TextFieldProps) => {
   const field = useFieldContext<string>();
+  const id = useId();
   const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
 
   return (
     <Field data-invalid={isInvalid}>
-      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Input
         {...props}
         aria-invalid={isInvalid}
-        id={field.name}
+        id={id}
         name={field.name}
         onBlur={field.handleBlur}
         onChange={(event) => {

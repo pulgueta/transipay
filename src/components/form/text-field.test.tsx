@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { useAppForm } from "./use-app-form";
@@ -34,5 +40,45 @@ describe("TextField validation", () => {
     fireEvent.blur(screen.getByRole("textbox", { name: "Name" }));
 
     expect(screen.getByRole("alert").textContent).toBe("Name is required");
+  });
+});
+
+const EmailForm = ({ label }: { label: string }) => {
+  const form = useAppForm({
+    defaultValues: { email: "" },
+    onSubmit: () => {},
+  });
+
+  return (
+    <form aria-label={label}>
+      <form.AppField name="email">
+        {(field) => <field.TextField label="Email" />}
+      </form.AppField>
+    </form>
+  );
+};
+
+describe("TextField ids", () => {
+  afterEach(cleanup);
+
+  it("links each label to the input in its own form", () => {
+    render(
+      <>
+        <EmailForm label="Sign in" />
+        <EmailForm label="Sign up" />
+      </>
+    );
+
+    const signIn = within(screen.getByRole("form", { name: "Sign in" }));
+    const signUp = within(screen.getByRole("form", { name: "Sign up" }));
+    const signInInput = signIn.getByRole("textbox", { name: "Email" });
+    const signUpInput = signUp.getByRole("textbox", { name: "Email" });
+
+    expect(screen.getAllByLabelText("Email")).toStrictEqual([
+      signInInput,
+      signUpInput,
+    ]);
+    expect(signInInput.id).not.toBe(signUpInput.id);
+    expect(signInInput.getAttribute("name")).toBe("email");
   });
 });
