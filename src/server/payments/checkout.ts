@@ -35,7 +35,9 @@ export interface PendingPayment {
 }
 
 export type CheckoutDecision<T> =
-  // Wompi has a transaction in progress for this target. Its result decides, so no new payment starts.
+  // An approved attempt of the obligation waits for staff. The citizen must not pay again until staff decide.
+  | { kind: "under_review" }
+  // Wompi has a transaction in progress for the obligation. Its result decides, so no new payment starts.
   | { kind: "in_progress" }
   // An open link has a different amount. A new payment can start at `until`.
   | { kind: "wait"; until: Date }
@@ -44,15 +46,20 @@ export type CheckoutDecision<T> =
 
 /**
  * Decides if a checkout can start for a target, from its pending payments after reconciliation.
+ * An attempt under review or in progress on any target of the obligation blocks first: money can already be collected.
  * An open link with the same amount is given again, so two tabs do not make two payable links.
  * An expired link without a transaction cannot collect money, so it does not block.
  */
 export const decideCheckout = <T extends PendingPayment>(input: {
   open: readonly T[];
   hasPendingTransaction: boolean;
+  hasAttemptUnderReview: boolean;
   amountInCents: number;
   now: Date;
 }): CheckoutDecision<T> => {
+  if (input.hasAttemptUnderReview) {
+    return { kind: "under_review" };
+  }
   if (input.hasPendingTransaction) {
     return { kind: "in_progress" };
   }

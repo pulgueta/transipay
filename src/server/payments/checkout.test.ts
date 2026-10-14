@@ -55,6 +55,7 @@ describe(decideCheckout, () => {
       decideCheckout({
         open: [pending],
         hasPendingTransaction: false,
+        hasAttemptUnderReview: false,
         amountInCents: 4_000_000,
         now: whileOpen,
       })
@@ -68,6 +69,7 @@ describe(decideCheckout, () => {
       decideCheckout({
         open: none,
         hasPendingTransaction: false,
+        hasAttemptUnderReview: false,
         amountInCents: 4_000_000,
         now: whileOpen,
       })
@@ -79,6 +81,7 @@ describe(decideCheckout, () => {
       decideCheckout({
         open: [pending],
         hasPendingTransaction: false,
+        hasAttemptUnderReview: false,
         amountInCents: 3_000_000,
         now: afterExpiry,
       })
@@ -90,10 +93,23 @@ describe(decideCheckout, () => {
       decideCheckout({
         open: [pending],
         hasPendingTransaction: true,
+        hasAttemptUnderReview: false,
         amountInCents: 4_000_000,
         now: whileOpen,
       })
     ).toStrictEqual({ kind: "in_progress" });
+  });
+
+  it("refuses while an approved attempt waits for staff, before any other rule", () => {
+    expect(
+      decideCheckout({
+        open: [pending],
+        hasPendingTransaction: true,
+        hasAttemptUnderReview: true,
+        amountInCents: 4_000_000,
+        now: whileOpen,
+      })
+    ).toStrictEqual({ kind: "under_review" });
   });
 
   it("refuses until an open link for a different amount expires", () => {
@@ -103,6 +119,7 @@ describe(decideCheckout, () => {
       decideCheckout({
         open: [later, pending],
         hasPendingTransaction: false,
+        hasAttemptUnderReview: false,
         amountInCents: 3_000_000,
         now: whileOpen,
       })

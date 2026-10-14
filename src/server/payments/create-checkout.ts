@@ -1,5 +1,5 @@
 import "@tanstack/react-start/server-only";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, or } from "drizzle-orm";
 
 import type { Database, Transaction } from "@/server/db/client";
 import { citizen } from "@/server/db/schema/citizens";
@@ -44,7 +44,9 @@ export type CheckoutRefusal =
         | AmountDueError
         // Wompi could not tell the status of an earlier payment. Nothing starts until it can.
         | "earlier_payment_unavailable"
-        | "payment_in_progress";
+        | "payment_in_progress"
+        // An approved attempt of the obligation waits for staff. The citizen must not pay again.
+        | "payment_under_review";
     }
   | { reason: "other_amount_open"; until: Date };
 
@@ -203,21 +205,38 @@ export const createCheckout = async (
       .from(payment)
       .where(and(targetFilter(input), eq(payment.status, "pending")))
       .orderBy(desc(payment.id));
-    // A pending attempt is a Wompi transaction in progress, also on a payment that is not pending any more.
-    const inProgress = await tx
-      .select({ id: paymentAttempt.id })
+    // The attempts of every target of the obligation that block a new checkout:
+    // a pending attempt is a Wompi transaction in progress, also on a payment that is not pending any more;
+    // an attempt with a review reason is an approval that staff must examine (the money is collected).
+    // Staff clear a review by setting the reason to null.
+    const blocking = await tx
+      .select({
+        status: paymentAttempt.status,
+        reviewReason: paymentAttempt.reviewReason,
+      })
       .from(paymentAttempt)
       .innerJoin(payment, eq(payment.id, paymentAttempt.paymentId))
-      .where(and(targetFilter(input), eq(paymentAttempt.status, "pending")))
-      .limit(1);
+      .where(
+        and(
+          eq(payment.obligationId, input.obligationId),
+          or(
+            eq(paymentAttempt.status, "pending"),
+            isNotNull(paymentAttempt.reviewReason)
+          )
+        )
+      );
 
     const decision = decideCheckout({
       open,
-      hasPendingTransaction: inProgress.length > 0,
+      hasPendingTransaction: blocking.some((row) => row.status === "pending"),
+      hasAttemptUnderReview: blocking.some((row) => row.reviewReason !== null),
       amountInCents: amountDue.amountInCents,
       now: new Date(),
     });
     switch (decision.kind) {
+      case "under_review": {
+        return refuse({ reason: "payment_under_review" });
+      }
       case "in_progress": {
         return refuse({ reason: "payment_in_progress" });
       }

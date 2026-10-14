@@ -158,6 +158,14 @@ const seedSettledPayment = async (
   return { paymentId, reference, attempt };
 };
 
+/** A Wompi transaction in progress for the payment. */
+const insertPendingAttempt = async (paymentId: string) =>
+  await database.pool.query(
+    `insert into payment_attempt (payment_id, provider_transaction_id, status, amount_in_cents, currency)
+     values ($1, $2, 'pending', $3, 'COP')`,
+    [paymentId, `${unique()}-1610641025-49201`, AMOUNT]
+  );
+
 /** Moves the obligation into an agreement with two installments, and returns their ids. */
 const seedInstallments = async (obligationId: string) => {
   await database.pool.query(
@@ -330,6 +338,36 @@ describe(createCheckout, () => {
     );
 
     expect(reconciled).toStrictEqual([earlier.paymentId]);
+  });
+
+  it("refuses while an approved attempt of the obligation waits for staff", async () => {
+    const target = await seedObligation();
+    const earlier = await seedSettledPayment(target, "approved");
+    // The money is collected, but the target was not payable: staff decide about a refund.
+    await database.pool.query(
+      "update payment_attempt set review_reason = 'target_not_payable' where payment_id = $1",
+      [earlier.paymentId]
+    );
+
+    await expect(
+      createCheckout(target.input, withoutWompi())
+    ).resolves.toStrictEqual({ ok: false, reason: "payment_under_review" });
+    await expect(paymentsOf(target.obligationId)).resolves.toHaveLength(1);
+  });
+
+  it("refuses while a payment of another target of the obligation has a transaction in progress", async () => {
+    const target = await seedObligation();
+    const [first, second] = await seedInstallments(target.obligationId);
+    const earlier = await seedPendingPayment(target, { installmentId: first });
+    await insertPendingAttempt(earlier.paymentId);
+
+    await expect(
+      createCheckout(
+        { ...target.input, installmentId: second ?? null },
+        withoutWompi()
+      )
+    ).resolves.toStrictEqual({ ok: false, reason: "payment_in_progress" });
+    await expect(paymentsOf(target.obligationId)).resolves.toHaveLength(1);
   });
 
   it("refuses until an open link for a different amount expires", async () => {

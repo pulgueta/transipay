@@ -35,6 +35,8 @@ const CHECKOUT_MESSAGES: Record<
     "We cannot check the status of an earlier payment now. Try again in a few minutes.",
   payment_in_progress:
     "A payment for this obligation is in progress. Wait for its result before you pay again.",
+  payment_under_review:
+    "Staff must examine an earlier payment for this obligation. Do not pay again. We will contact you.",
 };
 
 const CHECKOUT_STATUSES: Record<CheckoutRefusal["reason"], number> = {
@@ -47,6 +49,7 @@ const CHECKOUT_STATUSES: Record<CheckoutRefusal["reason"], number> = {
   nothing_due: 409,
   earlier_payment_unavailable: 503,
   payment_in_progress: 409,
+  payment_under_review: 409,
   other_amount_open: 409,
 };
 
