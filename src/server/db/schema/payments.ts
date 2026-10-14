@@ -256,6 +256,8 @@ export const paymentAttempt = pgTable(
  * Inbox of gateway webhooks, for payments and payouts.
  * `integration` names the account that signed the event. The unique (integration, checksum) drops a repeated delivery.
  * A row with `processed_at` null needs review or failed. A new delivery of that event processes it again.
+ * A row is a receipt. The trigger `payment_event_keep_receipt` refuses a delete and a change to a column other than
+ * `processed_at`. `processed_at` is written one time.
  */
 export const paymentEvent = pgTable(
   "payment_event",

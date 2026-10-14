@@ -98,6 +98,7 @@ Wompi can create a second transaction with the same reference after a decline (p
 - The payment is approved when one attempt is approved. A second approval for the same payment goes to review (possible overpayment).
 - A webhook only tells us that a transaction changed. After the signature check, the server gets the transaction from the Wompi API with the signed transaction id. The API response gives the reference and the status that we use.
 - Receipt deduplication: `UNIQUE (integration, checksum)` on `payment_event`. Payout events use the same table.
+- A `payment_event` row is a receipt. The trigger `payment_event_keep_receipt` refuses a delete and a change to a column other than `processed_at`. `processed_at` goes from null to a value one time. Thus the application cannot remove a receipt and record the same event again.
 - Financial idempotency: the unique transaction id and a locked, conditional update. A different checksum must never cause a second money effect.
 - An event that needs review stays unprocessed. Staff or a later run can process it again.
 - Webhook routes read at most 64 KiB of body. A larger body gets HTTP 413 before the signature check.
