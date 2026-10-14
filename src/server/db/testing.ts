@@ -38,15 +38,37 @@ export const createTestDatabase = (url: string) => {
 /**
  * Makes a new database with all migrations for one test file.
  * Use it when the code under test reads all rows of a table, so that rows from other test files do not change the result.
+ * If the setup fails, it closes the pools, removes the new database, and throws the original error.
  */
-export const createIsolatedDatabase = async (url: string) => {
+export const createIsolatedDatabase = async (
+  url: string,
+  options: { migrationsFolder?: string } = {}
+) => {
   const name = `transipay_test_${randomUUID().replaceAll("-", "")}`;
   const admin = new Pool({ connectionString: url });
-  await admin.query(`CREATE DATABASE "${name}"`);
   const isolatedUrl = new URL(url);
   isolatedUrl.pathname = `/${name}`;
+  // The pool does not connect before the first query.
   const database = createTestDatabase(isolatedUrl.toString());
-  await migrate(database.db, { migrationsFolder });
+  let created = false;
+
+  try {
+    await admin.query(`CREATE DATABASE "${name}"`);
+    created = true;
+    await migrate(database.db, {
+      migrationsFolder: options.migrationsFolder ?? migrationsFolder,
+    });
+  } catch (error) {
+    try {
+      await database.pool.end();
+      if (created) {
+        await admin.query(`DROP DATABASE "${name}" WITH (FORCE)`);
+      }
+    } finally {
+      await admin.end();
+    }
+    throw error;
+  }
 
   return {
     ...database,
