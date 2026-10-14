@@ -1,30 +1,29 @@
 import { buildCheckoutUrl } from "@pulgueta/wompi/server";
 import { createServerFn } from "@tanstack/react-start";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { serverEnv } from "@/env/server";
 import { db } from "@/server/db/client";
 import { citizen } from "@/server/db/schema/citizens";
-import { obligation } from "@/server/db/schema/obligations";
-import {
-  installment,
-  payment,
-  paymentAgreement,
-  paymentAttempt,
-} from "@/server/db/schema/payments";
-import { withActor } from "@/server/db/with-actor";
+import { payment, paymentAttempt } from "@/server/db/schema/payments";
 import { httpError, throwNotFound } from "@/server/http-error";
 import { authMiddleware, requirePermission } from "@/server/middleware/auth";
 import { getWompi } from "@/server/wompi";
 
 import { canReadPayment } from "./access";
-import { resolveAmountDue } from "./amount";
-import type { AmountDueError } from "./amount";
-import { checkoutExpiresAt, findReusablePayment } from "./checkout";
+import { checkoutExpiresAt } from "./checkout";
+import { createCheckout } from "./create-checkout";
+import type { CheckoutRefusal } from "./create-checkout";
 import { reconcilePaymentWithWompi } from "./reconcile";
 
-const AMOUNT_DUE_MESSAGES: Record<AmountDueError, string> = {
+/** The messages for a refused checkout. The citizen reads them, so each one says what to do next. */
+const CHECKOUT_MESSAGES: Record<
+  Exclude<CheckoutRefusal["reason"], "other_amount_open">,
+  string
+> = {
+  obligation_not_found: "We cannot find this obligation.",
+  installment_not_found: "We cannot find this installment.",
   obligation_not_payable: "This obligation is paid or void. You cannot pay it.",
   installment_required:
     "This obligation has a payment agreement. Select an installment to pay.",
@@ -32,7 +31,40 @@ const AMOUNT_DUE_MESSAGES: Record<AmountDueError, string> = {
     "This obligation has no payment agreement. Pay the full amount.",
   installment_not_payable: "This installment is paid.",
   nothing_due: "This obligation has no amount to pay.",
+  earlier_payment_unavailable:
+    "We cannot check the status of an earlier payment now. Try again in a few minutes.",
+  payment_in_progress:
+    "A payment for this obligation is in progress. Wait for its result before you pay again.",
 };
+
+const CHECKOUT_STATUSES: Record<CheckoutRefusal["reason"], number> = {
+  obligation_not_found: 404,
+  installment_not_found: 404,
+  obligation_not_payable: 409,
+  installment_required: 409,
+  installment_not_allowed: 409,
+  installment_not_payable: 409,
+  nothing_due: 409,
+  earlier_payment_unavailable: 503,
+  payment_in_progress: 409,
+  other_amount_open: 409,
+};
+
+const formatBogotaTime = (date: Date) =>
+  new Intl.DateTimeFormat("es-CO", {
+    timeZone: "America/Bogota",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+
+/** Maps a refused checkout to the HTTP status and the message for the citizen. */
+const checkoutError = (refusal: CheckoutRefusal) =>
+  httpError(
+    CHECKOUT_STATUSES[refusal.reason],
+    refusal.reason === "other_amount_open"
+      ? `An earlier payment link with a different amount is open until ${formatBogotaTime(refusal.until)}. Wait until then to pay again.`
+      : CHECKOUT_MESSAGES[refusal.reason]
+  );
 
 /** Wompi terms that the citizen must accept before a payment. Show the permalinks as links. */
 export const getAcceptanceTokensFn = createServerFn({ method: "GET" })
@@ -60,9 +92,9 @@ export const getAcceptanceTokensFn = createServerFn({ method: "GET" })
 
 /**
  * Records a pending payment and returns the Wompi Web Checkout URL.
- * An open payment for the same target is given again until its link expires.
+ * An open payment for the same target is given again until its link expires (see `createCheckout`).
  * Wompi collects the card or bank data, so that data does not touch our servers.
- * The result comes later through the Wompi webhook.
+ * The result comes through the Wompi webhook, or through `refreshPaymentFn` when the webhook is lost.
  */
 export const createCheckoutFn = createServerFn({ method: "POST" })
   .middleware([requirePermission({ payment: ["create"] })])
@@ -73,115 +105,19 @@ export const createCheckoutFn = createServerFn({ method: "POST" })
     })
   )
   .handler(async ({ context, data }) => {
-    const checkout = await withActor(context.actorId, async (tx) => {
-      // The join on citizen.user_id limits the citizen to their own obligations.
-      // The row locks (obligation, then agreement, then installment) make parallel checkouts wait.
-      const owned = await tx
-        .select({
-          citizenId: obligation.citizenId,
-          status: obligation.status,
-          amountInCents: obligation.amountInCents,
-          discountInCents: obligation.discountInCents,
-        })
-        .from(obligation)
-        .innerJoin(citizen, eq(citizen.id, obligation.citizenId))
-        .where(
-          and(
-            eq(obligation.id, data.obligationId),
-            eq(citizen.userId, context.user.id)
-          )
-        )
-        .for("update", { of: obligation });
-      const target = owned.at(0);
-      if (!target) {
-        throw httpError(404, "We cannot find this obligation.");
-      }
-
-      let selectedInstallment = null;
-      if (data.installmentId !== undefined) {
-        const agreements = await tx
-          .select({ id: paymentAgreement.id })
-          .from(paymentAgreement)
-          .where(
-            and(
-              eq(paymentAgreement.obligationId, data.obligationId),
-              eq(paymentAgreement.status, "active")
-            )
-          )
-          .for("update");
-        const agreement = agreements.at(0);
-
-        const installments = agreement
-          ? await tx
-              .select({
-                status: installment.status,
-                amountInCents: installment.amountInCents,
-              })
-              .from(installment)
-              .where(
-                and(
-                  eq(installment.id, data.installmentId),
-                  eq(installment.paymentAgreementId, agreement.id)
-                )
-              )
-              .for("update")
-          : [];
-        selectedInstallment = installments.at(0) ?? null;
-        if (!selectedInstallment) {
-          throw httpError(404, "We cannot find this installment.");
-        }
-      }
-
-      const amountDue = resolveAmountDue(target, selectedInstallment);
-      if (!amountDue.ok) {
-        throw httpError(409, AMOUNT_DUE_MESSAGES[amountDue.reason]);
-      }
-
-      // No unique index on open payments: an expired link stays pending, and a new payment can replace it.
-      const open = await tx
-        .select({
-          id: payment.id,
-          reference: payment.reference,
-          amountInCents: payment.amountInCents,
-          createdAt: payment.createdAt,
-        })
-        .from(payment)
-        .where(
-          and(
-            eq(payment.obligationId, data.obligationId),
-            data.installmentId === undefined
-              ? isNull(payment.installmentId)
-              : eq(payment.installmentId, data.installmentId),
-            eq(payment.status, "pending")
-          )
-        )
-        .orderBy(desc(payment.id));
-      const reusable = findReusablePayment(
-        open,
-        amountDue.amountInCents,
-        new Date()
-      );
-      if (reusable) {
-        return reusable;
-      }
-
-      const [row] = await tx
-        .insert(payment)
-        .values({
-          citizenId: target.citizenId,
-          obligationId: data.obligationId,
-          installmentId: data.installmentId ?? null,
-          amountInCents: amountDue.amountInCents,
-          reference: `tp_${crypto.randomUUID()}`,
-        })
-        .returning({
-          id: payment.id,
-          reference: payment.reference,
-          amountInCents: payment.amountInCents,
-          createdAt: payment.createdAt,
-        });
-      return row;
-    });
+    const outcome = await createCheckout(
+      {
+        userId: context.user.id,
+        actorId: context.actorId,
+        obligationId: data.obligationId,
+        installmentId: data.installmentId ?? null,
+      },
+      { database: db, reconcile: reconcilePaymentWithWompi }
+    );
+    if (!outcome.ok) {
+      throw checkoutError(outcome);
+    }
+    const checkout = outcome.payment;
 
     // The same payment gives the same expiration time, so a second tab gets the same link.
     const checkoutUrl = await buildCheckoutUrl({
