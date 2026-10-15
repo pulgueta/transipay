@@ -11,10 +11,6 @@ const userInput = z.object({ userId: z.uuid() });
 
 export const USERS_PAGE_SIZE = 25;
 
-type ListUsersQuery = NonNullable<
-  Parameters<typeof auth.api.listUsers>[0]
->["query"];
-
 /**
  * Lists the users for the staff users page, newest first.
  * The admin plugin searches one field: a search with "@" looks in the email, else in the name.
@@ -30,20 +26,25 @@ export const listUsersFn = createServerFn({ method: "GET" })
   )
   .handler(async ({ data }) => {
     const search = data.search ?? "";
-    const query: ListUsersQuery = {
-      limit: USERS_PAGE_SIZE,
-      offset: data.offset,
-      sortBy: "createdAt",
-      sortDirection: "desc",
-    };
-    if (search !== "") {
-      query.searchValue = search;
-      query.searchField = search.includes("@") ? "email" : "name";
-      query.searchOperator = "contains";
-    }
+    const searchQuery =
+      search === ""
+        ? {}
+        : {
+            searchValue: search,
+            searchField: search.includes("@")
+              ? ("email" as const)
+              : ("name" as const),
+            searchOperator: "contains" as const,
+          };
     const result = await auth.api.listUsers({
       headers: getRequestHeaders(),
-      query,
+      query: {
+        limit: USERS_PAGE_SIZE,
+        offset: data.offset,
+        sortBy: "createdAt",
+        sortDirection: "desc",
+        ...searchQuery,
+      },
     });
     const users = result.users.map((user) => ({
       id: user.id,

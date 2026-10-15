@@ -19,6 +19,7 @@ import { Route as StaffIndexRouteImport } from './routes/staff/index'
 import { Route as StaffObligationsRouteImport } from './routes/staff/obligations'
 import { Route as StaffPaymentsRouteImport } from './routes/staff/payments'
 import { Route as StaffPayoutsRouteImport } from './routes/staff/payouts'
+import { Route as StaffScheduleRouteImport } from './routes/staff/schedule'
 import { Route as StaffUsersRouteImport } from './routes/staff/users'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiJobsRunRouteImport } from './routes/api/jobs/run'
@@ -75,6 +76,11 @@ const StaffPayoutsRoute = StaffPayoutsRouteImport.update({
   path: '/payouts',
   getParentRoute: () => StaffRouteRoute,
 } as any)
+const StaffScheduleRoute = StaffScheduleRouteImport.update({
+  id: '/schedule',
+  path: '/schedule',
+  getParentRoute: () => StaffRouteRoute,
+} as any)
 const StaffUsersRoute = StaffUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/staff/obligations': typeof StaffObligationsRoute
   '/staff/payments': typeof StaffPaymentsRoute
   '/staff/payouts': typeof StaffPayoutsRoute
+  '/staff/schedule': typeof StaffScheduleRoute
   '/staff/users': typeof StaffUsersRoute
   '/staff/': typeof StaffIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/staff/obligations': typeof StaffObligationsRoute
   '/staff/payments': typeof StaffPaymentsRoute
   '/staff/payouts': typeof StaffPayoutsRoute
+  '/staff/schedule': typeof StaffScheduleRoute
   '/staff/users': typeof StaffUsersRoute
   '/staff': typeof StaffIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/staff/obligations': typeof StaffObligationsRoute
   '/staff/payments': typeof StaffPaymentsRoute
   '/staff/payouts': typeof StaffPayoutsRoute
+  '/staff/schedule': typeof StaffScheduleRoute
   '/staff/users': typeof StaffUsersRoute
   '/staff/': typeof StaffIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -164,6 +173,7 @@ export interface FileRouteTypes {
     | '/staff/obligations'
     | '/staff/payments'
     | '/staff/payouts'
+    | '/staff/schedule'
     | '/staff/users'
     | '/staff/'
     | '/api/auth/$'
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/staff/obligations'
     | '/staff/payments'
     | '/staff/payouts'
+    | '/staff/schedule'
     | '/staff/users'
     | '/staff'
     | '/api/auth/$'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/staff/obligations'
     | '/staff/payments'
     | '/staff/payouts'
+    | '/staff/schedule'
     | '/staff/users'
     | '/staff/'
     | '/api/auth/$'
@@ -290,6 +302,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffPayoutsRouteImport
       parentRoute: typeof StaffRouteRoute
     }
+    '/staff/schedule': {
+      id: '/staff/schedule'
+      path: '/schedule'
+      fullPath: '/staff/schedule'
+      preLoaderRoute: typeof StaffScheduleRouteImport
+      parentRoute: typeof StaffRouteRoute
+    }
     '/staff/users': {
       id: '/staff/users'
       path: '/users'
@@ -332,6 +351,7 @@ interface StaffRouteRouteChildren {
   StaffObligationsRoute: typeof StaffObligationsRoute
   StaffPaymentsRoute: typeof StaffPaymentsRoute
   StaffPayoutsRoute: typeof StaffPayoutsRoute
+  StaffScheduleRoute: typeof StaffScheduleRoute
   StaffUsersRoute: typeof StaffUsersRoute
   StaffIndexRoute: typeof StaffIndexRoute
 }
@@ -340,6 +360,7 @@ const StaffRouteRouteChildren: StaffRouteRouteChildren = {
   StaffObligationsRoute: StaffObligationsRoute,
   StaffPaymentsRoute: StaffPaymentsRoute,
   StaffPayoutsRoute: StaffPayoutsRoute,
+  StaffScheduleRoute: StaffScheduleRoute,
   StaffUsersRoute: StaffUsersRoute,
   StaffIndexRoute: StaffIndexRoute,
 }
@@ -363,3 +384,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
