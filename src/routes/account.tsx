@@ -4,7 +4,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 
 import { LinkDocumentForm } from "@/components/auth/link-document-form";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/card";
 import { requireSession } from "@/lib/auth/guards";
 import { roleNames } from "@/lib/auth/roles";
+import { reloadForNewSession } from "@/lib/auth/session-change";
 import { useSignOut } from "@/lib/auth/use-sign-out";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/citizens/document";
 import { getMyCitizenFn, linkCitizenFn } from "@/server/citizens/functions";
@@ -31,6 +32,7 @@ export const myCitizenQueryOptions = queryOptions({
 
 const LinkDocument = () => {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const linkCitizen = useServerFn(linkCitizenFn);
 
   const link = async (values: LinkDocumentValues) => {
@@ -41,9 +43,8 @@ const LinkDocument = () => {
         ? error.message
         : "We could not link the document. Try again.";
     }
-    await queryClient.invalidateQueries({
-      queryKey: myCitizenQueryOptions.queryKey,
-    });
+    // Many cached queries depend on the citizen (obligations, appointments, courses), so load all of them again.
+    await reloadForNewSession(queryClient, router);
     return null;
   };
 

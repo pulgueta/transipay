@@ -84,7 +84,7 @@ The audit trigger runs as the caller. The application role must have INSERT on `
 - The local database port listens only on `127.0.0.1`.
 - A staff member works only with the entities of their `staff_member` rows (`staffScopeFor`). The admin works with all entities. Each staff read and write of entity data (obligations, payment reviews, payouts, appointments, course sessions, attendance) uses this scope. A record outside the scope reads as not found, and a write for an entity outside the scope is refused.
 - A document number is not a secret. The server links an account to a registered citizen only when the email of the citizen record is the email of the account. Otherwise staff must link it.
-- After sign-in, sign-up, and sign-out, the client removes all cached queries, because the query keys do not include the user.
+- After sign-in, sign-up, sign-out, and a document link, the client removes all cached queries, because the query keys do not include the user or the citizen.
 
 ### Open product decisions
 
