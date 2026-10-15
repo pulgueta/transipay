@@ -10,7 +10,7 @@ import type { StaffScope } from "@/server/staff/scope";
 
 import { courseDiscountInCents } from "./enrollment";
 
-/** The results that staff record for an enrollment after the session starts. */
+/** The results that staff record for an enrollment after the session ends. */
 export const ATTENDANCE_OUTCOMES = ["attended", "absent"] as const;
 
 export type AttendanceOutcome = (typeof ATTENDANCE_OUTCOMES)[number];
@@ -82,14 +82,21 @@ export type RecordAttendanceOutcome =
     }
   | {
       ok: false;
-      reason: "enrollment_not_found" | "not_enrolled" | "session_not_started";
+      reason:
+        | "enrollment_not_found"
+        | "not_enrolled"
+        | "not_ended"
+        | "full_discount_not_supported";
     };
 
 /**
  * Records that the citizen attended the session or was absent, in one transaction with the actor.
- * The enrollment must be `enrolled`, and the session must have started (database clock).
+ * The enrollment must be `enrolled`, and the session must have ended (database clock),
+ * because each result closes the enrollment and an attendance gives the discount.
  * An attendance gives the session discount on the fine only when the fine is still pending and has no discount,
  * so the discount applies one time only. An enrollment outside the scope reads as not found.
+ * A discount must leave an amount to pay: a fine is settled only by a payment, and no flow closes a fine with
+ * nothing due. So an attendance that makes the fine free is refused, and nothing changes.
  * Returns the enrollment and the obligation as stored after the write.
  */
 export const recordAttendance = async (
@@ -107,7 +114,7 @@ export const recordAttendance = async (
         status: courseEnrollment.status,
         obligationId: courseEnrollment.obligationId,
         discountPercent: courseSession.discountPercent,
-        started: sql<boolean>`${courseSession.startsAt} <= now()`,
+        ended: sql<boolean>`${courseSession.endsAt} <= now()`,
       })
       .from(courseEnrollment)
       .innerJoin(
@@ -127,8 +134,8 @@ export const recordAttendance = async (
     if (current.status !== "enrolled") {
       return { ok: false, reason: "not_enrolled" };
     }
-    if (!current.started) {
-      return { ok: false, reason: "session_not_started" };
+    if (!current.ended) {
+      return { ok: false, reason: "not_ended" };
     }
 
     const [debt] = await tx
@@ -138,6 +145,17 @@ export const recordAttendance = async (
       .for("update");
     if (debt === undefined) {
       throw new Error("The enrollment has no obligation.");
+    }
+
+    const getsDiscount =
+      input.outcome === "attended" &&
+      debt.status === "pending" &&
+      debt.discountInCents === 0;
+    const discountInCents = getsDiscount
+      ? courseDiscountInCents(debt.amountInCents, current.discountPercent)
+      : 0;
+    if (getsDiscount && debt.amountInCents - discountInCents <= 0) {
+      return { ok: false, reason: "full_discount_not_supported" };
     }
 
     const [enrollment] = await tx
@@ -152,21 +170,12 @@ export const recordAttendance = async (
       throw new Error("The enrollment update returned no row.");
     }
 
-    const getsDiscount =
-      input.outcome === "attended" &&
-      debt.status === "pending" &&
-      debt.discountInCents === 0;
     if (!getsDiscount) {
       return { ok: true, enrollment, obligation: debt };
     }
     const [discounted] = await tx
       .update(obligation)
-      .set({
-        discountInCents: courseDiscountInCents(
-          debt.amountInCents,
-          current.discountPercent
-        ),
-      })
+      .set({ discountInCents })
       .where(eq(obligation.id, debt.id))
       .returning(STORED_OBLIGATION);
     if (discounted === undefined) {

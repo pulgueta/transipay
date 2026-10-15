@@ -53,12 +53,17 @@ export const listCourseSessions = async (
   return toPage(rows, input.limit);
 };
 
+/** A discount must leave an amount to pay, because a fine is settled only by a payment. */
+export const MIN_DISCOUNT_PERCENT = 1;
+export const MAX_DISCOUNT_PERCENT = 99;
+
 export type CreateSessionRefusal =
   | "entity_not_in_scope"
   | "entity_inactive"
   | "entity_cannot_give_courses"
   | "branch_not_found"
-  | "ends_before_start";
+  | "ends_before_start"
+  | "discount_out_of_range";
 
 export type CreateSessionOutcome =
   | { ok: true; session: typeof courseSession.$inferSelect }
@@ -78,6 +83,7 @@ export interface CreateSessionInput {
 /**
  * Creates a course session at a branch of the entity, with the actor in the audit log.
  * The entity must be active and give courses (a CEA or the transit authority).
+ * The discount is from 1 to 99 percent. A fine is settled only by a payment, so a discount must leave an amount to pay.
  */
 export const createCourseSession = async (
   database: Database,
@@ -90,6 +96,13 @@ export const createCourseSession = async (
     return { ok: false, reason: "ends_before_start" };
   }
   return await runAsActor(database, input.actorId, async (tx) => {
+    if (
+      !Number.isInteger(input.discountPercent) ||
+      input.discountPercent < MIN_DISCOUNT_PERCENT ||
+      input.discountPercent > MAX_DISCOUNT_PERCENT
+    ) {
+      return { ok: false, reason: "discount_out_of_range" };
+    }
     const [owner] = await tx
       .select({ kind: entity.kind, isActive: entity.isActive })
       .from(entity)

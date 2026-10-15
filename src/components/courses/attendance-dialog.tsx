@@ -45,11 +45,11 @@ const enrollmentsKey = (courseSessionId: string) => [
 const EnrollmentItem = ({
   row,
   courseSessionId,
-  started,
+  ended,
 }: {
   row: EnrollmentRow;
   courseSessionId: string;
-  started: boolean;
+  ended: boolean;
 }) => {
   const queryClient = useQueryClient();
   const complete = useServerFn(completeEnrollmentFn);
@@ -78,7 +78,7 @@ const EnrollmentItem = ({
         {row.status === "enrolled" ? (
           <span className="flex gap-1">
             <Button
-              disabled={!started || record.isPending}
+              disabled={!ended || record.isPending}
               onClick={() => {
                 record.mutate("attended");
               }}
@@ -88,7 +88,7 @@ const EnrollmentItem = ({
               Attended
             </Button>
             <Button
-              disabled={!started || record.isPending}
+              disabled={!ended || record.isPending}
               onClick={() => {
                 record.mutate("absent");
               }}
@@ -109,10 +109,10 @@ const EnrollmentItem = ({
 
 const EnrollmentList = ({
   courseSessionId,
-  started,
+  ended,
 }: {
   courseSessionId: string;
-  started: boolean;
+  ended: boolean;
 }) => {
   const listEnrollments = useServerFn(listSessionEnrollmentsFn);
   const enrollments = useQuery({
@@ -140,7 +140,7 @@ const EnrollmentList = ({
           courseSessionId={courseSessionId}
           key={row.id}
           row={row}
-          started={started}
+          ended={ended}
         />
       ))}
     </ul>
@@ -151,13 +151,13 @@ const EnrollmentList = ({
 export const AttendanceDialog = ({
   session,
 }: {
-  session: { id: string; startsAt: Date };
+  session: { id: string; endsAt: Date };
 }) => {
   const [open, setOpen] = useState(false);
   // The time at mount. The server checks again with the database clock.
   // oxlint-disable-next-line react/hook-use-state -- The time is fixed at mount. Nothing sets it later.
   const [mountedAt] = useState(Date.now);
-  const started = session.startsAt.getTime() <= mountedAt;
+  const ended = session.endsAt.getTime() <= mountedAt;
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
@@ -168,13 +168,13 @@ export const AttendanceDialog = ({
         <DialogHeader>
           <DialogTitle>Attendance</DialogTitle>
           <DialogDescription>
-            {started
+            {ended
               ? "Record the result for each citizen. When a citizen attended, the fine gets the session discount."
-              : "This session did not start. You can record the attendance after its start."}
+              : "This session did not end. You can record the attendance after its end."}
           </DialogDescription>
         </DialogHeader>
         {open ? (
-          <EnrollmentList courseSessionId={session.id} started={started} />
+          <EnrollmentList courseSessionId={session.id} ended={ended} />
         ) : null}
         <DialogFooter>
           <DialogClose render={<Button variant="outline" />}>Close</DialogClose>

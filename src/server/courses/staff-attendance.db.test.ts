@@ -26,9 +26,14 @@ const queryId = async (text: string, values: unknown[]) => {
   return row.id;
 };
 
-/** `startsIn` is a Postgres interval from now. The default session started one hour ago. */
+/** `startsIn` is a Postgres interval from now. The default session started three hours ago and ended one hour ago. */
 const seedWorld = async (
-  options: { startsIn?: string; fineStatus?: string; discount?: number } = {}
+  options: {
+    startsIn?: string;
+    fineStatus?: string;
+    discount?: number;
+    percent?: number;
+  } = {}
 ) => {
   const actorId = await queryId(
     `insert into auth."user" (name, email, role) values ('Staff', $1, 'scheduler') returning id`,
@@ -46,7 +51,12 @@ const seedWorld = async (
   const sessionId = await queryId(
     `insert into course_session (entity_id, branch_id, starts_at, ends_at, capacity, discount_percent)
      values ($1, $2, now() + $3::interval, now() + $3::interval + interval '2 hours', 10, $4) returning id`,
-    [ceaId, branchId, options.startsIn ?? "-1 hour", DISCOUNT_PERCENT]
+    [
+      ceaId,
+      branchId,
+      options.startsIn ?? "-3 hours",
+      options.percent ?? DISCOUNT_PERCENT,
+    ]
   );
   const ittbId = await queryId(
     `insert into entity (kind, name, tax_id, email, phone)
@@ -198,8 +208,9 @@ describe("course attendance", () => {
     await expect(discountOf(discounted.obligationId)).resolves.toBe(1000);
   });
 
-  it("refuses a session that did not start and an enrollment outside the scope", async () => {
+  it("refuses a session that did not end and an enrollment outside the scope", async () => {
     const future = await seedWorld({ startsIn: "1 day" });
+    const inProgress = await seedWorld({ startsIn: "-1 hour" });
     const other = await seedWorld();
 
     await expect(
@@ -209,7 +220,19 @@ describe("course attendance", () => {
         outcome: "attended",
         scope: scopeOf(future),
       })
-    ).resolves.toStrictEqual({ ok: false, reason: "session_not_started" });
+    ).resolves.toStrictEqual({ ok: false, reason: "not_ended" });
+    for (const outcome of ["attended", "absent"] as const) {
+      // oxlint-disable-next-line no-await-in-loop -- Each call reads the same row. The order does not matter.
+      await expect(
+        recordAttendance(appDatabase, {
+          actorId: inProgress.actorId,
+          enrollmentId: inProgress.enrollmentId,
+          outcome,
+          scope: scopeOf(inProgress),
+        })
+      ).resolves.toStrictEqual({ ok: false, reason: "not_ended" });
+    }
+    await expect(discountOf(inProgress.obligationId)).resolves.toBe(0);
     await expect(
       recordAttendance(appDatabase, {
         actorId: future.actorId,
@@ -220,6 +243,25 @@ describe("course attendance", () => {
     ).resolves.toStrictEqual({ ok: false, reason: "enrollment_not_found" });
     await expect(discountOf(future.obligationId)).resolves.toBe(0);
     await expect(discountOf(other.obligationId)).resolves.toBe(0);
+  });
+
+  it("refuses an attendance that makes the fine free, and keeps the enrollment", async () => {
+    const world = await seedWorld({ percent: 100 });
+    const input = {
+      actorId: world.actorId,
+      enrollmentId: world.enrollmentId,
+      outcome: "attended" as const,
+      scope: scopeOf(world),
+    };
+
+    await expect(recordAttendance(appDatabase, input)).resolves.toStrictEqual({
+      ok: false,
+      reason: "full_discount_not_supported",
+    });
+    await expect(discountOf(world.obligationId)).resolves.toBe(0);
+    await expect(
+      recordAttendance(appDatabase, { ...input, outcome: "absent" })
+    ).resolves.toMatchObject({ ok: true, enrollment: { status: "absent" } });
   });
 
   it("lists the enrollments of a session in the scope only", async () => {

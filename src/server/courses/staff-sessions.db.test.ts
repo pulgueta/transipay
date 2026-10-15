@@ -144,6 +144,20 @@ describe("staff course sessions", () => {
     ).resolves.toStrictEqual({ ok: false, reason: "ends_before_start" });
   });
 
+  it("refuses a discount of 0 or 100 percent, because a fine is settled only by a payment", async () => {
+    const world = await seedWorld();
+
+    for (const discountPercent of [0, 100]) {
+      // oxlint-disable-next-line no-await-in-loop -- Each call is independent. The order does not matter.
+      await expect(
+        createCourseSession(appDatabase, {
+          ...sessionInput(world),
+          discountPercent,
+        })
+      ).resolves.toStrictEqual({ ok: false, reason: "discount_out_of_range" });
+    }
+  });
+
   it("refuses an entity that does not give courses or is not active", async () => {
     const cda = await seedWorld("cda");
     const closed = await seedWorld("cea", false);

@@ -230,7 +230,7 @@ const sessionSchema = z.object({
     .regex(/^[1-9]\d{0,3}$/u, "Enter a whole number larger than zero."),
   discountPercent: z
     .string()
-    .regex(/^(?:100|\d{1,2})$/u, "Enter a whole number from 0 to 100."),
+    .regex(/^[1-9]\d?$/u, "Enter a whole number from 1 to 99."),
 });
 
 /** The form of the dialog. It mounts when the dialog opens, so a new dialog starts empty. */

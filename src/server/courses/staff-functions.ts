@@ -12,7 +12,12 @@ import type {
   AttendanceOutcome,
   RecordAttendanceOutcome,
 } from "./staff-attendance";
-import { createCourseSession, listCourseSessions } from "./staff-sessions";
+import {
+  MAX_DISCOUNT_PERCENT,
+  MIN_DISCOUNT_PERCENT,
+  createCourseSession,
+  listCourseSessions,
+} from "./staff-sessions";
 import type { CreateSessionRefusal } from "./staff-sessions";
 
 /** The course sessions of the entities of the staff member (all for the admin), newest first. */
@@ -36,6 +41,7 @@ const CREATE_MESSAGES: Record<CreateSessionRefusal, string> = {
   branch_not_found:
     "This branch does not belong to the entity, or it is not active.",
   ends_before_start: "The end must be after the start.",
+  discount_out_of_range: "Enter a discount from 1% to 99%.",
 };
 
 const CREATE_STATUSES: Record<CreateSessionRefusal, number> = {
@@ -44,6 +50,7 @@ const CREATE_STATUSES: Record<CreateSessionRefusal, number> = {
   entity_cannot_give_courses: 409,
   branch_not_found: 404,
   ends_before_start: 400,
+  discount_out_of_range: 400,
 };
 
 /** Creates a course session. Returns the session as stored after the write. */
@@ -56,7 +63,10 @@ export const createCourseSessionFn = createServerFn({ method: "POST" })
       startsAt: z.coerce.date(),
       endsAt: z.coerce.date(),
       capacity: z.int().min(1).max(1000),
-      discountPercent: z.int().min(0).max(100),
+      discountPercent: z
+        .int()
+        .min(MIN_DISCOUNT_PERCENT)
+        .max(MAX_DISCOUNT_PERCENT),
     })
   )
   .handler(async ({ context, data }) => {
@@ -95,8 +105,10 @@ const ATTENDANCE_MESSAGES: Record<
 > = {
   enrollment_not_found: "We cannot find this enrollment.",
   not_enrolled: "The attendance of this enrollment is already recorded.",
-  session_not_started:
-    "This session did not start. You can record the attendance after its start.",
+  not_ended:
+    "This session did not end. You can record the attendance after its end.",
+  full_discount_not_supported:
+    "The session discount makes the fine free. You cannot record this attendance, because a fine closes only with a payment.",
 };
 
 /** Records the outcome and returns the enrollment and the obligation as stored after the write. */
