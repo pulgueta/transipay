@@ -22,8 +22,15 @@ export type LinkCitizenOutcome =
   | { ok: true; citizenId: string; created: boolean }
   | {
       ok: false;
-      reason: "document_belongs_to_other_user" | "user_already_linked";
+      reason:
+        | "document_belongs_to_other_user"
+        | "document_needs_verification"
+        | "user_already_linked";
     };
+
+/** Compares two emails without case and without spaces at the start and the end. */
+const sameEmail = (stored: string | null, given: string) =>
+  stored !== null && stored.trim().toLowerCase() === given.trim().toLowerCase();
 
 /** The first word is the first name. The rest is the last name. */
 const splitName = (name: string) => {
@@ -34,6 +41,8 @@ const splitName = (name: string) => {
 /**
  * Links the user to the citizen with the document.
  * The ITTB registers citizens before they have an account, so the citizen can exist without a user.
+ * A document number is not a secret. Thus it links a registered citizen only when the email
+ * of that record is the email of the user. Otherwise staff must examine the link.
  * When no citizen has the document, it creates one from the user data.
  */
 export const linkCitizen = async (
@@ -59,11 +68,14 @@ export const linkCitizen = async (
         eq(citizen.documentType, input.documentType),
         eq(citizen.documentNumber, input.documentNumber)
       ),
-      columns: { id: true, userId: true },
+      columns: { id: true, userId: true, email: true },
     });
     if (byDocument) {
       if (byDocument.userId !== null) {
         return { ok: false, reason: "document_belongs_to_other_user" };
+      }
+      if (!sameEmail(byDocument.email, input.email)) {
+        return { ok: false, reason: "document_needs_verification" };
       }
       await tx
         .update(citizen)

@@ -53,7 +53,8 @@ const LinkDocument = () => {
         <CardTitle>Link your document</CardTitle>
         <CardDescription>
           Your account has no document yet. We need it to find your fines and
-          procedures.
+          procedures. If the transit authority registered your document, the
+          email in that record must be the email of this account.
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -17,6 +17,8 @@ const LINK_MESSAGES: Record<
 > = {
   document_belongs_to_other_user:
     "This document is linked to another account. If it is yours, sign in with that account or contact the ITTB.",
+  document_needs_verification:
+    "We cannot link this document to your account automatically. Contact the transit authority to link it.",
   user_already_linked:
     "Your account already has a document. Open your account to see it.",
 };

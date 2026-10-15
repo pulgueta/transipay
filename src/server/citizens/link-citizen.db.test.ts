@@ -34,12 +34,13 @@ const seedUser = async (name = "Ana Maria Rojas") => {
 
 const seedCitizen = async (
   documentNumber: string,
-  userId: string | null = null
+  userId: string | null = null,
+  email: string | null = null
 ) =>
   await queryId(
-    `insert into citizen (user_id, document_type, document_number, first_name, last_name)
-     values ($1, 'CC', $2, 'Registered', 'Person') returning id`,
-    [userId, documentNumber]
+    `insert into citizen (user_id, document_type, document_number, first_name, last_name, email)
+     values ($1, 'CC', $2, 'Registered', 'Person', $3) returning id`,
+    [userId, documentNumber, email]
   );
 
 const readCitizen = async (id: string) => {
@@ -106,10 +107,14 @@ describe(linkCitizen, () => {
     });
   });
 
-  it("links the registered citizen with that document and keeps its names", async () => {
+  it("links the registered citizen when its email is the user email", async () => {
     const documentNumber = unique();
-    const citizenId = await seedCitizen(documentNumber);
     const user = await seedUser();
+    const citizenId = await seedCitizen(
+      documentNumber,
+      null,
+      `  ${user.email.toUpperCase()} `
+    );
 
     const outcome = await linkCitizen(appDatabase, input(user, documentNumber));
 
@@ -118,6 +123,42 @@ describe(linkCitizen, () => {
       user_id: user.id,
       first_name: "Registered",
       last_name: "Person",
+    });
+  });
+
+  it("refuses to link a registered citizen that has no email", async () => {
+    const documentNumber = unique();
+    const citizenId = await seedCitizen(documentNumber);
+    const user = await seedUser();
+
+    const outcome = await linkCitizen(appDatabase, input(user, documentNumber));
+
+    expect(outcome).toStrictEqual({
+      ok: false,
+      reason: "document_needs_verification",
+    });
+    await expect(readCitizen(citizenId)).resolves.toMatchObject({
+      user_id: null,
+    });
+  });
+
+  it("refuses to link a registered citizen with a different email", async () => {
+    const documentNumber = unique();
+    const citizenId = await seedCitizen(
+      documentNumber,
+      null,
+      "other@example.com"
+    );
+    const user = await seedUser();
+
+    const outcome = await linkCitizen(appDatabase, input(user, documentNumber));
+
+    expect(outcome).toStrictEqual({
+      ok: false,
+      reason: "document_needs_verification",
+    });
+    await expect(readCitizen(citizenId)).resolves.toMatchObject({
+      user_id: null,
     });
   });
 
