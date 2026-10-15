@@ -13,14 +13,15 @@ import { normalizeFieldErrors } from "./normalize-field-errors";
 
 interface DateTimeFieldProps {
   label: string;
-  /** The earliest value, as "YYYY-MM-DDTHH:mm" in the browser time zone. */
+  /** The earliest value, as "YYYY-MM-DDTHH:mm" in the same time zone as the value. */
   min?: string;
   description?: string;
 }
 
 /**
  * A native `datetime-local` input for `form.AppField`.
- * The field value is "YYYY-MM-DDTHH:mm" in the browser time zone, or "" while empty.
+ * The field value is a wall-clock time "YYYY-MM-DDTHH:mm" with no time zone, or "" while empty.
+ * The caller decides the time zone (see `bogotaWallClockToInstant`).
  */
 export const DateTimeField = ({
   label,

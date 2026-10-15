@@ -25,8 +25,37 @@ export const formatBogotaDate = (date: string) =>
 /** The calendar date in Bogota as "YYYY-MM-DD". Compare it with a `date` column value. */
 export const bogotaDateString = (now: Date) => isoDateFormat.format(now);
 
+// Bogota has no daylight saving time, so its offset is always -05:00.
+const BOGOTA_OFFSET = "-05:00";
+const BOGOTA_OFFSET_MS = -5 * 60 * 60 * 1000;
+
 const pad = (value: number) => String(value).padStart(2, "0");
 
-/** Formats a date in the browser time zone for a `datetime-local` input ("YYYY-MM-DDTHH:mm"). */
-export const toDateTimeLocalValue = (date: Date) =>
-  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+/** Formats an instant as Bogota time for a `datetime-local` input ("YYYY-MM-DDTHH:mm"). */
+export const toBogotaDateTimeLocalValue = (date: Date) => {
+  // The UTC fields of the shifted instant are the Bogota wall clock.
+  const wall = new Date(date.getTime() + BOGOTA_OFFSET_MS);
+  return `${wall.getUTCFullYear()}-${pad(wall.getUTCMonth() + 1)}-${pad(wall.getUTCDate())}T${pad(wall.getUTCHours())}:${pad(wall.getUTCMinutes())}`;
+};
+
+const DATE_TIME_LOCAL = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/u;
+
+/**
+ * Reads a `datetime-local` value ("YYYY-MM-DDTHH:mm", seconds optional) as Bogota time.
+ * The result does not depend on the time zone of the device.
+ * Throws a RangeError when the value is not a valid date and time.
+ */
+export const bogotaWallClockToInstant = (value: string): Date => {
+  if (!DATE_TIME_LOCAL.test(value)) {
+    throw new RangeError(`"${value}" is not a datetime-local value.`);
+  }
+  const instant = new Date(`${value}${BOGOTA_OFFSET}`);
+  // A value such as February 30 must not move to another day.
+  if (
+    Number.isNaN(instant.getTime()) ||
+    toBogotaDateTimeLocalValue(instant) !== value.slice(0, 16)
+  ) {
+    throw new RangeError(`"${value}" is not a valid date and time.`);
+  }
+  return instant;
+};

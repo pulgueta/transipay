@@ -4,7 +4,10 @@ import { z } from "zod";
 import { FormError } from "@/components/auth/form-error";
 import { useAppForm } from "@/components/form/use-app-form";
 import { FieldGroup } from "@/components/ui/field";
-import { toDateTimeLocalValue } from "@/lib/dates";
+import {
+  bogotaWallClockToInstant,
+  toBogotaDateTimeLocalValue,
+} from "@/lib/dates";
 import { formatAmount } from "@/lib/format-amount";
 import type { readBookingOptions } from "@/server/appointments/appointments";
 import { earliestScheduledAt } from "@/server/appointments/decisions";
@@ -47,10 +50,10 @@ export const BookingForm = ({
   const prefilled = options.obligations.find(
     (item) => item.id === obligationId
   );
-  // The browser time zone. The citizen books in Bogota, where the branches are.
+  // Bogota time, where the branches are. The device time zone has no effect.
   // oxlint-disable-next-line react/hook-use-state -- The earliest time is fixed at mount. Nothing sets it later.
   const [min] = useState(() =>
-    toDateTimeLocalValue(earliestScheduledAt(new Date()))
+    toBogotaDateTimeLocalValue(earliestScheduledAt(new Date()))
   );
 
   const form = useAppForm({
@@ -73,7 +76,9 @@ export const BookingForm = ({
             value.obligationId === NO_OBLIGATION
               ? undefined
               : value.obligationId,
-          scheduledAt: new Date(value.scheduledAt).toISOString(),
+          scheduledAt: bogotaWallClockToInstant(
+            value.scheduledAt
+          ).toISOString(),
         })
       );
     },
@@ -181,7 +186,7 @@ export const BookingForm = ({
           {(field) => (
             <field.DateTimeField
               description="Select a time at least one hour from now."
-              label="Date and time"
+              label="Date and time (Bogota time)"
               min={min}
             />
           )}

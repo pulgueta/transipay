@@ -47,6 +47,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { canUser } from "@/lib/auth/permissions";
 import { canGiveCourses } from "@/lib/courses/course-entities";
+import { bogotaWallClockToInstant } from "@/lib/dates";
 import {
   listStaffAppointmentsFn,
   updateAppointmentStatusFn,
@@ -256,9 +257,9 @@ const NewSessionForm = ({ onCreated }: { onCreated: () => void }) => {
           data: {
             entityId: input.entityId,
             branchId: input.branchId,
-            // The browser reads the local time of the staff member and sends instants.
-            startsAt: new Date(input.startsAt).toISOString(),
-            endsAt: new Date(input.endsAt).toISOString(),
+            // The inputs are Bogota time, also on a device in another time zone.
+            startsAt: bogotaWallClockToInstant(input.startsAt).toISOString(),
+            endsAt: bogotaWallClockToInstant(input.endsAt).toISOString(),
             capacity: Number(input.capacity),
             discountPercent: Number(input.discountPercent),
           },
@@ -326,12 +327,18 @@ const NewSessionForm = ({ onCreated }: { onCreated: () => void }) => {
           </form.AppField>
           <form.AppField name="startsAt">
             {(field) => (
-              <field.TextField label="Starts at" type="datetime-local" />
+              <field.TextField
+                label="Starts at (Bogota time)"
+                type="datetime-local"
+              />
             )}
           </form.AppField>
           <form.AppField name="endsAt">
             {(field) => (
-              <field.TextField label="Ends at" type="datetime-local" />
+              <field.TextField
+                label="Ends at (Bogota time)"
+                type="datetime-local"
+              />
             )}
           </form.AppField>
           <form.AppField name="capacity">
