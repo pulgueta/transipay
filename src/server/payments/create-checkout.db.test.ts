@@ -73,7 +73,7 @@ const seedObligation = async () => {
   const citizenId = await queryId(
     `insert into citizen (user_id, document_type, document_number, first_name, last_name)
      values ($1, 'CC', $2, 'Ana', 'Rojas') returning id`,
-    [userId, unique()]
+    [userId, unique().toUpperCase()]
   );
   const obligationId = await queryId(
     `insert into obligation (citizen_id, entity_id, kind, number, amount_in_cents)

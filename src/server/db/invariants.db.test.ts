@@ -22,6 +22,23 @@ const insertId = async (text: string, values: unknown[]) => {
   return row.id;
 };
 
+/** Inserts a citizen as the application role, in a transaction that rolls back. */
+const insertCitizenAsApp = async (documentNumber: string) => {
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    await client.query("set local role transipay_app");
+    await client.query(
+      `insert into citizen (document_type, document_number, first_name, last_name)
+       values ('CC', $1, 'Ana', 'Rojas')`,
+      [documentNumber]
+    );
+  } finally {
+    await client.query("rollback");
+    client.release();
+  }
+};
+
 const seedEntity = async (kind = "transit_authority") =>
   await insertId(
     `insert into entity (kind, name, tax_id, email, phone)
@@ -33,7 +50,7 @@ const seedCitizen = async () =>
   await insertId(
     `insert into citizen (document_type, document_number, first_name, last_name)
      values ('CC', $1, 'Ana', 'Rojas') returning id`,
-    [unique()]
+    [unique().toUpperCase()]
   );
 
 const seedObligation = async (input: {
@@ -656,6 +673,28 @@ describe("domain invariants", () => {
           obligationId,
         ])
       ).rejects.toMatchObject({ code: CHECK_VIOLATION });
+    });
+  });
+
+  describe("citizen: the document number is canonical", () => {
+    it("accepts an uppercase number without separators", async () => {
+      await expect(
+        insertCitizenAsApp(`AB${unique().toUpperCase()}`)
+      ).resolves.toBeUndefined();
+    });
+
+    it("rejects a number with lowercase letters, spaces, points, or hyphens", async () => {
+      for (const documentNumber of [
+        `ab${unique()}`,
+        "AB 123456",
+        "1.234.567",
+        "AB-123456",
+      ]) {
+        // oxlint-disable-next-line no-await-in-loop -- Each insert rolls back. The order does not matter.
+        await expect(insertCitizenAsApp(documentNumber)).rejects.toMatchObject({
+          code: CHECK_VIOLATION,
+        });
+      }
     });
   });
 });

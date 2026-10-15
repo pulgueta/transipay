@@ -5,7 +5,7 @@ import { adminAc, defaultStatements } from "better-auth/plugins/admin/access";
 export const statement = {
   ...defaultStatements,
   obligation: ["read", "create", "update", "void"],
-  payment: ["read", "create", "refund"],
+  payment: ["read", "create", "refund", "review"],
   appointment: ["read", "create", "update", "cancel"],
   course: ["read", "create", "update", "enroll"],
   payout: ["read", "create"],
@@ -37,7 +37,8 @@ export const scheduler = ac.newRole({
 
 export const supervisor = ac.newRole({
   obligation: ["read", "create", "update", "void"],
-  payment: ["read", "create", "refund"],
+  // `review`: examine a payment attempt that the gateway flagged (see `payment_attempt.review_reason`).
+  payment: ["read", "create", "refund", "review"],
   appointment: ["read", "create", "update", "cancel"],
   course: ["read", "create", "update", "enroll"],
   payout: ["read"],
@@ -48,7 +49,7 @@ export const supervisor = ac.newRole({
 export const admin = ac.newRole({
   ...adminAc.statements,
   obligation: ["read", "create", "update", "void"],
-  payment: ["read", "create", "refund"],
+  payment: ["read", "create", "refund", "review"],
   appointment: ["read", "create", "update", "cancel"],
   course: ["read", "create", "update", "enroll"],
   payout: ["read", "create"],
@@ -64,3 +65,20 @@ export type Role = keyof typeof roles;
 export type Permissions = {
   [Resource in keyof typeof statement]?: (typeof statement)[Resource][number][];
 };
+
+/** True when the name is one of the app roles. */
+export const isRole = (name: string): name is Role => name in roles;
+
+/**
+ * True when one of the comma-separated roles has all the permissions.
+ * Use it for navigation only. `requirePermission` is the server check.
+ */
+export const canUser = (
+  role: string | null | undefined,
+  permissions: Permissions
+): boolean =>
+  (role ?? "")
+    .split(",")
+    .map((name) => name.trim())
+    .filter(isRole)
+    .some((name) => roles[name].authorize(permissions).success);

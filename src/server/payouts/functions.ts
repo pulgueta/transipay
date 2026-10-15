@@ -3,12 +3,16 @@ import { z } from "zod";
 
 import { serverEnv } from "@/env/server";
 import { db } from "@/server/db/client";
+import { pageInputSchema } from "@/server/db/pagination";
+import { PAYOUT_STATUSES } from "@/server/db/schema/payments";
 import { httpError } from "@/server/http-error";
 import { requirePermission } from "@/server/middleware/auth";
+import { isInScope, staffScopeFor } from "@/server/staff/scope";
 import { getWompiPayouts } from "@/server/wompi";
 
 import type { PayoutDeps } from "./port";
 import { createPayout, runPayoutQueue } from "./queue";
+import { listPayoutTargets, listPayouts } from "./staff-read";
 
 /** Banks that can receive payouts. Use the bank id in an entity bank account. */
 export const listPayoutBanksFn = createServerFn({ method: "GET" })
@@ -25,6 +29,28 @@ export const listPayoutBanksFn = createServerFn({ method: "GET" })
     }));
   });
 
+/** The payouts of the entities of the staff member (see `listPayouts`). */
+export const listPayoutsFn = createServerFn({ method: "GET" })
+  .middleware([requirePermission({ payout: ["read"] })])
+  .validator(
+    pageInputSchema.extend({ status: z.enum(PAYOUT_STATUSES).optional() })
+  )
+  .handler(
+    async ({ context, data }) =>
+      await listPayouts(db, {
+        ...data,
+        scope: await staffScopeFor(db, context.user),
+      })
+  );
+
+/** The active entities of the staff member that can receive a payout now: each one has a default bank account. */
+export const listPayoutTargetsFn = createServerFn({ method: "GET" })
+  .middleware([requirePermission({ payout: ["create"] })])
+  .handler(
+    async ({ context }) =>
+      await listPayoutTargets(db, await staffScopeFor(db, context.user))
+  );
+
 const payoutDeps = (actorId: string): PayoutDeps => ({
   database: db,
   payouts: getWompiPayouts(),
@@ -38,6 +64,7 @@ const payoutDeps = (actorId: string): PayoutDeps => ({
  * and does not make a second payout. The payout row is queued with a snapshot of the bank account before the Wompi call,
  * so a lost response does not lose the payout. The returned status comes from the database.
  * The final status comes through the payouts webhook or reconciliation.
+ * The entity must be in the scope of the staff member. This check comes before the idempotency key.
  */
 export const createPayoutFn = createServerFn({ method: "POST" })
   .middleware([requirePermission({ payout: ["create"] })])
@@ -50,6 +77,9 @@ export const createPayoutFn = createServerFn({ method: "POST" })
     })
   )
   .handler(async ({ context, data }) => {
+    if (!isInScope(await staffScopeFor(db, context.user), data.entityId)) {
+      throw httpError(403, "You do not work for this entity.");
+    }
     const result = await createPayout(payoutDeps(context.actorId), data);
     switch (result.kind) {
       case "ok": {

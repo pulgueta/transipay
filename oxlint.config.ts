@@ -30,6 +30,7 @@ export default defineConfig({
         "jsx-a11y/prefer-tag-over-role": "off",
         "typescript/promise-function-async": "off",
         "typescript/strict-boolean-expressions": "off",
+        "no-use-before-define": "off",
       },
     },
   ],

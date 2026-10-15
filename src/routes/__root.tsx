@@ -4,12 +4,18 @@ import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import {
   HeadContent,
+  Outlet,
   Scripts,
   createRootRouteWithContext,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { tableDevtoolsPlugin } from "@tanstack/react-table-devtools";
 import type { ReactNode } from "react";
+
+import { AppFooter } from "@/components/shell/app-footer";
+import { AppHeader } from "@/components/shell/app-header";
+import { THEME_SCRIPT } from "@/components/shell/theme";
+import { getSessionFn } from "@/server/session";
 
 import appCss from "../styles.css?url";
 
@@ -18,7 +24,8 @@ interface RouterContext {
 }
 
 const RootDocument = ({ children }: { children: ReactNode }) => (
-  <html lang="en">
+  // The head script sets the `dark` class before React hydrates, so the class differs from the server HTML.
+  <html lang="en" suppressHydrationWarning>
     <head>
       <HeadContent />
     </head>
@@ -39,7 +46,25 @@ const RootDocument = ({ children }: { children: ReactNode }) => (
   </html>
 );
 
+/** Header, page content, and footer. The not-found and error pages render inside it too. */
+const RootLayout = () => {
+  const { session } = Route.useRouteContext();
+
+  return (
+    <div className="flex min-h-svh flex-col">
+      <AppHeader session={session} />
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+        <Outlet />
+      </main>
+      <AppFooter />
+    </div>
+  );
+};
+
 export const Route = createRootRouteWithContext<RouterContext>()({
+  // Every route reads `context.session`. It is null when the user is signed out.
+  // Guards use it for navigation only. A server function checks the session again.
+  beforeLoad: async () => ({ session: await getSessionFn() }),
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -50,6 +75,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/manifest.json" },
     ],
+    scripts: [{ children: THEME_SCRIPT }],
   }),
   shellComponent: RootDocument,
+  component: RootLayout,
 });

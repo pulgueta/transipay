@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatAmount } from "./-format-amount";
+import { formatAmount } from "./format-amount";
 
 // Intl puts a nonbreaking space between the symbol and the number.
 const shown = (text: string) => text.replaceAll(" ", " ");
