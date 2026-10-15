@@ -1,4 +1,3 @@
-// oxlint-disable no-use-before-define -- shadcn generates this file. The override belongs in oxlint.config.ts.
 "use client";
 
 import { Select as SelectPrimitive } from "@base-ui/react/select";
