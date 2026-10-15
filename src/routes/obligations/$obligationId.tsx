@@ -54,8 +54,10 @@ const ObligationPage = () => {
   const { data: obligation } = useSuspenseQuery(
     obligationQueryOptions(obligationId)
   );
-  const canPayInFull =
+  const isOpen =
     obligation.state === "pending" || obligation.state === "overdue";
+  // A procedure can cost zero, and a discount can cover the full amount.
+  const canPayInFull = isOpen && obligation.amountDueInCents > 0;
   const canBookAppointment =
     obligation.kind === "procedure" && obligation.status === "pending";
 
@@ -109,6 +111,11 @@ const ObligationPage = () => {
       <div className="flex flex-wrap gap-3">
         {canPayInFull ? (
           <PayButton obligationId={obligation.id}>Pay</PayButton>
+        ) : null}
+        {isOpen && !canPayInFull ? (
+          <p className="text-muted-foreground self-center text-sm">
+            Nothing to pay
+          </p>
         ) : null}
         {canBookAppointment ? (
           <Button
