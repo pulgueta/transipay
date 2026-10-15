@@ -23,6 +23,7 @@ import {
   refreshPaymentFn,
 } from "@/server/payments/functions";
 
+import { formatAmount } from "./-format-amount";
 import { resolveResultState } from "./-result-state";
 import type { ResultState } from "./-result-state";
 
@@ -89,13 +90,6 @@ const STATUS_CONTENT: Record<ResultState, StatusContent> = {
     canRetry: false,
   },
 };
-
-const formatAmount = (amountInCents: number, currency: string) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amountInCents / 100);
 
 /** Starts a new checkout for the same obligation or installment. */
 const RetryPayment = ({
