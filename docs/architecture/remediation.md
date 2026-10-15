@@ -66,6 +66,7 @@ The audit trigger runs as the caller. The application role must have INSERT on `
 - A trigger rejects privileged changes without an actor: a change to `auth.user.role` or to the ban columns, and a delete of a user.
 - better-auth admin endpoints are in `disabledPaths`, so HTTP clients cannot call them. Our server functions call them through `createAuth(tx)` inside `withActor(actorId, tx => ...)`. The admin write and the actor setting then use the same connection and the same transaction.
 - A notification keeps its content and recipient as a snapshot that does not change. The database rejects UPDATE of the snapshot columns and rejects DELETE.
+- `appointment`, `course_session`, and `course_enrollment` have the audit trigger (migration 0018). Staff close appointments and record course attendance, and an attendance gives a fine discount.
 
 ### Limit
 
@@ -80,6 +81,9 @@ The audit trigger runs as the caller. The application role must have INSERT on `
 - better-auth decides secure cookies from the HTTPS base URL. The code does not override it.
 - A response that depends on the session has `Cache-Control: private, no-store`.
 - The local database port listens only on `127.0.0.1`.
+- A staff member works only with the entities of their `staff_member` rows (`staffScopeFor`). The admin works with all entities. Each staff read and write of entity data (obligations, payment reviews, payouts, appointments, course sessions, attendance) uses this scope. A record outside the scope reads as not found, and a write for an entity outside the scope is refused.
+- A document number is not a secret. The server links an account to a registered citizen only when the email of the citizen record is the email of the account. Otherwise staff must link it.
+- After sign-in, sign-up, and sign-out, the client removes all cached queries, because the query keys do not include the user.
 
 ### Open product decisions
 
