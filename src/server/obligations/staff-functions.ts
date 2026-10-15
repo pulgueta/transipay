@@ -19,7 +19,8 @@ import type {
 const REFUSAL_MESSAGES: Record<CreateObligationRefusal, string> = {
   citizen_not_found: "We cannot find this citizen. Find the citizen again.",
   entity_not_found: "We cannot find this entity.",
-  entity_not_in_scope: "You do not work for this entity.",
+  entity_not_in_scope:
+    "Your role for this entity does not let you do this operation.",
   entity_inactive: "This entity is not active.",
   entity_not_transit_authority: "Only the transit authority can issue a fine.",
   infraction_not_found: "This infraction is not in the active catalog.",

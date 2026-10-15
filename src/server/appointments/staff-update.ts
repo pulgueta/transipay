@@ -1,5 +1,5 @@
 import "@tanstack/react-start/server-only";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 
 import type { Database } from "@/server/db/client";
 import { citizen } from "@/server/db/schema/citizens";
@@ -7,6 +7,7 @@ import { branch } from "@/server/db/schema/entities";
 import { procedureType } from "@/server/db/schema/obligations";
 import { appointment } from "@/server/db/schema/scheduling";
 import { runAsActor } from "@/server/db/with-actor";
+import { entityScopeFilter } from "@/server/staff/scope";
 import type { StaffScope } from "@/server/staff/scope";
 
 import { canStaffTransition } from "./staff-transitions";
@@ -24,10 +25,9 @@ export interface ListStaffAppointmentsInput {
   limit: number;
 }
 
+/** Staff see and close only the appointments of the entities where their role has `appointment: update`. */
 const scopeFilter = (scope: StaffScope) =>
-  scope.kind === "all"
-    ? undefined
-    : inArray(appointment.entityId, scope.entityIds);
+  entityScopeFilter(appointment.entityId, scope, { appointment: ["update"] });
 
 /** The scheduled appointments of the scope, earliest first. Past appointments stay until staff close them. */
 export const listStaffAppointments = async (

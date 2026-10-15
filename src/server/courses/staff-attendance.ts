@@ -1,11 +1,12 @@
 import "@tanstack/react-start/server-only";
-import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, eq, ne, sql } from "drizzle-orm";
 
 import type { Database } from "@/server/db/client";
 import { citizen } from "@/server/db/schema/citizens";
 import { obligation } from "@/server/db/schema/obligations";
 import { courseEnrollment, courseSession } from "@/server/db/schema/scheduling";
 import { runAsActor } from "@/server/db/with-actor";
+import { entityScopeFilter } from "@/server/staff/scope";
 import type { StaffScope } from "@/server/staff/scope";
 
 import { courseDiscountInCents } from "./enrollment";
@@ -15,10 +16,9 @@ export const ATTENDANCE_OUTCOMES = ["attended", "absent"] as const;
 
 export type AttendanceOutcome = (typeof ATTENDANCE_OUTCOMES)[number];
 
+/** Staff record attendance only for the entities where their role has `course: update`. */
 const scopeFilter = (scope: StaffScope) =>
-  scope.kind === "all"
-    ? undefined
-    : inArray(courseSession.entityId, scope.entityIds);
+  entityScopeFilter(courseSession.entityId, scope, { course: ["update"] });
 
 /**
  * The enrollments of a session that are not cancelled, by citizen name.

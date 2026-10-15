@@ -34,7 +34,8 @@ export const listCourseSessionsFn = createServerFn({ method: "GET" })
   );
 
 const CREATE_MESSAGES: Record<CreateSessionRefusal, string> = {
-  entity_not_in_scope: "You are not a staff member of this entity.",
+  entity_not_in_scope:
+    "Your role for this entity does not let you do this operation.",
   entity_inactive: "This entity is not active.",
   entity_cannot_give_courses:
     "This entity cannot give courses. Select a CEA or the transit authority.",

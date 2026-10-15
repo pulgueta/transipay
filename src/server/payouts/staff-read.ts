@@ -1,18 +1,15 @@
 import "@tanstack/react-start/server-only";
-import { and, desc, eq, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, lt } from "drizzle-orm";
 
 import type { Database } from "@/server/db/client";
 import { toPage } from "@/server/db/pagination";
 import { entity, entityBankAccount } from "@/server/db/schema/entities";
 import { payout } from "@/server/db/schema/payments";
 import type { PayoutStatus } from "@/server/db/schema/payments";
+import { entityScopeFilter } from "@/server/staff/scope";
 import type { StaffScope } from "@/server/staff/scope";
 
-/** Limits the rows to the entities in the scope. */
-const scopeFilter = (scope: StaffScope) =>
-  scope.kind === "all" ? undefined : inArray(entity.id, scope.entityIds);
-
-/** The payouts of the entities in the scope, newest first, with an optional status filter. Keyset on `id`. */
+/** The payouts of the entities where the role has `payout: read`, newest first, with an optional status filter. Keyset on `id`. */
 export const listPayouts = async (
   database: Database,
   input: {
@@ -38,7 +35,7 @@ export const listPayouts = async (
     .innerJoin(entity, eq(entity.id, payout.entityId))
     .where(
       and(
-        scopeFilter(input.scope),
+        entityScopeFilter(entity.id, input.scope, { payout: ["read"] }),
         input.status === undefined
           ? undefined
           : eq(payout.status, input.status),
@@ -50,7 +47,7 @@ export const listPayouts = async (
   return toPage(rows, input.limit);
 };
 
-/** The active entities in the scope that can receive a payout now: each one has a default bank account. */
+/** The active entities where the role has `payout: create` that can receive a payout now: each one has a default bank account. */
 export const listPayoutTargets = async (
   database: Database,
   scope: StaffScope
@@ -65,5 +62,10 @@ export const listPayoutTargets = async (
         eq(entityBankAccount.isDefault, true)
       )
     )
-    .where(and(eq(entity.isActive, true), scopeFilter(scope)))
+    .where(
+      and(
+        eq(entity.isActive, true),
+        entityScopeFilter(entity.id, scope, { payout: ["create"] })
+      )
+    )
     .orderBy(entity.name);

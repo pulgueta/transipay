@@ -96,7 +96,10 @@ describe("staff appointments", () => {
       actorId: world.actorId,
       appointmentId: world.appointmentId,
       status: "attended",
-      scope: { kind: "entities", entityIds: [world.entityId] },
+      scope: {
+        kind: "entities",
+        memberships: [{ entityId: world.entityId, role: "scheduler" as const }],
+      },
     });
 
     expect(outcome.ok).toBeTruthy();
@@ -135,7 +138,12 @@ describe("staff appointments", () => {
         actorId: world.actorId,
         appointmentId: other.appointmentId,
         status: "attended",
-        scope: { kind: "entities", entityIds: [world.entityId] },
+        scope: {
+          kind: "entities",
+          memberships: [
+            { entityId: world.entityId, role: "scheduler" as const },
+          ],
+        },
       })
     ).resolves.toStrictEqual({ ok: false, reason: "appointment_not_found" });
     await expect(
@@ -175,7 +183,10 @@ describe("staff appointments", () => {
     const other = await seedWorld();
 
     const page = await listStaffAppointments(appDatabase, {
-      scope: { kind: "entities", entityIds: [mine.entityId] },
+      scope: {
+        kind: "entities",
+        memberships: [{ entityId: mine.entityId, role: "scheduler" as const }],
+      },
       limit: 100,
     });
     const ids = page.items.map((item) => item.id);

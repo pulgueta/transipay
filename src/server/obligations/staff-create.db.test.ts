@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { schema } from "@/server/db/client";
 import type { Database } from "@/server/db/client";
 import { createTestDatabase } from "@/server/db/testing";
+import { staffScopeFor } from "@/server/staff/scope";
 
 import { createFine, createProcedure } from "./staff-create";
 
@@ -260,7 +261,10 @@ describe("staff obligations", () => {
   it("refuses a fine or a procedure for an entity outside the staff scope", async () => {
     const world = await seedWorld();
     const ownEntityId = await seedEntity();
-    const scope = { kind: "entities" as const, entityIds: [ownEntityId] };
+    const scope = {
+      kind: "entities" as const,
+      memberships: [{ entityId: ownEntityId, role: "supervisor" as const }],
+    };
 
     await expect(
       createFine(appDatabase, { ...fineInput(world), scope })
@@ -288,9 +292,39 @@ describe("staff obligations", () => {
     const world = await seedWorld();
     const outcome = await createFine(appDatabase, {
       ...fineInput(world),
-      scope: { kind: "entities", entityIds: [world.entityId] },
+      scope: {
+        kind: "entities",
+        memberships: [
+          { entityId: world.entityId, role: "supervisor" as const },
+        ],
+      },
     });
 
     expect(outcome.ok).toBeTruthy();
+  });
+
+  it("uses the role of the user in each entity, not the platform role", async () => {
+    const world = await seedWorld();
+    const entityB = world.entityId;
+    const entityA = await seedEntity();
+    // A platform supervisor who is a supervisor in entity A and only a cashier in entity B.
+    await database.pool.query(
+      `insert into staff_member (user_id, entity_id, role) values ($1, $2, 'supervisor'), ($1, $3, 'cashier')`,
+      [world.actorId, entityA, entityB]
+    );
+    const scope = await staffScopeFor(appDatabase, {
+      id: world.actorId,
+      role: "supervisor",
+    });
+
+    await expect(
+      createFine(appDatabase, { ...fineInput(world), scope })
+    ).resolves.toStrictEqual({ ok: false, reason: "entity_not_in_scope" });
+    const inA = await createFine(appDatabase, {
+      ...fineInput(world),
+      entityId: entityA,
+      scope,
+    });
+    expect(inA.ok).toBeTruthy();
   });
 });

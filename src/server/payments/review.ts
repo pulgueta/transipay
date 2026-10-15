@@ -1,5 +1,5 @@
 import "@tanstack/react-start/server-only";
-import { and, desc, eq, inArray, isNotNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, lt, sql } from "drizzle-orm";
 
 import type { Database } from "@/server/db/client";
 import { toPage } from "@/server/db/pagination";
@@ -8,13 +8,12 @@ import { citizen } from "@/server/db/schema/citizens";
 import { obligation } from "@/server/db/schema/obligations";
 import { payment, paymentAttempt } from "@/server/db/schema/payments";
 import { runAsActor } from "@/server/db/with-actor";
+import { entityScopeFilter } from "@/server/staff/scope";
 import type { StaffScope } from "@/server/staff/scope";
 
-/** Limits the rows to the obligations of the entities in the scope. Needs the obligation join. */
+/** Limits the rows to the obligations of the entities where the role has `payment: review`. Needs the obligation join. */
 const scopeFilter = (scope: StaffScope) =>
-  scope.kind === "all"
-    ? undefined
-    : inArray(obligation.entityId, scope.entityIds);
+  entityScopeFilter(obligation.entityId, scope, { payment: ["review"] });
 
 /**
  * The attempts that wait for staff: a review reason is set (see `PAYMENT_ATTEMPT_REVIEW_REASONS`).

@@ -34,7 +34,10 @@ describe("staff payout reads", () => {
     });
 
     const scoped = await listPayouts(appDatabase, {
-      scope: { kind: "entities", entityIds: [own.entityId] },
+      scope: {
+        kind: "entities",
+        memberships: [{ entityId: own.entityId, role: "admin" as const }],
+      },
       limit: 100,
     });
     expect(scoped.items.map((item) => item.id)).toStrictEqual([ownPayout.id]);
@@ -54,7 +57,7 @@ describe("staff payout reads", () => {
 
     const scoped = await listPayoutTargets(appDatabase, {
       kind: "entities",
-      entityIds: [own.entityId],
+      memberships: [{ entityId: own.entityId, role: "admin" as const }],
     });
     expect(scoped.map((row) => row.id)).toStrictEqual([own.entityId]);
 

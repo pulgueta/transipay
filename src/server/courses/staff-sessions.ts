@@ -1,5 +1,5 @@
 import "@tanstack/react-start/server-only";
-import { and, desc, eq, inArray, lt, sql } from "drizzle-orm";
+import { and, desc, eq, lt, sql } from "drizzle-orm";
 
 import { canGiveCourses } from "@/lib/courses/course-entities";
 import type { Database } from "@/server/db/client";
@@ -7,13 +7,8 @@ import { toPage } from "@/server/db/pagination";
 import { branch, entity } from "@/server/db/schema/entities";
 import { courseEnrollment, courseSession } from "@/server/db/schema/scheduling";
 import { runAsActor } from "@/server/db/with-actor";
-import { isInScope } from "@/server/staff/scope";
+import { entityRoleAllows, entityScopeFilter } from "@/server/staff/scope";
 import type { StaffScope } from "@/server/staff/scope";
-
-const scopeFilter = (scope: StaffScope) =>
-  scope.kind === "all"
-    ? undefined
-    : inArray(courseSession.entityId, scope.entityIds);
 
 /** The course sessions of the scope, newest first, with the count of enrollments that are not cancelled. */
 export const listCourseSessions = async (
@@ -42,7 +37,9 @@ export const listCourseSessions = async (
     .innerJoin(branch, eq(branch.id, courseSession.branchId))
     .where(
       and(
-        scopeFilter(input.scope),
+        entityScopeFilter(courseSession.entityId, input.scope, {
+          course: ["create"],
+        }),
         input.cursor === undefined
           ? undefined
           : lt(courseSession.id, input.cursor)
@@ -89,7 +86,7 @@ export const createCourseSession = async (
   database: Database,
   input: CreateSessionInput
 ): Promise<CreateSessionOutcome> => {
-  if (!isInScope(input.scope, input.entityId)) {
+  if (!entityRoleAllows(input.scope, input.entityId, { course: ["create"] })) {
     return { ok: false, reason: "entity_not_in_scope" };
   }
   if (input.endsAt <= input.startsAt) {

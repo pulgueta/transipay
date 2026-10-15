@@ -93,7 +93,7 @@ type World = Awaited<ReturnType<typeof seedWorld>>;
 
 const scopeOf = (world: World) => ({
   kind: "entities" as const,
-  entityIds: [world.ceaId],
+  memberships: [{ entityId: world.ceaId, role: "scheduler" as const }],
 });
 
 const discountOf = async (obligationId: string) => {
