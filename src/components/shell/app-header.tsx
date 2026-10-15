@@ -1,6 +1,5 @@
 import { IconLogout, IconMenu2, IconUserCircle } from "@tabler/icons-react";
 import { Link } from "@tanstack/react-router";
-import type { LinkProps } from "@tanstack/react-router";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -23,33 +22,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import type { AppSession } from "@/lib/auth/guards";
-import { isStaff } from "@/lib/auth/roles";
 import { useSignOut } from "@/lib/auth/use-sign-out";
 
+import { navLinksFor } from "./nav-links";
 import { ThemeToggle } from "./theme-toggle";
-
-interface NavLink {
-  to: LinkProps["to"];
-  label: string;
-}
-
-/** The pages of a signed-in citizen. */
-const CITIZEN_LINKS: NavLink[] = [
-  { to: "/obligations", label: "Obligations" },
-  { to: "/appointments", label: "Appointments" },
-  { to: "/courses", label: "Courses" },
-];
-
-const STAFF_LINK: NavLink = { to: "/staff", label: "Staff" };
-
-const navLinks = (session: AppSession | null) => {
-  if (!session) {
-    return [];
-  }
-  return isStaff(session.user.role)
-    ? [...CITIZEN_LINKS, STAFF_LINK]
-    : [...CITIZEN_LINKS];
-};
 
 const initials = (name: string) =>
   name
@@ -148,7 +124,7 @@ const MobileMenu = ({ session }: { session: AppSession | null }) => {
           >
             Home
           </SheetClose>
-          {navLinks(session).map((link) => (
+          {navLinksFor(session).map((link) => (
             <SheetClose
               className="data-[status=active]:bg-muted rounded-md px-2 py-2 text-base font-medium"
               key={link.to}
@@ -215,7 +191,7 @@ export const AppHeader = ({ session }: { session: AppSession | null }) => (
         Transipay
       </Link>
       <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
-        {navLinks(session).map((link) => (
+        {navLinksFor(session).map((link) => (
           <Link
             className="text-muted-foreground hover:text-foreground data-[status=active]:text-foreground rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors"
             key={link.to}
