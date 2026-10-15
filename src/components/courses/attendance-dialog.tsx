@@ -16,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNow } from "@/lib/use-now";
 import {
   completeEnrollmentFn,
   listSessionEnrollmentsFn,
@@ -154,10 +155,9 @@ export const AttendanceDialog = ({
   session: { id: string; endsAt: Date };
 }) => {
   const [open, setOpen] = useState(false);
-  // The time at mount. The server checks again with the database clock.
-  // oxlint-disable-next-line react/hook-use-state -- The time is fixed at mount. Nothing sets it later.
-  const [mountedAt] = useState(Date.now);
-  const ended = session.endsAt.getTime() <= mountedAt;
+  // The device time, again each 30 seconds. The server checks again with the database clock.
+  const now = useNow(30_000);
+  const ended = session.endsAt.getTime() <= now;
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>

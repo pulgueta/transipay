@@ -49,6 +49,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { canUser } from "@/lib/auth/permissions";
 import { canGiveCourses } from "@/lib/courses/course-entities";
 import { bogotaWallClockToInstant } from "@/lib/dates";
+import { useNow } from "@/lib/use-now";
 import {
   listStaffAppointmentsFn,
   updateAppointmentStatusFn,
@@ -107,12 +108,14 @@ const OUTCOME_LABELS: Record<StaffAppointmentOutcome, string> = {
   no_show: "No show",
 };
 
+/** How often the time gates of the page read the time again. */
+const TIME_GATE_INTERVAL_MS = 30_000;
+
 /** The two close actions of a scheduled appointment. They are off until the appointment time. */
 const AppointmentActions = ({ row }: { row: AppointmentRow }) => {
-  // The time at mount. The server checks again with the database clock.
-  // oxlint-disable-next-line react/hook-use-state -- The time is fixed at mount. Nothing sets it later.
-  const [mountedAt] = useState(Date.now);
-  const notStarted = row.scheduledAt.getTime() > mountedAt;
+  // The device time, again each 30 seconds. The server checks again with the database clock.
+  const now = useNow(TIME_GATE_INTERVAL_MS);
+  const notStarted = row.scheduledAt.getTime() > now;
   const queryClient = useQueryClient();
   const updateStatus = useServerFn(updateAppointmentStatusFn);
   const update = useMutation({
