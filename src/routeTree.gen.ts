@@ -16,6 +16,7 @@ import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as StaffRouteRouteImport } from './routes/staff/route'
 import { Route as PaymentsPaymentIdRouteImport } from './routes/payments/$paymentId'
 import { Route as StaffIndexRouteImport } from './routes/staff/index'
+import { Route as StaffPayoutsRouteImport } from './routes/staff/payouts'
 import { Route as StaffUsersRouteImport } from './routes/staff/users'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiJobsRunRouteImport } from './routes/api/jobs/run'
@@ -57,6 +58,11 @@ const StaffIndexRoute = StaffIndexRouteImport.update({
   path: '/',
   getParentRoute: () => StaffRouteRoute,
 } as any)
+const StaffPayoutsRoute = StaffPayoutsRouteImport.update({
+  id: '/payouts',
+  path: '/payouts',
+  getParentRoute: () => StaffRouteRoute,
+} as any)
 const StaffUsersRoute = StaffUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/payments/$paymentId': typeof PaymentsPaymentIdRoute
+  '/staff/payouts': typeof StaffPayoutsRoute
   '/staff/users': typeof StaffUsersRoute
   '/staff/': typeof StaffIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/payments/$paymentId': typeof PaymentsPaymentIdRoute
+  '/staff/payouts': typeof StaffPayoutsRoute
   '/staff/users': typeof StaffUsersRoute
   '/staff': typeof StaffIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/payments/$paymentId': typeof PaymentsPaymentIdRoute
+  '/staff/payouts': typeof StaffPayoutsRoute
   '/staff/users': typeof StaffUsersRoute
   '/staff/': typeof StaffIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/payments/$paymentId'
+    | '/staff/payouts'
     | '/staff/users'
     | '/staff/'
     | '/api/auth/$'
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/payments/$paymentId'
+    | '/staff/payouts'
     | '/staff/users'
     | '/staff'
     | '/api/auth/$'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/payments/$paymentId'
+    | '/staff/payouts'
     | '/staff/users'
     | '/staff/'
     | '/api/auth/$'
@@ -233,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffIndexRouteImport
       parentRoute: typeof StaffRouteRoute
     }
+    '/staff/payouts': {
+      id: '/staff/payouts'
+      path: '/payouts'
+      fullPath: '/staff/payouts'
+      preLoaderRoute: typeof StaffPayoutsRouteImport
+      parentRoute: typeof StaffRouteRoute
+    }
     '/staff/users': {
       id: '/staff/users'
       path: '/users'
@@ -272,11 +291,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface StaffRouteRouteChildren {
+  StaffPayoutsRoute: typeof StaffPayoutsRoute
   StaffUsersRoute: typeof StaffUsersRoute
   StaffIndexRoute: typeof StaffIndexRoute
 }
 
 const StaffRouteRouteChildren: StaffRouteRouteChildren = {
+  StaffPayoutsRoute: StaffPayoutsRoute,
   StaffUsersRoute: StaffUsersRoute,
   StaffIndexRoute: StaffIndexRoute,
 }
