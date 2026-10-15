@@ -174,6 +174,34 @@ describe("staff obligations", () => {
     });
   });
 
+  it("refuses a used number when a concurrent insert commits the same number first", async () => {
+    const world = await seedWorld();
+    const input = fineInput(world);
+    // The other insert is not committed yet, so the check for a used number finds nothing.
+    const other = await database.pool.connect();
+    try {
+      await other.query("begin");
+      await other.query(
+        `insert into obligation (citizen_id, entity_id, kind, number, amount_in_cents)
+         values ($1, $2, 'fine', $3, 1000)`,
+        [world.citizenId, world.entityId, input.number]
+      );
+      const pending = createFine(appDatabase, input);
+      // Let the insert of `createFine` wait on the unique index, then commit the other insert.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 200);
+      });
+      await other.query("commit");
+
+      await expect(pending).resolves.toStrictEqual({
+        ok: false,
+        reason: "number_in_use",
+      });
+    } finally {
+      other.release();
+    }
+  });
+
   it("creates a procedure with the amount of its type, and refuses a type of another entity", async () => {
     const world = await seedWorld();
     const number = `P-${unique()}`;
