@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { canCancelEnrollment, enrollmentDecision } from "./enrollment";
+import {
+  canCancelEnrollment,
+  courseDiscountInCents,
+  enrollmentDecision,
+} from "./enrollment";
 
 const now = new Date("2026-10-14T15:00:00Z");
 const session = {
@@ -119,5 +123,22 @@ describe(canCancelEnrollment, () => {
         now
       )
     ).toBeFalsy();
+  });
+});
+
+describe(courseDiscountInCents, () => {
+  it("gives the percent of the amount", () => {
+    expect(courseDiscountInCents(100_000, 50)).toBe(50_000);
+    expect(courseDiscountInCents(5_600_000, 25)).toBe(1_400_000);
+  });
+
+  it("rounds to the nearest cent", () => {
+    expect(courseDiscountInCents(333, 50)).toBe(167);
+    expect(courseDiscountInCents(999, 33)).toBe(330);
+  });
+
+  it("gives zero for zero percent and the full amount for 100 percent", () => {
+    expect(courseDiscountInCents(100_000, 0)).toBe(0);
+    expect(courseDiscountInCents(100_000, 100)).toBe(100_000);
   });
 });

@@ -23,6 +23,7 @@ import { useTanStackTableDevtools } from "@tanstack/react-table-devtools";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 
+import { AttendanceDialog } from "@/components/courses/attendance-dialog";
 import { DataTable } from "@/components/data-table/data-table";
 import { useAppForm } from "@/components/form/use-app-form";
 import { formatDateTime } from "@/components/staff/format";
@@ -433,6 +434,11 @@ const sessionColumns = sessionHelper.columns([
     header: ({ column }) => <SortableHeader column={column} label="Discount" />,
     sortFn: "basic",
     cell: ({ getValue }) => <Badge variant="secondary">{getValue()}%</Badge>,
+  }),
+  sessionHelper.display({
+    id: "actions",
+    header: () => <span className="sr-only">Actions</span>,
+    cell: ({ row }) => <AttendanceDialog session={row.original} />,
   }),
 ]);
 

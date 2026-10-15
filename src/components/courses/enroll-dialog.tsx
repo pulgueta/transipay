@@ -96,8 +96,9 @@ export const EnrollDialog = ({
           <DialogHeader>
             <DialogTitle>Enroll in the course</DialogTitle>
             <DialogDescription>
-              Session on {formatBogotaDateTime(startsAt)}. When you complete the
-              course, the fine gets a {discountPercent}% discount.
+              Session on {formatBogotaDateTime(startsAt)}. When staff record
+              that you attended, the fine gets a {discountPercent}% discount, if
+              you did not pay it yet.
             </DialogDescription>
           </DialogHeader>
           <FormError message={formError} />

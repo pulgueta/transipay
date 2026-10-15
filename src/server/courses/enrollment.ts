@@ -67,3 +67,7 @@ export const canCancelEnrollment = (
 ) =>
   enrollment.status === "enrolled" &&
   enrollment.startsAt.getTime() > now.getTime();
+
+/** The discount that a course attendance gives on the fine amount, rounded to the nearest cent. */
+export const courseDiscountInCents = (amountInCents: number, percent: number) =>
+  Math.round((amountInCents * percent) / 100);

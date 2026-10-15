@@ -7,6 +7,11 @@ import { httpError } from "@/server/http-error";
 import { requirePermission } from "@/server/middleware/auth";
 import { staffScopeFor } from "@/server/staff/scope";
 
+import { listSessionEnrollments, recordAttendance } from "./staff-attendance";
+import type {
+  AttendanceOutcome,
+  RecordAttendanceOutcome,
+} from "./staff-attendance";
 import { createCourseSession, listCourseSessions } from "./staff-sessions";
 import type { CreateSessionRefusal } from "./staff-sessions";
 
@@ -68,3 +73,68 @@ export const createCourseSessionFn = createServerFn({ method: "POST" })
     }
     return outcome.session;
   });
+
+/** The enrollments of a session of the entities of the staff member, for the attendance dialog. */
+export const listSessionEnrollmentsFn = createServerFn({ method: "GET" })
+  .middleware([requirePermission({ course: ["update"] })])
+  .validator(z.object({ courseSessionId: z.uuid() }))
+  .handler(async ({ context, data }) => {
+    const rows = await listSessionEnrollments(db, {
+      courseSessionId: data.courseSessionId,
+      scope: await staffScopeFor(db, context.user),
+    });
+    if (rows === null) {
+      throw httpError(404, "We cannot find this course session.");
+    }
+    return rows;
+  });
+
+const ATTENDANCE_MESSAGES: Record<
+  Extract<RecordAttendanceOutcome, { ok: false }>["reason"],
+  string
+> = {
+  enrollment_not_found: "We cannot find this enrollment.",
+  not_enrolled: "The attendance of this enrollment is already recorded.",
+  session_not_started:
+    "This session did not start. You can record the attendance after its start.",
+};
+
+/** Records the outcome and returns the enrollment and the obligation as stored after the write. */
+const attend = async (
+  user: { id: string; role?: string | null },
+  actorId: string,
+  enrollmentId: string,
+  outcome: AttendanceOutcome
+) => {
+  const result = await recordAttendance(db, {
+    actorId,
+    enrollmentId,
+    outcome,
+    scope: await staffScopeFor(db, user),
+  });
+  if (!result.ok) {
+    throw httpError(
+      result.reason === "enrollment_not_found" ? 404 : 409,
+      ATTENDANCE_MESSAGES[result.reason]
+    );
+  }
+  return { enrollment: result.enrollment, obligation: result.obligation };
+};
+
+/** Records that the citizen completed the course. The fine gets the session discount one time (see `recordAttendance`). */
+export const completeEnrollmentFn = createServerFn({ method: "POST" })
+  .middleware([requirePermission({ course: ["update"] })])
+  .validator(z.object({ enrollmentId: z.uuid() }))
+  .handler(
+    async ({ context, data }) =>
+      await attend(context.user, context.actorId, data.enrollmentId, "attended")
+  );
+
+/** Records that the citizen did not come to the session. The fine gets no discount. */
+export const markEnrollmentAbsentFn = createServerFn({ method: "POST" })
+  .middleware([requirePermission({ course: ["update"] })])
+  .validator(z.object({ enrollmentId: z.uuid() }))
+  .handler(
+    async ({ context, data }) =>
+      await attend(context.user, context.actorId, data.enrollmentId, "absent")
+  );
