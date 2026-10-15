@@ -44,15 +44,18 @@ const SignUpPage = () => {
         ? "An account with this email exists. Sign in instead."
         : (error.message ?? "We could not create the account. Try again.");
     }
-    await reloadForNewSession(queryClient, router);
+    let linked = true;
     try {
       await linkCitizen({ data: { documentType, documentNumber } });
     } catch {
-      // The account exists and the user is signed in. The account page shows the document form again.
-      await navigate({ to: "/account" });
-      return null;
+      linked = false;
     }
-    await navigate({ href: redirectTo });
+    // Load the routes and queries again only after the link, so that no page caches the account without its citizen.
+    await reloadForNewSession(queryClient, router);
+    // When the link is refused, the account exists and the user is signed in. The account page shows the document form again.
+    await (linked
+      ? navigate({ href: redirectTo })
+      : navigate({ to: "/account" }));
     return null;
   };
 
