@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { setTimeout as sleep } from "node:timers/promises";
 
 import { drizzle } from "drizzle-orm/node-postgres";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
@@ -189,9 +190,7 @@ describe("staff obligations", () => {
       );
       const pending = createFine(appDatabase, input);
       // Let the insert of `createFine` wait on the unique index, then commit the other insert.
-      await new Promise((resolve) => {
-        setTimeout(resolve, 200);
-      });
+      await sleep(200);
       await other.query("commit");
 
       await expect(pending).resolves.toStrictEqual({

@@ -1,5 +1,6 @@
 import "@tanstack/react-start/server-only";
 import { and, eq } from "drizzle-orm";
+import { DatabaseError } from "pg";
 
 import type { Database, Transaction } from "@/server/db/client";
 import { citizen, vehicle } from "@/server/db/schema/citizens";
@@ -157,16 +158,12 @@ const insertObligation = async (
   return stored;
 };
 
-/** True when the error is the unique violation of the obligation number for the entity. */
-const isNumberInUseError = (error: unknown): boolean => {
-  const cause: unknown =
-    error instanceof Error && error.cause !== undefined ? error.cause : error;
+/** True when the error (or its cause) is the unique violation of the obligation number for the entity. */
+const isNumberInUseError = (error: Error) => {
+  const cause = error.cause instanceof DatabaseError ? error.cause : error;
   return (
-    typeof cause === "object" &&
-    cause !== null &&
-    "code" in cause &&
+    cause instanceof DatabaseError &&
     cause.code === "23505" &&
-    "constraint" in cause &&
     cause.constraint === "obligation_entity_id_number_key"
   );
 };
@@ -181,7 +178,7 @@ const refuseUsedNumber = async (
   try {
     return await create();
   } catch (error) {
-    if (isNumberInUseError(error)) {
+    if (error instanceof Error && isNumberInUseError(error)) {
       return { ok: false, reason: "number_in_use" };
     }
     throw error;
