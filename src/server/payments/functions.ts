@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { serverEnv } from "@/env/server";
 import { db } from "@/server/db/client";
+import { pageInputSchema } from "@/server/db/pagination";
 import { citizen } from "@/server/db/schema/citizens";
 import { payment, paymentAttempt } from "@/server/db/schema/payments";
 import { httpError, throwNotFound } from "@/server/http-error";
@@ -16,6 +17,7 @@ import { canStillSettle, checkoutExpiresAt } from "./checkout";
 import { createCheckout } from "./create-checkout";
 import type { CheckoutRefusal } from "./create-checkout";
 import { reconcilePaymentWithWompi } from "./reconcile";
+import { clearPaymentReview, listPaymentsUnderReview } from "./review";
 
 /** The messages for a refused checkout. The citizen reads them, so each one says what to do next. */
 const CHECKOUT_MESSAGES: Record<
@@ -217,4 +219,33 @@ export const refreshPaymentFn = createServerFn({ method: "POST" })
       );
     }
     return await readPaymentView(current.id, context.user);
+  });
+
+/** The payment attempts that wait for staff (see `listPaymentsUnderReview`). */
+export const listPaymentsUnderReviewFn = createServerFn({ method: "GET" })
+  .middleware([requirePermission({ payment: ["review"] })])
+  .validator(pageInputSchema)
+  .handler(async ({ data }) => await listPaymentsUnderReview(db, data));
+
+const CLEAR_REVIEW_MESSAGES = {
+  attempt_not_found: "We cannot find this payment attempt.",
+  not_under_review: "This payment attempt is not under review.",
+} as const;
+
+/** Marks an attempt as examined: its review reason becomes null. Returns the attempt as stored after the write. */
+export const clearPaymentReviewFn = createServerFn({ method: "POST" })
+  .middleware([requirePermission({ payment: ["review"] })])
+  .validator(z.object({ attemptId: z.uuid() }))
+  .handler(async ({ context, data }) => {
+    const outcome = await clearPaymentReview(db, {
+      actorId: context.actorId,
+      attemptId: data.attemptId,
+    });
+    if (!outcome.ok) {
+      throw httpError(
+        outcome.reason === "attempt_not_found" ? 404 : 409,
+        CLEAR_REVIEW_MESSAGES[outcome.reason]
+      );
+    }
+    return outcome.attempt;
   });
