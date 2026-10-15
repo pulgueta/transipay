@@ -8,7 +8,6 @@ import type { Icon } from "@tabler/icons-react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
-import { PATHS } from "@/lib/paths";
 
 interface Service {
   icon: Icon;
@@ -83,14 +82,14 @@ const Hero = ({ signedIn }: { signedIn: boolean }) => (
           <>
             <Button
               nativeButton={false}
-              render={<Link to={PATHS.obligations} />}
+              render={<Link to="/obligations" />}
               size="lg"
             >
               Find my obligations
             </Button>
             <Button
               nativeButton={false}
-              render={<Link to={PATHS.appointments} />}
+              render={<Link to="/appointments" />}
               size="lg"
               variant="outline"
             >
@@ -102,7 +101,7 @@ const Hero = ({ signedIn }: { signedIn: boolean }) => (
             <Button
               nativeButton={false}
               render={
-                <Link search={{ redirect: PATHS.obligations }} to="/sign-in" />
+                <Link search={{ redirect: "/obligations" }} to="/sign-in" />
               }
               size="lg"
             >

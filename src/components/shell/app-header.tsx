@@ -1,5 +1,6 @@
 import { IconLogout, IconMenu2, IconUserCircle } from "@tabler/icons-react";
 import { Link } from "@tanstack/react-router";
+import type { LinkProps } from "@tanstack/react-router";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -24,23 +25,22 @@ import {
 import type { AppSession } from "@/lib/auth/guards";
 import { isStaff } from "@/lib/auth/roles";
 import { useSignOut } from "@/lib/auth/use-sign-out";
-import { PATHS } from "@/lib/paths";
 
 import { ThemeToggle } from "./theme-toggle";
 
 interface NavLink {
-  to: string;
+  to: LinkProps["to"];
   label: string;
 }
 
 /** The pages of a signed-in citizen. */
 const CITIZEN_LINKS: NavLink[] = [
-  { to: PATHS.obligations, label: "Obligations" },
-  { to: PATHS.appointments, label: "Appointments" },
-  { to: PATHS.courses, label: "Courses" },
+  { to: "/obligations", label: "Obligations" },
+  { to: "/appointments", label: "Appointments" },
+  { to: "/courses", label: "Courses" },
 ];
 
-const STAFF_LINK: NavLink = { to: PATHS.staff, label: "Staff" };
+const STAFF_LINK: NavLink = { to: "/staff", label: "Staff" };
 
 const navLinks = (session: AppSession | null) => {
   if (!session) {

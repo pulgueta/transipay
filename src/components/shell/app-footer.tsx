@@ -1,12 +1,11 @@
 import { Link } from "@tanstack/react-router";
+import type { LinkProps } from "@tanstack/react-router";
 
-import { PATHS } from "@/lib/paths";
-
-const FOOTER_LINKS: { to: string; label: string }[] = [
+const FOOTER_LINKS: { to: LinkProps["to"]; label: string }[] = [
   { to: "/", label: "Home" },
-  { to: PATHS.obligations, label: "Obligations" },
-  { to: PATHS.appointments, label: "Appointments" },
-  { to: PATHS.courses, label: "Courses" },
+  { to: "/obligations", label: "Obligations" },
+  { to: "/appointments", label: "Appointments" },
+  { to: "/courses", label: "Courses" },
   { to: "/account", label: "Account" },
 ];
 
