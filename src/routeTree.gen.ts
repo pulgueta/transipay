@@ -13,7 +13,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as StaffRouteRouteImport } from './routes/staff/route'
 import { Route as PaymentsPaymentIdRouteImport } from './routes/payments/$paymentId'
+import { Route as StaffIndexRouteImport } from './routes/staff/index'
+import { Route as StaffUsersRouteImport } from './routes/staff/users'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiJobsRunRouteImport } from './routes/api/jobs/run'
 import { Route as ApiWebhooksWompiRouteImport } from './routes/api/webhooks/wompi'
@@ -39,10 +42,25 @@ const SignUpRoute = SignUpRouteImport.update({
   path: '/sign-up',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffRouteRoute = StaffRouteRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PaymentsPaymentIdRoute = PaymentsPaymentIdRouteImport.update({
   id: '/payments/$paymentId',
   path: '/payments/$paymentId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const StaffIndexRoute = StaffIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StaffRouteRoute,
+} as any)
+const StaffUsersRoute = StaffUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => StaffRouteRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -67,10 +85,13 @@ const ApiWebhooksWompiPayoutsRoute = ApiWebhooksWompiPayoutsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/staff': typeof StaffRouteRouteWithChildren
   '/account': typeof AccountRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/payments/$paymentId': typeof PaymentsPaymentIdRoute
+  '/staff/users': typeof StaffUsersRoute
+  '/staff/': typeof StaffIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/jobs/run': typeof ApiJobsRunRoute
   '/api/webhooks/wompi': typeof ApiWebhooksWompiRoute
@@ -82,6 +103,8 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/payments/$paymentId': typeof PaymentsPaymentIdRoute
+  '/staff/users': typeof StaffUsersRoute
+  '/staff': typeof StaffIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/jobs/run': typeof ApiJobsRunRoute
   '/api/webhooks/wompi': typeof ApiWebhooksWompiRoute
@@ -90,10 +113,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/staff': typeof StaffRouteRouteWithChildren
   '/account': typeof AccountRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/payments/$paymentId': typeof PaymentsPaymentIdRoute
+  '/staff/users': typeof StaffUsersRoute
+  '/staff/': typeof StaffIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/jobs/run': typeof ApiJobsRunRoute
   '/api/webhooks/wompi': typeof ApiWebhooksWompiRoute
@@ -103,10 +129,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/staff'
     | '/account'
     | '/sign-in'
     | '/sign-up'
     | '/payments/$paymentId'
+    | '/staff/users'
+    | '/staff/'
     | '/api/auth/$'
     | '/api/jobs/run'
     | '/api/webhooks/wompi'
@@ -118,6 +147,8 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/payments/$paymentId'
+    | '/staff/users'
+    | '/staff'
     | '/api/auth/$'
     | '/api/jobs/run'
     | '/api/webhooks/wompi'
@@ -125,10 +156,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/staff'
     | '/account'
     | '/sign-in'
     | '/sign-up'
     | '/payments/$paymentId'
+    | '/staff/users'
+    | '/staff/'
     | '/api/auth/$'
     | '/api/jobs/run'
     | '/api/webhooks/wompi'
@@ -137,6 +171,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  StaffRouteRoute: typeof StaffRouteRouteWithChildren
   AccountRoute: typeof AccountRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
@@ -177,12 +212,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignUpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff': {
+      id: '/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof StaffRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/payments/$paymentId': {
       id: '/payments/$paymentId'
       path: '/payments/$paymentId'
       fullPath: '/payments/$paymentId'
       preLoaderRoute: typeof PaymentsPaymentIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/staff/': {
+      id: '/staff/'
+      path: '/'
+      fullPath: '/staff/'
+      preLoaderRoute: typeof StaffIndexRouteImport
+      parentRoute: typeof StaffRouteRoute
+    }
+    '/staff/users': {
+      id: '/staff/users'
+      path: '/users'
+      fullPath: '/staff/users'
+      preLoaderRoute: typeof StaffUsersRouteImport
+      parentRoute: typeof StaffRouteRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -215,8 +271,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface StaffRouteRouteChildren {
+  StaffUsersRoute: typeof StaffUsersRoute
+  StaffIndexRoute: typeof StaffIndexRoute
+}
+
+const StaffRouteRouteChildren: StaffRouteRouteChildren = {
+  StaffUsersRoute: StaffUsersRoute,
+  StaffIndexRoute: StaffIndexRoute,
+}
+
+const StaffRouteRouteWithChildren = StaffRouteRoute._addFileChildren(
+  StaffRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  StaffRouteRoute: StaffRouteRouteWithChildren,
   AccountRoute: AccountRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
@@ -229,12 +300,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
