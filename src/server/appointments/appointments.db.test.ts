@@ -179,6 +179,34 @@ describe("appointments", () => {
       ).resolves.toStrictEqual({ ok: false, reason: "obligation_not_found" });
     });
 
+    it("refuses an obligation of another entity or another procedure type", async () => {
+      const { userId, citizenId, offer } = await seedScene();
+      const otherEntity = await seedOffer();
+      const otherTypeId = await queryId(
+        `insert into procedure_type (entity_id, code, name, amount_in_cents)
+         values ($1, $2, 'Plate change', 30000) returning id`,
+        [offer.entityId, unique()]
+      );
+      const obligationId = await seedProcedureObligation(citizenId, offer);
+
+      await expect(
+        bookAppointment(
+          appDatabase,
+          bookingInput(userId, otherEntity, { obligationId })
+        )
+      ).resolves.toStrictEqual({ ok: false, reason: "obligation_mismatch" });
+      await expect(
+        bookAppointment(
+          appDatabase,
+          bookingInput(
+            userId,
+            { ...offer, procedureTypeId: otherTypeId },
+            { obligationId }
+          )
+        )
+      ).resolves.toStrictEqual({ ok: false, reason: "obligation_mismatch" });
+    });
+
     it("refuses a time that is too soon and a user without a citizen record", async () => {
       const { userId, offer } = await seedScene();
 
@@ -292,7 +320,11 @@ describe("appointments", () => {
         })
       );
       expect(options.obligations).toStrictEqual([
-        expect.objectContaining({ id: obligationId }),
+        expect.objectContaining({
+          id: obligationId,
+          entityId: offer.entityId,
+          procedureTypeId: offer.procedureTypeId,
+        }),
       ]);
     });
   });

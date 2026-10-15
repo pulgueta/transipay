@@ -4,7 +4,11 @@ import { and, asc, desc, eq, exists, gte, lt } from "drizzle-orm";
 import type { Database, Transaction } from "@/server/db/client";
 import { citizen } from "@/server/db/schema/citizens";
 import { branch, entity } from "@/server/db/schema/entities";
-import { obligation, procedureType } from "@/server/db/schema/obligations";
+import {
+  obligation,
+  procedure,
+  procedureType,
+} from "@/server/db/schema/obligations";
 import { appointment } from "@/server/db/schema/scheduling";
 import { runAsActor } from "@/server/db/with-actor";
 
@@ -118,9 +122,11 @@ export const readBookingOptions = async (
             number: obligation.number,
             entityId: obligation.entityId,
             entityName: entity.name,
+            procedureTypeId: procedure.procedureTypeId,
           })
           .from(obligation)
           .innerJoin(entity, eq(entity.id, obligation.entityId))
+          .innerJoin(procedure, eq(procedure.obligationId, obligation.id))
           .where(
             and(
               eq(obligation.citizenId, citizenId),
@@ -148,7 +154,8 @@ export type BookRefusal =
   | "too_soon"
   | "branch_not_found"
   | "procedure_type_not_found"
-  | "obligation_not_found";
+  | "obligation_not_found"
+  | "obligation_mismatch";
 
 export type BookOutcome =
   | { ok: true; appointment: AppointmentView }
@@ -157,6 +164,7 @@ export type BookOutcome =
 /**
  * Books an appointment for the citizen of the user.
  * The branch and the procedure type must belong to the entity, and the obligation to the citizen.
+ * The obligation must also be a procedure of the same entity and procedure type as the appointment.
  * The composite foreign keys enforce the same rules, so a race cannot get past these checks.
  */
 export const bookAppointment = async (
@@ -203,8 +211,12 @@ export const bookAppointment = async (
 
     if (input.obligationId !== null) {
       const obligations = await tx
-        .select({ id: obligation.id })
+        .select({
+          entityId: procedure.entityId,
+          procedureTypeId: procedure.procedureTypeId,
+        })
         .from(obligation)
+        .innerJoin(procedure, eq(procedure.obligationId, obligation.id))
         .where(
           and(
             eq(obligation.id, input.obligationId),
@@ -213,8 +225,15 @@ export const bookAppointment = async (
             eq(obligation.status, "pending")
           )
         );
-      if (obligations.length === 0) {
+      const linked = obligations.at(0);
+      if (linked === undefined) {
         return { ok: false, reason: "obligation_not_found" };
+      }
+      if (
+        linked.entityId !== input.entityId ||
+        linked.procedureTypeId !== input.procedureTypeId
+      ) {
+        return { ok: false, reason: "obligation_mismatch" };
       }
     }
 

@@ -60,7 +60,7 @@ export const BookingForm = ({
     defaultValues: {
       entityId: prefilled?.entityId ?? "",
       branchId: "",
-      procedureTypeId: "",
+      procedureTypeId: prefilled?.procedureTypeId ?? "",
       obligationId: prefilled?.id ?? NO_OBLIGATION,
       scheduledAt: "",
     },
@@ -88,13 +88,6 @@ export const BookingForm = ({
     value: item.id,
     label: item.name,
   }));
-  const obligationItems = [
-    { value: NO_OBLIGATION, label: "No obligation" },
-    ...options.obligations.map((item) => ({
-      value: item.id,
-      label: `${item.number} · ${item.entityName}`,
-    })),
-  ];
 
   return (
     <form
@@ -110,9 +103,10 @@ export const BookingForm = ({
         <form.AppField
           listeners={{
             onChange: () => {
-              // A branch and a procedure type belong to one entity.
+              // A branch, a procedure type, and an obligation belong to one entity.
               form.setFieldValue("branchId", "");
               form.setFieldValue("procedureTypeId", "");
+              form.setFieldValue("obligationId", NO_OBLIGATION);
             },
           }}
           name="entityId"
@@ -154,7 +148,15 @@ export const BookingForm = ({
                     />
                   )}
                 </form.AppField>
-                <form.AppField name="procedureTypeId">
+                <form.AppField
+                  listeners={{
+                    onChange: () => {
+                      // An obligation is for one procedure type.
+                      form.setFieldValue("obligationId", NO_OBLIGATION);
+                    },
+                  }}
+                  name="procedureTypeId"
+                >
                   {(field) => (
                     <field.SelectField
                       items={typeItems}
@@ -171,17 +173,42 @@ export const BookingForm = ({
             );
           }}
         </form.Subscribe>
-        {options.obligations.length > 0 ? (
-          <form.AppField name="obligationId">
-            {(field) => (
-              <field.SelectField
-                items={obligationItems}
-                label="Pending procedure (optional)"
-                placeholder="No obligation"
-              />
-            )}
-          </form.AppField>
-        ) : null}
+        <form.Subscribe
+          selector={(state) => [
+            state.values.entityId,
+            state.values.procedureTypeId,
+          ]}
+        >
+          {([entityId, procedureTypeId]) => {
+            // Only the obligations of the selected entity and procedure type.
+            const matching = options.obligations.filter(
+              (item) =>
+                item.entityId === entityId &&
+                item.procedureTypeId === procedureTypeId
+            );
+            if (matching.length === 0) {
+              return null;
+            }
+            const obligationItems = [
+              { value: NO_OBLIGATION, label: "No obligation" },
+              ...matching.map((item) => ({
+                value: item.id,
+                label: `${item.number} · ${item.entityName}`,
+              })),
+            ];
+            return (
+              <form.AppField name="obligationId">
+                {(field) => (
+                  <field.SelectField
+                    items={obligationItems}
+                    label="Pending procedure (optional)"
+                    placeholder="No obligation"
+                  />
+                )}
+              </form.AppField>
+            );
+          }}
+        </form.Subscribe>
         <form.AppField name="scheduledAt">
           {(field) => (
             <field.DateTimeField

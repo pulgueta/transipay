@@ -23,6 +23,8 @@ const BOOK_MESSAGES: Record<BookRefusal, string> = {
     "This procedure is not available at the entity. Select another procedure.",
   obligation_not_found:
     "This procedure obligation is not pending. Book without an obligation.",
+  obligation_mismatch:
+    "This obligation is for a different entity or procedure. Select the entity and procedure of the obligation.",
 };
 
 const CANCEL_MESSAGES: Record<CancelRefusal, string> = {
