@@ -6,7 +6,14 @@ import { defineConfig } from "vite";
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
-  plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
+  plugins: [
+    // Console piping sends server logs to the browser and browser logs to the server.
+    // With TanStack Start, an error log goes around this loop again and again, so it is off.
+    devtools({ consolePiping: { enabled: false } }),
+    tailwindcss(),
+    tanstackStart(),
+    viteReact(),
+  ],
 });
 
 export default config;
