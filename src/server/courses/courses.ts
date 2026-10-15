@@ -244,19 +244,30 @@ export const enrollInCourse = async (
       return decision;
     }
 
-    const [inserted] = await tx
+    // One row per citizen and session (unique key). After a cancel, the same row becomes live again.
+    // Only a cancelled row changes. The checks above refuse a live enrollment.
+    const [stored] = await tx
       .insert(courseEnrollment)
       .values({
         courseSessionId: session.id,
         citizenId,
         obligationId: input.obligationId,
       })
+      .onConflictDoUpdate({
+        target: [courseEnrollment.courseSessionId, courseEnrollment.citizenId],
+        set: {
+          obligationId: input.obligationId,
+          status: "enrolled",
+          attendedAt: null,
+        },
+        setWhere: eq(courseEnrollment.status, "cancelled"),
+      })
       .returning({ id: courseEnrollment.id });
-    if (inserted === undefined) {
+    if (stored === undefined) {
       throw new Error("The enrollment insert returned no row.");
     }
     const rows = await enrollmentQuery(tx).where(
-      eq(courseEnrollment.id, inserted.id)
+      eq(courseEnrollment.id, stored.id)
     );
     const row = rows.at(0);
     if (row === undefined) {

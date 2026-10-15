@@ -202,6 +202,38 @@ describe("courses", () => {
     });
   });
 
+  describe("enrollment after a cancel", () => {
+    it("enrolls the citizen again in the same session, with the same or another fine", async () => {
+      const { userId, citizenId, fineId } = await seedScene();
+      const otherFineId = await seedFine(citizenId);
+      const sessionId = await seedSession();
+      const first = await enroll(userId, sessionId, fineId);
+      if (!first.ok) {
+        throw new Error(first.reason);
+      }
+      await cancelEnrollment(appDatabase, {
+        userId,
+        actorId: userId,
+        enrollmentId: first.enrollment.id,
+      });
+
+      const again = await enroll(userId, sessionId, otherFineId);
+
+      expect(again).toMatchObject({
+        ok: true,
+        enrollment: {
+          id: first.enrollment.id,
+          obligationId: otherFineId,
+          status: "enrolled",
+        },
+      });
+      await expect(enroll(userId, sessionId, fineId)).resolves.toStrictEqual({
+        ok: false,
+        reason: "already_enrolled",
+      });
+    });
+  });
+
   describe(listCourses, () => {
     it("lists the open sessions with the seats left, the enrollments, and the eligible fines", async () => {
       const { userId, citizenId, fineId } = await seedScene();
