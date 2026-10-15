@@ -24,6 +24,7 @@ import { FieldDescription, FieldGroup } from "@/components/ui/field";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { bogotaWallClockToInstant } from "@/lib/dates";
 import { formatAmount } from "@/lib/format-amount";
 import {
   listInfractionsFn,
@@ -162,8 +163,10 @@ const NewFineForm = () => {
               infractionId: input.infractionId,
               number: input.number,
               location: input.location,
-              // The browser reads the local time of the staff member and sends an instant.
-              occurredAt: new Date(input.occurredAt).toISOString(),
+              // The input is Bogota time, also on a device in another time zone.
+              occurredAt: bogotaWallClockToInstant(
+                input.occurredAt
+              ).toISOString(),
               agentCode: emptyToUndefined(input.agentCode),
               dueOn: emptyToUndefined(input.dueOn),
               plate: emptyToUndefined(input.plate),
@@ -224,7 +227,10 @@ const NewFineForm = () => {
           </form.AppField>
           <form.AppField name="occurredAt">
             {(field) => (
-              <field.TextField label="Occurred at" type="datetime-local" />
+              <field.TextField
+                label="Occurred at (Bogota time)"
+                type="datetime-local"
+              />
             )}
           </form.AppField>
           <form.AppField name="agentCode">
