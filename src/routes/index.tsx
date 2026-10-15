@@ -32,7 +32,7 @@ const SERVICES: Service[] = [
     icon: IconSchool,
     title: "Take a course for a fine discount",
     description:
-      "Enroll in a pedagogical course at a CEA. The discount applies to the fine when you complete it.",
+      "Enroll in a road safety course at a CEA. The discount applies to the fine when you attend.",
   },
   {
     icon: IconCalendarRepeat,
@@ -46,7 +46,7 @@ const PAYMENT_STEPS = [
   {
     title: "Find the obligation",
     description:
-      "Sign in with your document. Your fines and procedures appear with the amount due.",
+      "Sign in with your email and password. Your fines and procedures appear with the amount due.",
   },
   {
     title: "Pay through Wompi",
@@ -122,11 +122,11 @@ const Hero = ({ signedIn }: { signedIn: boolean }) => (
     <div className="lg:col-span-6">
       {/* Placeholder photo until the ITTB gives one. 4:3 keeps the space while it loads. */}
       <img
-        alt="A street with cars and motorcycles in Barrancabermeja"
+        alt="A road with vehicles"
         className="aspect-4/3 w-full rounded-lg border object-cover"
         fetchPriority="high"
         height={900}
-        src="https://picsum.photos/seed/transipay-barrancabermeja-transit/1200/900"
+        src="https://picsum.photos/seed/transipay-road-traffic-07/1200/900"
         width={1200}
       />
     </div>

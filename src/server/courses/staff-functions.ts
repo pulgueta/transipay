@@ -107,7 +107,7 @@ const ATTENDANCE_MESSAGES: Record<
   enrollment_not_found: "We cannot find this enrollment.",
   not_enrolled: "The attendance of this enrollment is already recorded.",
   not_ended:
-    "This session did not end. You can record the attendance after its end.",
+    "This session has not ended. You can record the attendance after it ends.",
   full_discount_not_supported:
     "The session discount makes the fine free. You cannot record this attendance, because a fine closes only with a payment.",
 };

@@ -144,7 +144,11 @@ const MobileMenu = ({ session }: { session: AppSession | null }) => {
               <SheetClose
                 nativeButton={false}
                 render={
-                  <Button render={<Link to="/account" />} variant="outline" />
+                  <Button
+                    nativeButton={false}
+                    render={<Link to="/account" />}
+                    variant="outline"
+                  />
                 }
               >
                 Account
@@ -164,14 +168,23 @@ const MobileMenu = ({ session }: { session: AppSession | null }) => {
               <SheetClose
                 nativeButton={false}
                 render={
-                  <Button render={<Link to="/sign-in" />} variant="outline" />
+                  <Button
+                    nativeButton={false}
+                    render={<Link to="/sign-in" />}
+                    variant="outline"
+                  />
                 }
               >
                 Sign in
               </SheetClose>
               <SheetClose
                 nativeButton={false}
-                render={<Button render={<Link to="/sign-up" />} />}
+                render={
+                  <Button
+                    nativeButton={false}
+                    render={<Link to="/sign-up" />}
+                  />
+                }
               >
                 Create account
               </SheetClose>

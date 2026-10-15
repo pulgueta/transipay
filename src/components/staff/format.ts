@@ -1,8 +1,8 @@
 const BOGOTA = "America/Bogota";
 
-/** Day, month, year, hour, and minute in Bogota time, for example "14 oct 2026, 09:30". */
+/** Day, month, year, hour, and minute in Bogota time, for example "Oct 14, 2026, 09:30". */
 export const formatDateTime = (value: Date | string) =>
-  new Intl.DateTimeFormat("es-CO", {
+  new Intl.DateTimeFormat("en-US", {
     timeZone: BOGOTA,
     day: "2-digit",
     month: "short",
@@ -14,7 +14,7 @@ export const formatDateTime = (value: Date | string) =>
 
 /** A `date` column value (YYYY-MM-DD), shown as a Bogota calendar day. */
 export const formatDay = (day: string) =>
-  new Intl.DateTimeFormat("es-CO", {
+  new Intl.DateTimeFormat("en-US", {
     timeZone: BOGOTA,
     day: "2-digit",
     month: "short",

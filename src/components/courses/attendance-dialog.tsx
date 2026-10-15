@@ -170,7 +170,7 @@ export const AttendanceDialog = ({
           <DialogDescription>
             {ended
               ? "Record the result for each citizen. When a citizen attended, the fine gets the session discount."
-              : "This session did not end. You can record the attendance after its end."}
+              : "This session has not ended. You can record the attendance after it ends."}
           </DialogDescription>
         </DialogHeader>
         {open ? (
