@@ -13,12 +13,19 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as StaffRouteRouteImport } from './routes/staff/route'
 import { Route as AppointmentsIndexRouteImport } from './routes/appointments/index'
 import { Route as AppointmentsNewRouteImport } from './routes/appointments/new'
 import { Route as CoursesIndexRouteImport } from './routes/courses/index'
 import { Route as ObligationsIndexRouteImport } from './routes/obligations/index'
 import { Route as ObligationsObligationIdRouteImport } from './routes/obligations/$obligationId'
 import { Route as PaymentsPaymentIdRouteImport } from './routes/payments/$paymentId'
+import { Route as StaffIndexRouteImport } from './routes/staff/index'
+import { Route as StaffObligationsRouteImport } from './routes/staff/obligations'
+import { Route as StaffPaymentsRouteImport } from './routes/staff/payments'
+import { Route as StaffPayoutsRouteImport } from './routes/staff/payouts'
+import { Route as StaffScheduleRouteImport } from './routes/staff/schedule'
+import { Route as StaffUsersRouteImport } from './routes/staff/users'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiJobsRunRouteImport } from './routes/api/jobs/run'
 import { Route as ApiWebhooksWompiRouteImport } from './routes/api/webhooks/wompi'
@@ -42,6 +49,11 @@ const SignInRoute = SignInRouteImport.update({
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StaffRouteRoute = StaffRouteRouteImport.update({
+  id: '/staff',
+  path: '/staff',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppointmentsIndexRoute = AppointmentsIndexRouteImport.update({
@@ -74,6 +86,36 @@ const PaymentsPaymentIdRoute = PaymentsPaymentIdRouteImport.update({
   path: '/payments/$paymentId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffIndexRoute = StaffIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StaffRouteRoute,
+} as any)
+const StaffObligationsRoute = StaffObligationsRouteImport.update({
+  id: '/obligations',
+  path: '/obligations',
+  getParentRoute: () => StaffRouteRoute,
+} as any)
+const StaffPaymentsRoute = StaffPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => StaffRouteRoute,
+} as any)
+const StaffPayoutsRoute = StaffPayoutsRouteImport.update({
+  id: '/payouts',
+  path: '/payouts',
+  getParentRoute: () => StaffRouteRoute,
+} as any)
+const StaffScheduleRoute = StaffScheduleRouteImport.update({
+  id: '/schedule',
+  path: '/schedule',
+  getParentRoute: () => StaffRouteRoute,
+} as any)
+const StaffUsersRoute = StaffUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => StaffRouteRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -97,15 +139,22 @@ const ApiWebhooksWompiPayoutsRoute = ApiWebhooksWompiPayoutsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/staff': typeof StaffRouteRouteWithChildren
   '/account': typeof AccountRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/appointments/new': typeof AppointmentsNewRoute
   '/obligations/$obligationId': typeof ObligationsObligationIdRoute
   '/payments/$paymentId': typeof PaymentsPaymentIdRoute
+  '/staff/obligations': typeof StaffObligationsRoute
+  '/staff/payments': typeof StaffPaymentsRoute
+  '/staff/payouts': typeof StaffPayoutsRoute
+  '/staff/schedule': typeof StaffScheduleRoute
+  '/staff/users': typeof StaffUsersRoute
   '/appointments/': typeof AppointmentsIndexRoute
   '/courses/': typeof CoursesIndexRoute
   '/obligations/': typeof ObligationsIndexRoute
+  '/staff/': typeof StaffIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/jobs/run': typeof ApiJobsRunRoute
   '/api/webhooks/wompi': typeof ApiWebhooksWompiRoute
@@ -119,9 +168,15 @@ export interface FileRoutesByTo {
   '/appointments/new': typeof AppointmentsNewRoute
   '/obligations/$obligationId': typeof ObligationsObligationIdRoute
   '/payments/$paymentId': typeof PaymentsPaymentIdRoute
+  '/staff/obligations': typeof StaffObligationsRoute
+  '/staff/payments': typeof StaffPaymentsRoute
+  '/staff/payouts': typeof StaffPayoutsRoute
+  '/staff/schedule': typeof StaffScheduleRoute
+  '/staff/users': typeof StaffUsersRoute
   '/appointments': typeof AppointmentsIndexRoute
   '/courses': typeof CoursesIndexRoute
   '/obligations': typeof ObligationsIndexRoute
+  '/staff': typeof StaffIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/jobs/run': typeof ApiJobsRunRoute
   '/api/webhooks/wompi': typeof ApiWebhooksWompiRoute
@@ -130,15 +185,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/staff': typeof StaffRouteRouteWithChildren
   '/account': typeof AccountRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
   '/appointments/new': typeof AppointmentsNewRoute
   '/obligations/$obligationId': typeof ObligationsObligationIdRoute
   '/payments/$paymentId': typeof PaymentsPaymentIdRoute
+  '/staff/obligations': typeof StaffObligationsRoute
+  '/staff/payments': typeof StaffPaymentsRoute
+  '/staff/payouts': typeof StaffPayoutsRoute
+  '/staff/schedule': typeof StaffScheduleRoute
+  '/staff/users': typeof StaffUsersRoute
   '/appointments/': typeof AppointmentsIndexRoute
   '/courses/': typeof CoursesIndexRoute
   '/obligations/': typeof ObligationsIndexRoute
+  '/staff/': typeof StaffIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/jobs/run': typeof ApiJobsRunRoute
   '/api/webhooks/wompi': typeof ApiWebhooksWompiRoute
@@ -148,15 +210,22 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/staff'
     | '/account'
     | '/sign-in'
     | '/sign-up'
     | '/appointments/new'
     | '/obligations/$obligationId'
     | '/payments/$paymentId'
+    | '/staff/obligations'
+    | '/staff/payments'
+    | '/staff/payouts'
+    | '/staff/schedule'
+    | '/staff/users'
     | '/appointments/'
     | '/courses/'
     | '/obligations/'
+    | '/staff/'
     | '/api/auth/$'
     | '/api/jobs/run'
     | '/api/webhooks/wompi'
@@ -170,9 +239,15 @@ export interface FileRouteTypes {
     | '/appointments/new'
     | '/obligations/$obligationId'
     | '/payments/$paymentId'
+    | '/staff/obligations'
+    | '/staff/payments'
+    | '/staff/payouts'
+    | '/staff/schedule'
+    | '/staff/users'
     | '/appointments'
     | '/courses'
     | '/obligations'
+    | '/staff'
     | '/api/auth/$'
     | '/api/jobs/run'
     | '/api/webhooks/wompi'
@@ -180,15 +255,22 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/staff'
     | '/account'
     | '/sign-in'
     | '/sign-up'
     | '/appointments/new'
     | '/obligations/$obligationId'
     | '/payments/$paymentId'
+    | '/staff/obligations'
+    | '/staff/payments'
+    | '/staff/payouts'
+    | '/staff/schedule'
+    | '/staff/users'
     | '/appointments/'
     | '/courses/'
     | '/obligations/'
+    | '/staff/'
     | '/api/auth/$'
     | '/api/jobs/run'
     | '/api/webhooks/wompi'
@@ -197,6 +279,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  StaffRouteRoute: typeof StaffRouteRouteWithChildren
   AccountRoute: typeof AccountRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
@@ -242,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignUpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff': {
+      id: '/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof StaffRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/appointments/': {
       id: '/appointments/'
       path: '/appointments'
@@ -284,6 +374,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PaymentsPaymentIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff/': {
+      id: '/staff/'
+      path: '/'
+      fullPath: '/staff/'
+      preLoaderRoute: typeof StaffIndexRouteImport
+      parentRoute: typeof StaffRouteRoute
+    }
+    '/staff/obligations': {
+      id: '/staff/obligations'
+      path: '/obligations'
+      fullPath: '/staff/obligations'
+      preLoaderRoute: typeof StaffObligationsRouteImport
+      parentRoute: typeof StaffRouteRoute
+    }
+    '/staff/payments': {
+      id: '/staff/payments'
+      path: '/payments'
+      fullPath: '/staff/payments'
+      preLoaderRoute: typeof StaffPaymentsRouteImport
+      parentRoute: typeof StaffRouteRoute
+    }
+    '/staff/payouts': {
+      id: '/staff/payouts'
+      path: '/payouts'
+      fullPath: '/staff/payouts'
+      preLoaderRoute: typeof StaffPayoutsRouteImport
+      parentRoute: typeof StaffRouteRoute
+    }
+    '/staff/schedule': {
+      id: '/staff/schedule'
+      path: '/schedule'
+      fullPath: '/staff/schedule'
+      preLoaderRoute: typeof StaffScheduleRouteImport
+      parentRoute: typeof StaffRouteRoute
+    }
+    '/staff/users': {
+      id: '/staff/users'
+      path: '/users'
+      fullPath: '/staff/users'
+      preLoaderRoute: typeof StaffUsersRouteImport
+      parentRoute: typeof StaffRouteRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -315,8 +447,31 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface StaffRouteRouteChildren {
+  StaffObligationsRoute: typeof StaffObligationsRoute
+  StaffPaymentsRoute: typeof StaffPaymentsRoute
+  StaffPayoutsRoute: typeof StaffPayoutsRoute
+  StaffScheduleRoute: typeof StaffScheduleRoute
+  StaffUsersRoute: typeof StaffUsersRoute
+  StaffIndexRoute: typeof StaffIndexRoute
+}
+
+const StaffRouteRouteChildren: StaffRouteRouteChildren = {
+  StaffObligationsRoute: StaffObligationsRoute,
+  StaffPaymentsRoute: StaffPaymentsRoute,
+  StaffPayoutsRoute: StaffPayoutsRoute,
+  StaffScheduleRoute: StaffScheduleRoute,
+  StaffUsersRoute: StaffUsersRoute,
+  StaffIndexRoute: StaffIndexRoute,
+}
+
+const StaffRouteRouteWithChildren = StaffRouteRoute._addFileChildren(
+  StaffRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  StaffRouteRoute: StaffRouteRouteWithChildren,
   AccountRoute: AccountRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,

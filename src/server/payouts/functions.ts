@@ -1,8 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
+import { and, desc, eq, lt } from "drizzle-orm";
 import { z } from "zod";
 
 import { serverEnv } from "@/env/server";
 import { db } from "@/server/db/client";
+import { pageInputSchema, toPage } from "@/server/db/pagination";
+import { entity, entityBankAccount } from "@/server/db/schema/entities";
+import { PAYOUT_STATUSES, payout } from "@/server/db/schema/payments";
 import { httpError } from "@/server/http-error";
 import { requirePermission } from "@/server/middleware/auth";
 import { getWompiPayouts } from "@/server/wompi";
@@ -24,6 +28,59 @@ export const listPayoutBanksFn = createServerFn({ method: "GET" })
       code: bank.code ?? null,
     }));
   });
+
+/** The payouts for the staff page, newest first, with an optional status filter. Keyset on `id`. */
+export const listPayoutsFn = createServerFn({ method: "GET" })
+  .middleware([requirePermission({ payout: ["read"] })])
+  .validator(
+    pageInputSchema.extend({ status: z.enum(PAYOUT_STATUSES).optional() })
+  )
+  .handler(async ({ data }) => {
+    const rows = await db
+      .select({
+        id: payout.id,
+        entityName: entity.name,
+        amountInCents: payout.amountInCents,
+        currency: payout.currency,
+        status: payout.status,
+        reviewReason: payout.reviewReason,
+        providerPayoutId: payout.providerPayoutId,
+        reference: payout.reference,
+        createdAt: payout.createdAt,
+      })
+      .from(payout)
+      .innerJoin(entity, eq(entity.id, payout.entityId))
+      .where(
+        and(
+          data.status === undefined
+            ? undefined
+            : eq(payout.status, data.status),
+          data.cursor === undefined ? undefined : lt(payout.id, data.cursor)
+        )
+      )
+      .orderBy(desc(payout.id))
+      .limit(data.limit + 1);
+    return toPage(rows, data.limit);
+  });
+
+/** The active entities that can receive a payout now: each one has a default bank account. */
+export const listPayoutTargetsFn = createServerFn({ method: "GET" })
+  .middleware([requirePermission({ payout: ["create"] })])
+  .handler(
+    async () =>
+      await db
+        .select({ id: entity.id, name: entity.name, kind: entity.kind })
+        .from(entity)
+        .innerJoin(
+          entityBankAccount,
+          and(
+            eq(entityBankAccount.entityId, entity.id),
+            eq(entityBankAccount.isDefault, true)
+          )
+        )
+        .where(eq(entity.isActive, true))
+        .orderBy(entity.name)
+  );
 
 const payoutDeps = (actorId: string): PayoutDeps => ({
   database: db,
