@@ -54,11 +54,12 @@ import {
   updateAppointmentStatusFn,
 } from "@/server/appointments/staff-functions";
 import type { StaffAppointmentOutcome } from "@/server/appointments/staff-transitions";
-import { listBranchesFn, listEntitiesFn } from "@/server/catalog/functions";
+import { listBranchesFn } from "@/server/catalog/functions";
 import {
   createCourseSessionFn,
   listCourseSessionsFn,
 } from "@/server/courses/staff-functions";
+import { listStaffEntitiesFn } from "@/server/staff/functions";
 
 type AppointmentPage = Awaited<ReturnType<typeof listStaffAppointmentsFn>>;
 type AppointmentRow = AppointmentPage["items"][number];
@@ -238,8 +239,9 @@ const NewSessionForm = ({ onCreated }: { onCreated: () => void }) => {
   const createSession = useServerFn(createCourseSessionFn);
   const [submitError, setSubmitError] = useState<Error | null>(null);
   const entities = useQuery({
-    queryKey: ["catalog", "entities", "all"],
-    queryFn: async () => await listEntitiesFn({ data: {} }),
+    queryKey: ["staff", "entities", "course"],
+    queryFn: async () =>
+      await listStaffEntitiesFn({ data: { purpose: "course" } }),
   });
   const entityItems = useMemo(
     () =>

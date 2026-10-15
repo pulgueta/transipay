@@ -26,7 +26,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatAmount } from "@/lib/format-amount";
 import {
-  listEntitiesFn,
   listInfractionsFn,
   listProcedureTypesFn,
 } from "@/server/catalog/functions";
@@ -34,6 +33,7 @@ import {
   createFineFn,
   createProcedureFn,
 } from "@/server/obligations/staff-functions";
+import { listStaffEntitiesFn } from "@/server/staff/functions";
 
 type StoredObligation = Awaited<ReturnType<typeof createFineFn>>;
 
@@ -110,9 +110,11 @@ const NewFineForm = () => {
   const [created, setCreated] = useState<StoredObligation | null>(null);
   const [submitError, setSubmitError] = useState<Error | null>(null);
   const entities = useQuery({
-    queryKey: ["catalog", "entities", "transit_authority"],
+    queryKey: ["staff", "entities", "obligation", "transit_authority"],
     queryFn: async () =>
-      await listEntitiesFn({ data: { kind: "transit_authority" } }),
+      await listStaffEntitiesFn({
+        data: { purpose: "obligation", kind: "transit_authority" },
+      }),
   });
   const infractions = useQuery({
     queryKey: ["catalog", "infractions"],
@@ -263,8 +265,9 @@ const NewProcedureForm = () => {
   const [created, setCreated] = useState<StoredObligation | null>(null);
   const [submitError, setSubmitError] = useState<Error | null>(null);
   const entities = useQuery({
-    queryKey: ["catalog", "entities", "all"],
-    queryFn: async () => await listEntitiesFn({ data: {} }),
+    queryKey: ["staff", "entities", "obligation"],
+    queryFn: async () =>
+      await listStaffEntitiesFn({ data: { purpose: "obligation" } }),
   });
   const entityItems = useMemo(
     () =>
