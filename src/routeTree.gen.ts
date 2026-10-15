@@ -13,6 +13,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as AppointmentsIndexRouteImport } from './routes/appointments/index'
+import { Route as AppointmentsNewRouteImport } from './routes/appointments/new'
+import { Route as CoursesIndexRouteImport } from './routes/courses/index'
+import { Route as ObligationsIndexRouteImport } from './routes/obligations/index'
+import { Route as ObligationsObligationIdRouteImport } from './routes/obligations/$obligationId'
 import { Route as PaymentsPaymentIdRouteImport } from './routes/payments/$paymentId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiJobsRunRouteImport } from './routes/api/jobs/run'
@@ -37,6 +42,31 @@ const SignInRoute = SignInRouteImport.update({
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppointmentsIndexRoute = AppointmentsIndexRouteImport.update({
+  id: '/appointments/',
+  path: '/appointments/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppointmentsNewRoute = AppointmentsNewRouteImport.update({
+  id: '/appointments/new',
+  path: '/appointments/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CoursesIndexRoute = CoursesIndexRouteImport.update({
+  id: '/courses/',
+  path: '/courses/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ObligationsIndexRoute = ObligationsIndexRouteImport.update({
+  id: '/obligations/',
+  path: '/obligations/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ObligationsObligationIdRoute = ObligationsObligationIdRouteImport.update({
+  id: '/obligations/$obligationId',
+  path: '/obligations/$obligationId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PaymentsPaymentIdRoute = PaymentsPaymentIdRouteImport.update({
@@ -70,7 +100,12 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/appointments/new': typeof AppointmentsNewRoute
+  '/obligations/$obligationId': typeof ObligationsObligationIdRoute
   '/payments/$paymentId': typeof PaymentsPaymentIdRoute
+  '/appointments/': typeof AppointmentsIndexRoute
+  '/courses/': typeof CoursesIndexRoute
+  '/obligations/': typeof ObligationsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/jobs/run': typeof ApiJobsRunRoute
   '/api/webhooks/wompi': typeof ApiWebhooksWompiRoute
@@ -81,7 +116,12 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/appointments/new': typeof AppointmentsNewRoute
+  '/obligations/$obligationId': typeof ObligationsObligationIdRoute
   '/payments/$paymentId': typeof PaymentsPaymentIdRoute
+  '/appointments': typeof AppointmentsIndexRoute
+  '/courses': typeof CoursesIndexRoute
+  '/obligations': typeof ObligationsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/jobs/run': typeof ApiJobsRunRoute
   '/api/webhooks/wompi': typeof ApiWebhooksWompiRoute
@@ -93,7 +133,12 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/appointments/new': typeof AppointmentsNewRoute
+  '/obligations/$obligationId': typeof ObligationsObligationIdRoute
   '/payments/$paymentId': typeof PaymentsPaymentIdRoute
+  '/appointments/': typeof AppointmentsIndexRoute
+  '/courses/': typeof CoursesIndexRoute
+  '/obligations/': typeof ObligationsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/jobs/run': typeof ApiJobsRunRoute
   '/api/webhooks/wompi': typeof ApiWebhooksWompiRoute
@@ -106,7 +151,12 @@ export interface FileRouteTypes {
     | '/account'
     | '/sign-in'
     | '/sign-up'
+    | '/appointments/new'
+    | '/obligations/$obligationId'
     | '/payments/$paymentId'
+    | '/appointments/'
+    | '/courses/'
+    | '/obligations/'
     | '/api/auth/$'
     | '/api/jobs/run'
     | '/api/webhooks/wompi'
@@ -117,7 +167,12 @@ export interface FileRouteTypes {
     | '/account'
     | '/sign-in'
     | '/sign-up'
+    | '/appointments/new'
+    | '/obligations/$obligationId'
     | '/payments/$paymentId'
+    | '/appointments'
+    | '/courses'
+    | '/obligations'
     | '/api/auth/$'
     | '/api/jobs/run'
     | '/api/webhooks/wompi'
@@ -128,7 +183,12 @@ export interface FileRouteTypes {
     | '/account'
     | '/sign-in'
     | '/sign-up'
+    | '/appointments/new'
+    | '/obligations/$obligationId'
     | '/payments/$paymentId'
+    | '/appointments/'
+    | '/courses/'
+    | '/obligations/'
     | '/api/auth/$'
     | '/api/jobs/run'
     | '/api/webhooks/wompi'
@@ -140,7 +200,12 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  AppointmentsNewRoute: typeof AppointmentsNewRoute
+  ObligationsObligationIdRoute: typeof ObligationsObligationIdRoute
   PaymentsPaymentIdRoute: typeof PaymentsPaymentIdRoute
+  AppointmentsIndexRoute: typeof AppointmentsIndexRoute
+  CoursesIndexRoute: typeof CoursesIndexRoute
+  ObligationsIndexRoute: typeof ObligationsIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiJobsRunRoute: typeof ApiJobsRunRoute
   ApiWebhooksWompiRoute: typeof ApiWebhooksWompiRoute
@@ -175,6 +240,41 @@ declare module '@tanstack/react-router' {
       path: '/sign-up'
       fullPath: '/sign-up'
       preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/appointments/': {
+      id: '/appointments/'
+      path: '/appointments'
+      fullPath: '/appointments/'
+      preLoaderRoute: typeof AppointmentsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/appointments/new': {
+      id: '/appointments/new'
+      path: '/appointments/new'
+      fullPath: '/appointments/new'
+      preLoaderRoute: typeof AppointmentsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/courses/': {
+      id: '/courses/'
+      path: '/courses'
+      fullPath: '/courses/'
+      preLoaderRoute: typeof CoursesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/obligations/': {
+      id: '/obligations/'
+      path: '/obligations'
+      fullPath: '/obligations/'
+      preLoaderRoute: typeof ObligationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/obligations/$obligationId': {
+      id: '/obligations/$obligationId'
+      path: '/obligations/$obligationId'
+      fullPath: '/obligations/$obligationId'
+      preLoaderRoute: typeof ObligationsObligationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/payments/$paymentId': {
@@ -220,7 +320,12 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  AppointmentsNewRoute: AppointmentsNewRoute,
+  ObligationsObligationIdRoute: ObligationsObligationIdRoute,
   PaymentsPaymentIdRoute: PaymentsPaymentIdRoute,
+  AppointmentsIndexRoute: AppointmentsIndexRoute,
+  CoursesIndexRoute: CoursesIndexRoute,
+  ObligationsIndexRoute: ObligationsIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiJobsRunRoute: ApiJobsRunRoute,
   ApiWebhooksWompiRoute: ApiWebhooksWompiRoute,
