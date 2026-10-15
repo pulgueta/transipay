@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import { drizzle } from "drizzle-orm/node-postgres";
+import type { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 
 import { schema } from "@/server/db/client";
@@ -10,6 +11,27 @@ import { createTestDatabase } from "@/server/db/testing";
 import { staffScopeFor } from "@/server/staff/scope";
 
 import { createFine, createProcedure } from "./staff-create";
+
+/** Polls until a session waits on a transaction lock for an insert into `obligation`. Fails after 5 s. */
+const waitForInsertLock = async (client: Pool) => {
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    // oxlint-disable-next-line no-await-in-loop -- One poll at a time.
+    const activity = await client.query(
+      `select pid from pg_stat_activity
+        where datname = current_database()
+          and wait_event_type = 'Lock'
+          and wait_event = 'transactionid'
+          and query ilike '%insert into "obligation"%'`
+    );
+    if (activity.rows.length > 0) {
+      return;
+    }
+    // oxlint-disable-next-line no-await-in-loop -- One poll at a time.
+    await sleep(10);
+  }
+  throw new Error("createFine did not wait on the obligation insert.");
+};
 
 const FINE_AMOUNT = 5_600_000;
 const PROCEDURE_AMOUNT = 120_000;
@@ -189,8 +211,8 @@ describe("staff obligations", () => {
         [world.citizenId, world.entityId, input.number]
       );
       const pending = createFine(appDatabase, input);
-      // Let the insert of `createFine` wait on the unique index, then commit the other insert.
-      await sleep(200);
+      // Commit the other insert only when the insert of `createFine` waits on the unique index.
+      await waitForInsertLock(database.pool);
       await other.query("commit");
 
       await expect(pending).resolves.toStrictEqual({
