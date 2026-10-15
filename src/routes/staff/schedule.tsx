@@ -46,6 +46,7 @@ import { FieldGroup } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { canUser } from "@/lib/auth/permissions";
+import { canGiveCourses } from "@/lib/courses/course-entities";
 import {
   listStaffAppointmentsFn,
   updateAppointmentStatusFn,
@@ -231,7 +232,9 @@ const NewSessionForm = ({ onCreated }: { onCreated: () => void }) => {
   });
   const entityItems = useMemo(
     () =>
-      (entities.data ?? []).map((row) => ({ value: row.id, label: row.name })),
+      (entities.data ?? [])
+        .filter((row) => canGiveCourses(row.kind))
+        .map((row) => ({ value: row.id, label: row.name })),
     [entities.data]
   );
 

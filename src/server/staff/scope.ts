@@ -36,3 +36,7 @@ export const staffScopeFor = async (
     rows.map((row) => row.entityId)
   );
 };
+
+/** True when the staff scope includes the entity. */
+export const isInScope = (scope: StaffScope, entityId: string) =>
+  scope.kind === "all" || scope.entityIds.includes(entityId);

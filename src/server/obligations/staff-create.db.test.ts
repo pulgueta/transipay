@@ -74,6 +74,7 @@ const fineInput = (world: Awaited<ReturnType<typeof seedWorld>>) => ({
   dueOn: "2026-11-10",
   plate: null,
   agentCode: "A-17",
+  scope: { kind: "all" } as const,
 });
 
 describe("staff obligations", () => {
@@ -185,6 +186,7 @@ describe("staff obligations", () => {
       number,
       dueOn: null,
       plate: null,
+      scope: { kind: "all" },
     });
 
     expect(outcome.ok).toBeTruthy();
@@ -222,7 +224,45 @@ describe("staff obligations", () => {
         number: `P-${unique()}`,
         dueOn: null,
         plate: null,
+        scope: { kind: "all" },
       })
     ).resolves.toStrictEqual({ ok: false, reason: "procedure_type_not_found" });
+  });
+
+  it("refuses a fine or a procedure for an entity outside the staff scope", async () => {
+    const world = await seedWorld();
+    const ownEntityId = await seedEntity();
+    const scope = { kind: "entities" as const, entityIds: [ownEntityId] };
+
+    await expect(
+      createFine(appDatabase, { ...fineInput(world), scope })
+    ).resolves.toStrictEqual({ ok: false, reason: "entity_not_in_scope" });
+    await expect(
+      createProcedure(appDatabase, {
+        actorId: world.actorId,
+        citizenId: world.citizenId,
+        entityId: world.entityId,
+        procedureTypeId: world.procedureTypeId,
+        number: `P-${unique()}`,
+        dueOn: null,
+        plate: null,
+        scope,
+      })
+    ).resolves.toStrictEqual({ ok: false, reason: "entity_not_in_scope" });
+    const stored = await database.pool.query(
+      "select id from obligation where entity_id = $1",
+      [world.entityId]
+    );
+    expect(stored.rows).toStrictEqual([]);
+  });
+
+  it("creates a fine for an entity in the staff scope", async () => {
+    const world = await seedWorld();
+    const outcome = await createFine(appDatabase, {
+      ...fineInput(world),
+      scope: { kind: "entities", entityIds: [world.entityId] },
+    });
+
+    expect(outcome.ok).toBeTruthy();
   });
 });

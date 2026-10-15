@@ -10,6 +10,7 @@ import { citizen } from "@/server/db/schema/citizens";
 import { payment, paymentAttempt } from "@/server/db/schema/payments";
 import { httpError, throwNotFound } from "@/server/http-error";
 import { authMiddleware, requirePermission } from "@/server/middleware/auth";
+import { staffScopeFor } from "@/server/staff/scope";
 import { getWompi } from "@/server/wompi";
 
 import { canReadPayment } from "./access";
@@ -225,7 +226,13 @@ export const refreshPaymentFn = createServerFn({ method: "POST" })
 export const listPaymentsUnderReviewFn = createServerFn({ method: "GET" })
   .middleware([requirePermission({ payment: ["review"] })])
   .validator(pageInputSchema)
-  .handler(async ({ data }) => await listPaymentsUnderReview(db, data));
+  .handler(
+    async ({ context, data }) =>
+      await listPaymentsUnderReview(db, {
+        ...data,
+        scope: await staffScopeFor(db, context.user),
+      })
+  );
 
 const CLEAR_REVIEW_MESSAGES = {
   attempt_not_found: "We cannot find this payment attempt.",
@@ -240,6 +247,7 @@ export const clearPaymentReviewFn = createServerFn({ method: "POST" })
     const outcome = await clearPaymentReview(db, {
       actorId: context.actorId,
       attemptId: data.attemptId,
+      scope: await staffScopeFor(db, context.user),
     });
     if (!outcome.ok) {
       throw httpError(

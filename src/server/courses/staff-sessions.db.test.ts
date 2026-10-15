@@ -23,15 +23,15 @@ const queryId = async (text: string, values: unknown[]) => {
   return row.id;
 };
 
-const seedWorld = async () => {
+const seedWorld = async (kind = "cea", isActive = true) => {
   const actorId = await queryId(
     `insert into auth."user" (name, email, role) values ('Staff', $1, 'scheduler') returning id`,
     [`${unique()}@example.com`]
   );
   const entityId = await queryId(
-    `insert into entity (kind, name, tax_id, email, phone)
-     values ('cea', 'CEA', $1, 'cea@example.com', '3000000000') returning id`,
-    [unique()]
+    `insert into entity (kind, name, tax_id, email, phone, is_active)
+     values ($1, 'CEA', $2, 'cea@example.com', '3000000000', $3) returning id`,
+    [kind, unique(), isActive]
   );
   const branchId = await queryId(
     `insert into branch (entity_id, name, address) values ($1, $2, 'Calle 1') returning id`,
@@ -138,6 +138,29 @@ describe("staff course sessions", () => {
         endsAt: new Date("2026-11-02T12:00:00Z"),
       })
     ).resolves.toStrictEqual({ ok: false, reason: "ends_before_start" });
+  });
+
+  it("refuses an entity that does not give courses or is not active", async () => {
+    const cda = await seedWorld("cda");
+    const closed = await seedWorld("cea", false);
+
+    await expect(
+      createCourseSession(appDatabase, sessionInput(cda))
+    ).resolves.toStrictEqual({
+      ok: false,
+      reason: "entity_cannot_give_courses",
+    });
+    await expect(
+      createCourseSession(appDatabase, sessionInput(closed))
+    ).resolves.toStrictEqual({ ok: false, reason: "entity_inactive" });
+  });
+
+  it("creates a session for the transit authority", async () => {
+    const ittb = await seedWorld("transit_authority");
+
+    const outcome = await createCourseSession(appDatabase, sessionInput(ittb));
+
+    expect(outcome.ok).toBeTruthy();
   });
 
   it("lists the sessions of the scope with the count of live enrollments", async () => {

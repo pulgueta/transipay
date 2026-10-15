@@ -1,11 +1,13 @@
 import "@tanstack/react-start/server-only";
 import { and, desc, eq, inArray, lt, sql } from "drizzle-orm";
 
+import { canGiveCourses } from "@/lib/courses/course-entities";
 import type { Database } from "@/server/db/client";
 import { toPage } from "@/server/db/pagination";
 import { branch, entity } from "@/server/db/schema/entities";
 import { courseEnrollment, courseSession } from "@/server/db/schema/scheduling";
 import { runAsActor } from "@/server/db/with-actor";
+import { isInScope } from "@/server/staff/scope";
 import type { StaffScope } from "@/server/staff/scope";
 
 const scopeFilter = (scope: StaffScope) =>
@@ -53,6 +55,8 @@ export const listCourseSessions = async (
 
 export type CreateSessionRefusal =
   | "entity_not_in_scope"
+  | "entity_inactive"
+  | "entity_cannot_give_courses"
   | "branch_not_found"
   | "ends_before_start";
 
@@ -71,21 +75,32 @@ export interface CreateSessionInput {
   scope: StaffScope;
 }
 
-/** Creates a course session at a branch of the entity, with the actor in the audit log. */
+/**
+ * Creates a course session at a branch of the entity, with the actor in the audit log.
+ * The entity must be active and give courses (a CEA or the transit authority).
+ */
 export const createCourseSession = async (
   database: Database,
   input: CreateSessionInput
 ): Promise<CreateSessionOutcome> => {
-  if (
-    input.scope.kind === "entities" &&
-    !input.scope.entityIds.includes(input.entityId)
-  ) {
+  if (!isInScope(input.scope, input.entityId)) {
     return { ok: false, reason: "entity_not_in_scope" };
   }
   if (input.endsAt <= input.startsAt) {
     return { ok: false, reason: "ends_before_start" };
   }
   return await runAsActor(database, input.actorId, async (tx) => {
+    const [owner] = await tx
+      .select({ kind: entity.kind, isActive: entity.isActive })
+      .from(entity)
+      .where(eq(entity.id, input.entityId))
+      .for("share");
+    if (owner === undefined || !canGiveCourses(owner.kind)) {
+      return { ok: false, reason: "entity_cannot_give_courses" };
+    }
+    if (!owner.isActive) {
+      return { ok: false, reason: "entity_inactive" };
+    }
     const [place] = await tx
       .select({ id: branch.id })
       .from(branch)

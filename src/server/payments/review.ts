@@ -1,5 +1,5 @@
 import "@tanstack/react-start/server-only";
-import { and, desc, eq, isNotNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, lt, sql } from "drizzle-orm";
 
 import type { Database } from "@/server/db/client";
 import { toPage } from "@/server/db/pagination";
@@ -8,14 +8,22 @@ import { citizen } from "@/server/db/schema/citizens";
 import { obligation } from "@/server/db/schema/obligations";
 import { payment, paymentAttempt } from "@/server/db/schema/payments";
 import { runAsActor } from "@/server/db/with-actor";
+import type { StaffScope } from "@/server/staff/scope";
+
+/** Limits the rows to the obligations of the entities in the scope. Needs the obligation join. */
+const scopeFilter = (scope: StaffScope) =>
+  scope.kind === "all"
+    ? undefined
+    : inArray(obligation.entityId, scope.entityIds);
 
 /**
  * The attempts that wait for staff: a review reason is set (see `PAYMENT_ATTEMPT_REVIEW_REASONS`).
- * Newest attempt first. Keyset on the attempt id.
+ * Only the attempts of the obligations of the entities in the scope. Newest attempt first. Keyset on the attempt id.
  */
 export const listPaymentsUnderReview = async (
   database: Database,
-  input: Required<Pick<PageInput, "limit">> & Pick<PageInput, "cursor">
+  input: Required<Pick<PageInput, "limit">> &
+    Pick<PageInput, "cursor"> & { scope: StaffScope }
 ) => {
   const rows = await database
     .select({
@@ -42,6 +50,7 @@ export const listPaymentsUnderReview = async (
     .where(
       and(
         isNotNull(paymentAttempt.reviewReason),
+        scopeFilter(input.scope),
         input.cursor === undefined
           ? undefined
           : lt(paymentAttempt.id, input.cursor)
@@ -63,17 +72,22 @@ export type ClearReviewOutcome =
  * Records that staff examined the attempt: the review reason becomes null.
  * It changes nothing else. A refund or a manual payment of the obligation is a separate decision.
  * The payment row does not change, so the attempt stays the only evidence of the decision (with the audit log).
+ * An attempt of an entity outside the scope reads as not found.
  */
 export const clearPaymentReview = async (
   database: Database,
-  input: { actorId: string; attemptId: string }
+  input: { actorId: string; attemptId: string; scope: StaffScope }
 ): Promise<ClearReviewOutcome> =>
   await runAsActor(database, input.actorId, async (tx) => {
     const [current] = await tx
       .select({ reviewReason: paymentAttempt.reviewReason })
       .from(paymentAttempt)
-      .where(eq(paymentAttempt.id, input.attemptId))
-      .for("update");
+      .innerJoin(payment, eq(payment.id, paymentAttempt.paymentId))
+      .innerJoin(obligation, eq(obligation.id, payment.obligationId))
+      .where(
+        and(eq(paymentAttempt.id, input.attemptId), scopeFilter(input.scope))
+      )
+      .for("update", { of: paymentAttempt });
     if (current === undefined) {
       return { ok: false, reason: "attempt_not_found" };
     }

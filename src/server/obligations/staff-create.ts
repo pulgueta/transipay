@@ -12,6 +12,8 @@ import {
   procedureType,
 } from "@/server/db/schema/obligations";
 import { runAsActor } from "@/server/db/with-actor";
+import { isInScope } from "@/server/staff/scope";
+import type { StaffScope } from "@/server/staff/scope";
 
 export type StoredObligation = Pick<
   typeof obligation.$inferSelect,
@@ -21,6 +23,7 @@ export type StoredObligation = Pick<
 export type CreateObligationRefusal =
   | "citizen_not_found"
   | "entity_not_found"
+  | "entity_not_in_scope"
   | "entity_inactive"
   | "entity_not_transit_authority"
   | "infraction_not_found"
@@ -43,6 +46,8 @@ interface CommonInput {
   dueOn: string | null;
   /** The plate of the vehicle, or null when the obligation has no vehicle. */
   plate: string | null;
+  /** The entities of the staff member. The creditor entity must be one of them. */
+  scope: StaffScope;
 }
 
 export interface CreateFineInput extends CommonInput {
@@ -77,6 +82,9 @@ const checkCommon = async (
   input: CommonInput,
   requiredKind: "transit_authority" | null
 ): Promise<{ vehicleId: string | null } | Refused> => {
+  if (!isInScope(input.scope, input.entityId)) {
+    return { ok: false, reason: "entity_not_in_scope" };
+  }
   const [target] = await tx
     .select({ kind: entity.kind, isActive: entity.isActive })
     .from(entity)

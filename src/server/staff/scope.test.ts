@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveStaffScope } from "./scope";
+import { isInScope, resolveStaffScope } from "./scope";
 
 describe(resolveStaffScope, () => {
   it("gives the admin every entity", () => {
@@ -19,5 +19,18 @@ describe(resolveStaffScope, () => {
       kind: "entities",
       entityIds: [],
     });
+  });
+});
+
+describe(isInScope, () => {
+  it("accepts every entity for the admin scope", () => {
+    expect(isInScope({ kind: "all" }, "e9")).toBeTruthy();
+  });
+
+  it("accepts only the entities of the memberships", () => {
+    const scope = { kind: "entities" as const, entityIds: ["e1", "e2"] };
+    expect(isInScope(scope, "e2")).toBeTruthy();
+    expect(isInScope(scope, "e9")).toBeFalsy();
+    expect(isInScope({ kind: "entities", entityIds: [] }, "e1")).toBeFalsy();
   });
 });

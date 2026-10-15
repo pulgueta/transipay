@@ -7,6 +7,7 @@ import { db } from "@/server/db/client";
 import { citizen } from "@/server/db/schema/citizens";
 import { httpError } from "@/server/http-error";
 import { requirePermission } from "@/server/middleware/auth";
+import { staffScopeFor } from "@/server/staff/scope";
 
 import { createFine, createProcedure } from "./staff-create";
 import type {
@@ -18,6 +19,7 @@ import type {
 const REFUSAL_MESSAGES: Record<CreateObligationRefusal, string> = {
   citizen_not_found: "We cannot find this citizen. Find the citizen again.",
   entity_not_found: "We cannot find this entity.",
+  entity_not_in_scope: "You do not work for this entity.",
   entity_inactive: "This entity is not active.",
   entity_not_transit_authority: "Only the transit authority can issue a fine.",
   infraction_not_found: "This infraction is not in the active catalog.",
@@ -31,6 +33,7 @@ const REFUSAL_MESSAGES: Record<CreateObligationRefusal, string> = {
 const REFUSAL_STATUSES: Record<CreateObligationRefusal, number> = {
   citizen_not_found: 404,
   entity_not_found: 404,
+  entity_not_in_scope: 403,
   entity_inactive: 409,
   entity_not_transit_authority: 409,
   infraction_not_found: 404,
@@ -112,6 +115,7 @@ export const createFineFn = createServerFn({ method: "POST" })
         agentCode: data.agentCode ?? null,
         dueOn: data.dueOn ?? null,
         plate: data.plate ?? null,
+        scope: await staffScopeFor(db, context.user),
       })
     )
   );
@@ -130,6 +134,7 @@ export const createProcedureFn = createServerFn({ method: "POST" })
         number: data.number,
         dueOn: data.dueOn ?? null,
         plate: data.plate ?? null,
+        scope: await staffScopeFor(db, context.user),
       })
     )
   );

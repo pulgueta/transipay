@@ -11,6 +11,7 @@ import { createTestDatabase } from "@/server/db/testing";
 import { clearPaymentReview, listPaymentsUnderReview } from "./review";
 
 const AMOUNT = 2_500_000;
+const ALL = { kind: "all" } as const;
 
 let database: ReturnType<typeof createTestDatabase>;
 let appDatabase: Database;
@@ -48,7 +49,7 @@ const seedObligation = async () => {
      values ($1, $2, 'fine', $3, $4) returning id`,
     [citizenId, entityId, `F-${unique()}`, AMOUNT]
   );
-  return { citizenId, obligationId };
+  return { citizenId, entityId, obligationId };
 };
 
 /** An approved payment with one approved attempt. The attempt has the review reason, or none. */
@@ -120,7 +121,10 @@ describe("payments under review", () => {
     const flagged = await seedApprovedPayment("target_not_payable");
     const clean = await seedApprovedPayment(null);
 
-    const page = await listPaymentsUnderReview(appDatabase, { limit: 100 });
+    const page = await listPaymentsUnderReview(appDatabase, {
+      limit: 100,
+      scope: ALL,
+    });
     const ids = page.items.map((item) => item.attemptId);
 
     expect(ids).toContain(flagged.attemptId);
@@ -143,6 +147,7 @@ describe("payments under review", () => {
     const outcome = await clearPaymentReview(appDatabase, {
       actorId,
       attemptId: flagged.attemptId,
+      scope: ALL,
     });
 
     expect(outcome.ok).toBeTruthy();
@@ -165,7 +170,10 @@ describe("payments under review", () => {
     await expect(paymentState(flagged.paymentId)).resolves.toStrictEqual(
       paymentBefore
     );
-    const page = await listPaymentsUnderReview(appDatabase, { limit: 100 });
+    const page = await listPaymentsUnderReview(appDatabase, {
+      limit: 100,
+      scope: ALL,
+    });
     expect(page.items.map((item) => item.attemptId)).not.toContain(
       flagged.attemptId
     );
@@ -176,10 +184,45 @@ describe("payments under review", () => {
     const clean = await seedApprovedPayment(null);
 
     await expect(
-      clearPaymentReview(appDatabase, { actorId, attemptId: clean.attemptId })
+      clearPaymentReview(appDatabase, {
+        actorId,
+        attemptId: clean.attemptId,
+        scope: ALL,
+      })
     ).resolves.toStrictEqual({ ok: false, reason: "not_under_review" });
     await expect(
-      clearPaymentReview(appDatabase, { actorId, attemptId: randomUUID() })
+      clearPaymentReview(appDatabase, {
+        actorId,
+        attemptId: randomUUID(),
+        scope: ALL,
+      })
     ).resolves.toStrictEqual({ ok: false, reason: "attempt_not_found" });
+  });
+
+  it("shows and clears only the attempts of the entities in the staff scope", async () => {
+    const actorId = await seedUser("supervisor");
+    const own = await seedApprovedPayment("target_not_payable");
+    const other = await seedApprovedPayment("target_not_payable");
+    const scope = { kind: "entities" as const, entityIds: [own.entityId] };
+
+    const page = await listPaymentsUnderReview(appDatabase, {
+      limit: 100,
+      scope,
+    });
+    expect(page.items.map((item) => item.attemptId)).toStrictEqual([
+      own.attemptId,
+    ]);
+
+    await expect(
+      clearPaymentReview(appDatabase, {
+        actorId,
+        attemptId: other.attemptId,
+        scope,
+      })
+    ).resolves.toStrictEqual({ ok: false, reason: "attempt_not_found" });
+    await expect(attemptState(other.attemptId)).resolves.toMatchObject({
+      review_reason: "target_not_payable",
+      audit: [],
+    });
   });
 });
