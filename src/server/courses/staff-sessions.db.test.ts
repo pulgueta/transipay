@@ -158,6 +158,23 @@ describe("staff course sessions", () => {
     }
   });
 
+  it("has a database CHECK that refuses a stored discount of 0 or 100 percent", async () => {
+    const world = await seedWorld();
+
+    for (const discountPercent of [0, 100]) {
+      // oxlint-disable-next-line no-await-in-loop -- Each insert is independent. The order does not matter.
+      await expect(
+        database.pool.query(
+          `insert into course_session (entity_id, branch_id, starts_at, ends_at, capacity, discount_percent)
+           values ($1, $2, now(), now() + interval '1 hour', 10, $3)`,
+          [world.entityId, world.branchId, discountPercent]
+        )
+      ).rejects.toMatchObject({
+        constraint: "course_session_discount_percent_check",
+      });
+    }
+  });
+
   it("refuses an entity that does not give courses or is not active", async () => {
     const cda = await seedWorld("cda");
     const closed = await seedWorld("cea", false);

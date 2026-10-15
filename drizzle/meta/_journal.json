@@ -141,6 +141,13 @@
       "when": 1792043715404,
       "tag": "0019_citizen_document_number_canonical",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792077069760,
+      "tag": "0020_citizen_audit_course_discount",
+      "breakpoints": true
     }
   ]
 }

@@ -67,7 +67,8 @@ The audit trigger runs as the caller. The application role must have INSERT on `
 - better-auth admin endpoints are in `disabledPaths`, so HTTP clients cannot call them. Our server functions call them through `createAuth(tx)` inside `withActor(actorId, tx => ...)`. The admin write and the actor setting then use the same connection and the same transaction.
 - A notification keeps its content and recipient as a snapshot that does not change. The database rejects UPDATE of the snapshot columns and rejects DELETE.
 - `appointment`, `course_session`, and `course_enrollment` have the audit trigger (migration 0018). Staff close appointments and record course attendance, and an attendance gives a fine discount.
-- Staff record course attendance only after the session ends (database clock), because each result closes the enrollment. A session discount is from 1% to 99%, and an attendance that makes a fine free is refused, because a fine is settled only by a payment.
+- `citizen` has the audit trigger (migration 0020). A document link gives a user access to the obligations and payments of the citizen.
+- Staff record course attendance only after the session ends (database clock), because each result closes the enrollment. A session discount is from 1% to 99%, and an attendance that makes a fine free is refused, because a fine is settled only by a payment. The CHECK `course_session_discount_percent_check` also refuses 0 and 100 (migration 0020).
 
 ### Limit
 

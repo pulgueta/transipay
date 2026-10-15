@@ -33,6 +33,7 @@ const seedWorld = async (
     fineStatus?: string;
     discount?: number;
     percent?: number;
+    amount?: number;
   } = {}
 ) => {
   const actorId = await queryId(
@@ -75,7 +76,7 @@ const seedWorld = async (
       citizenId,
       ittbId,
       `F-${unique()}`,
-      FINE_AMOUNT,
+      options.amount ?? FINE_AMOUNT,
       options.fineStatus ?? "pending",
       options.discount ?? 0,
     ]
@@ -246,7 +247,8 @@ describe("course attendance", () => {
   });
 
   it("refuses an attendance that makes the fine free, and keeps the enrollment", async () => {
-    const world = await seedWorld({ percent: 100 });
+    // 99% of 1 cent rounds to 1 cent, so the fine becomes free.
+    const world = await seedWorld({ percent: 99, amount: 1 });
     const input = {
       actorId: world.actorId,
       enrollmentId: world.enrollmentId,

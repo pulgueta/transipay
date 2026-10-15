@@ -139,6 +139,20 @@ describe(linkCitizen, () => {
     });
   });
 
+  it("writes an audit row with the actor when it links a registered citizen", async () => {
+    const documentNumber = unique().toUpperCase();
+    const user = await seedUser();
+    const citizenId = await seedCitizen(documentNumber, null, user.email);
+
+    await linkCitizen(appDatabase, input(user, documentNumber));
+
+    const audit = await database.pool.query<{ actor_user_id: string | null }>(
+      "select actor_user_id from audit_log where table_name = 'citizen' and record_id = $1 and action = 'update'",
+      [citizenId]
+    );
+    expect(audit.rows).toStrictEqual([{ actor_user_id: user.id }]);
+  });
+
   it("refuses to link a registered citizen that has no email", async () => {
     const documentNumber = unique().toUpperCase();
     const citizenId = await seedCitizen(documentNumber);
