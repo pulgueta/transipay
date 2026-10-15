@@ -71,13 +71,15 @@ import {
 
 const searchSchema = z.object({ q: z.string().optional() });
 
+const noCursor = (): string | undefined => undefined;
+
 const usersQueryOptions = (search: string | undefined) =>
   infiniteQueryOptions({
     queryKey: ["staff", "users", search ?? ""],
     queryFn: async ({ pageParam }) =>
-      await listUsersFn({ data: { search, offset: pageParam } }),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
+      await listUsersFn({ data: { search, cursor: pageParam } }),
+    initialPageParam: noCursor(),
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
 
 type UserRow = Awaited<ReturnType<typeof listUsersFn>>["users"][number];
