@@ -33,6 +33,8 @@ const UPDATE_MESSAGES = {
   appointment_not_found: "We cannot find this appointment.",
   not_allowed:
     "This appointment is not scheduled, so its status cannot change.",
+  not_started:
+    "This appointment did not start. You can record the outcome after its time.",
 } as const;
 
 /** Closes an appointment as attended or no-show. Returns the appointment as stored after the write. */

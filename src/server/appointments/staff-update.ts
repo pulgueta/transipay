@@ -72,11 +72,15 @@ export const listStaffAppointments = async (
 
 export type UpdateAppointmentOutcome =
   | { ok: true; appointment: typeof appointment.$inferSelect }
-  | { ok: false; reason: "appointment_not_found" | "not_allowed" };
+  | {
+      ok: false;
+      reason: "appointment_not_found" | "not_allowed" | "not_started";
+    };
 
 /**
  * Closes a scheduled appointment as attended or no-show, with the actor in the audit log.
  * An appointment outside the scope reads as not found, so staff cannot find out that it exists.
+ * An appointment that did not start (database clock) stays scheduled, so the citizen can still cancel it.
  */
 export const updateAppointmentStatus = async (
   database: Database,
@@ -89,7 +93,10 @@ export const updateAppointmentStatus = async (
 ): Promise<UpdateAppointmentOutcome> =>
   await runAsActor(database, input.actorId, async (tx) => {
     const [current] = await tx
-      .select({ status: appointment.status })
+      .select({
+        status: appointment.status,
+        started: sql<boolean>`${appointment.scheduledAt} <= now()`,
+      })
       .from(appointment)
       .where(
         and(eq(appointment.id, input.appointmentId), scopeFilter(input.scope))
@@ -100,6 +107,9 @@ export const updateAppointmentStatus = async (
     }
     if (!canStaffTransition(current.status, input.status)) {
       return { ok: false, reason: "not_allowed" };
+    }
+    if (!current.started) {
+      return { ok: false, reason: "not_started" };
     }
     const [updated] = await tx
       .update(appointment)

@@ -105,8 +105,12 @@ const OUTCOME_LABELS: Record<StaffAppointmentOutcome, string> = {
   no_show: "No show",
 };
 
-/** The two close actions of a scheduled appointment. */
+/** The two close actions of a scheduled appointment. They are off until the appointment time. */
 const AppointmentActions = ({ row }: { row: AppointmentRow }) => {
+  // The time at mount. The server checks again with the database clock.
+  // oxlint-disable-next-line react/hook-use-state -- The time is fixed at mount. Nothing sets it later.
+  const [mountedAt] = useState(Date.now);
+  const notStarted = row.scheduledAt.getTime() > mountedAt;
   const queryClient = useQueryClient();
   const updateStatus = useServerFn(updateAppointmentStatusFn);
   const update = useMutation({
@@ -124,7 +128,7 @@ const AppointmentActions = ({ row }: { row: AppointmentRow }) => {
       <span className="flex gap-1">
         {(["attended", "no_show"] as const).map((status) => (
           <Button
-            disabled={update.isPending}
+            disabled={notStarted || update.isPending}
             key={status}
             onClick={() => {
               update.mutate(status);
@@ -136,6 +140,11 @@ const AppointmentActions = ({ row }: { row: AppointmentRow }) => {
           </Button>
         ))}
       </span>
+      {notStarted ? (
+        <span className="text-muted-foreground text-xs">
+          Available after the appointment time.
+        </span>
+      ) : null}
       <InlineError error={update.error} />
     </span>
   );

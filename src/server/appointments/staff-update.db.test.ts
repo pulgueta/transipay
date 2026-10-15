@@ -23,7 +23,8 @@ const queryId = async (text: string, values: unknown[]) => {
   return row.id;
 };
 
-const seedWorld = async () => {
+/** `scheduledIn` is a Postgres interval from now. The default appointment started one hour ago. */
+const seedWorld = async (scheduledIn = "-1 hour") => {
   const actorId = await queryId(
     `insert into auth."user" (name, email, role) values ('Staff', $1, 'scheduler') returning id`,
     [`${unique()}@example.com`]
@@ -49,8 +50,8 @@ const seedWorld = async () => {
   );
   const appointmentId = await queryId(
     `insert into appointment (citizen_id, entity_id, branch_id, procedure_type_id, scheduled_at)
-     values ($1, $2, $3, $4, now() + interval '1 day') returning id`,
-    [citizenId, entityId, branchId, procedureTypeId]
+     values ($1, $2, $3, $4, now() + $5::interval) returning id`,
+    [citizenId, entityId, branchId, procedureTypeId, scheduledIn]
   );
   return {
     actorId,
@@ -136,6 +137,25 @@ describe("staff appointments", () => {
       })
     ).resolves.toStrictEqual({ ok: false, reason: "appointment_not_found" });
     await expect(appointmentState(other.appointmentId)).resolves.toBe(
+      "scheduled"
+    );
+  });
+
+  it("refuses to close an appointment that did not start", async () => {
+    const world = await seedWorld("1 day");
+
+    for (const status of ["attended", "no_show"] as const) {
+      // oxlint-disable-next-line no-await-in-loop -- The two calls run one after the other on purpose.
+      await expect(
+        updateAppointmentStatus(appDatabase, {
+          actorId: world.actorId,
+          appointmentId: world.appointmentId,
+          status,
+          scope: { kind: "all" },
+        })
+      ).resolves.toStrictEqual({ ok: false, reason: "not_started" });
+    }
+    await expect(appointmentState(world.appointmentId)).resolves.toBe(
       "scheduled"
     );
   });
