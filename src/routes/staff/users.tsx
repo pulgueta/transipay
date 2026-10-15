@@ -57,6 +57,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
+import { banDaysToSeconds } from "@/lib/auth/ban-duration";
 import { isRole } from "@/lib/auth/permissions";
 import type { Role } from "@/lib/auth/permissions";
 import { roleNames } from "@/lib/auth/roles";
@@ -88,8 +89,6 @@ const ROLE_ITEMS: { value: Role; label: string }[] = [
   { value: "supervisor", label: "Supervisor" },
   { value: "admin", label: "Admin" },
 ];
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 const features = tableFeatures({
   rowSortingFeature,
@@ -125,17 +124,14 @@ const UserActions = ({ user }: { user: UserRow }) => {
     onSuccess: refresh,
   });
   const banMutation = useMutation({
-    mutationFn: async () => {
-      const days = Number(banDays);
-      return await ban({
+    mutationFn: async () =>
+      await ban({
         data: {
           userId: user.id,
           banReason: banReason.trim() || undefined,
-          banExpiresIn:
-            Number.isInteger(days) && days > 0 ? days * DAY_MS : undefined,
+          banExpiresIn: banDaysToSeconds(banDays),
         },
-      });
-    },
+      }),
     onSuccess: refresh,
   });
   const unbanMutation = useMutation({
