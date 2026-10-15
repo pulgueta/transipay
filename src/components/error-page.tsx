@@ -14,14 +14,16 @@ export const ErrorPage = ({ reset }: ErrorComponentProps) => {
   };
 
   return (
-    <main className="mx-auto flex min-h-svh max-w-md flex-col justify-center gap-4 p-6">
-      <h1 className="text-lg font-medium">An error occurred</h1>
-      <p className="text-muted-foreground text-sm">
+    <section className="mx-auto flex max-w-md flex-col gap-4 py-16">
+      <h1 className="text-2xl font-semibold tracking-tight">
+        An error occurred
+      </h1>
+      <p className="text-muted-foreground">
         We cannot show this page now. Try again.
       </p>
       <Button className="self-start" onClick={retry}>
         Try again
       </Button>
-    </main>
+    </section>
   );
 };

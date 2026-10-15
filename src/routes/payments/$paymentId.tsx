@@ -174,7 +174,7 @@ const PaymentResult = () => {
   const StatusIcon = content.icon;
 
   return (
-    <main className="mx-auto flex min-h-svh max-w-md flex-col justify-center gap-6 p-6">
+    <section className="mx-auto flex max-w-md flex-col gap-6 py-8">
       <div aria-live="polite" className="flex flex-col gap-2">
         <StatusIcon aria-hidden className="text-muted-foreground size-8" />
         <h1 className="text-lg font-medium">{content.title}</h1>
@@ -208,7 +208,7 @@ const PaymentResult = () => {
           Go to the home page
         </Button>
       ) : null}
-    </main>
+    </section>
   );
 };
 
