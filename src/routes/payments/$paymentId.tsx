@@ -17,13 +17,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { formatAmount } from "@/lib/format-amount";
 import {
   createCheckoutFn,
   getPaymentFn,
   refreshPaymentFn,
 } from "@/server/payments/functions";
 
-import { formatAmount } from "./-format-amount";
 import { resolveResultState } from "./-result-state";
 import type { ResultState } from "./-result-state";
 
