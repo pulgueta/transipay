@@ -73,6 +73,11 @@ export const citizen = pgTable(
       table.documentNumber
     ),
     checkIn("citizen_document_type_check", table.documentType, DOCUMENT_TYPES),
+    // The canonical form (see `normalizeDocumentNumber`): no spaces, points, or hyphens, and uppercase letters.
+    check(
+      "citizen_document_number_canonical_check",
+      sql`${table.documentNumber} = upper(regexp_replace(${table.documentNumber}, '[\\s.-]', '', 'g'))`
+    ),
   ]
 );
 

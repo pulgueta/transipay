@@ -33,7 +33,7 @@ const seedCitizen = async (userId: string) =>
   await queryId(
     `insert into citizen (user_id, document_type, document_number, first_name, last_name)
      values ($1, 'CC', $2, 'Ana', 'Rojas') returning id`,
-    [userId, unique()]
+    [userId, unique().toUpperCase()]
   );
 
 const seedEntity = async (kind = "cea") =>

@@ -31,12 +31,19 @@ export const documentTypeSchema = z.enum(DOCUMENT_TYPE_VALUES, {
   message: "Select a document type.",
 });
 
+/**
+ * The canonical form of a document number: no spaces, points, or hyphens, and uppercase letters.
+ * The database accepts only this form (`citizen_document_number_canonical_check`),
+ * so "ab-1.234" and "AB1234" are the same identity.
+ */
+export const normalizeDocumentNumber = (value: string) =>
+  value.replaceAll(/[\s.-]/gu, "").toUpperCase();
+
 export const documentNumberSchema = z
   .string()
-  .trim()
-  .regex(
-    /^[A-Za-z0-9-]{4,20}$/u,
-    "Enter 4 to 20 letters or numbers, without spaces or points."
+  .transform(normalizeDocumentNumber)
+  .pipe(
+    z.string().regex(/^[A-Z0-9]{4,20}$/u, "Enter 4 to 20 letters or numbers.")
   );
 
 export const documentSchema = z.object({

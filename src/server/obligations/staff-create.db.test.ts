@@ -42,7 +42,7 @@ const seedWorld = async () => {
   const citizenId = await queryId(
     `insert into citizen (document_type, document_number, first_name, last_name)
      values ('CC', $1, 'Ana', 'Rojas') returning id`,
-    [unique()]
+    [unique().toUpperCase()]
   );
   const infractionId = await queryId(
     `insert into infraction (code, description, amount_in_cents) values ($1, 'Speeding', $2) returning id`,

@@ -1,6 +1,7 @@
 import "@tanstack/react-start/server-only";
 import { and, eq } from "drizzle-orm";
 
+import { normalizeDocumentNumber } from "@/lib/citizens/document";
 import type { Database } from "@/server/db/client";
 import { citizen } from "@/server/db/schema/citizens";
 import type { DocumentType } from "@/server/db/schema/citizens";
@@ -44,12 +45,14 @@ const splitName = (name: string) => {
  * A document number is not a secret. Thus it links a registered citizen only when the email
  * of that record is the email of the user. Otherwise staff must examine the link.
  * When no citizen has the document, it creates one from the user data.
+ * It compares and stores the canonical document number (see `normalizeDocumentNumber`).
  */
 export const linkCitizen = async (
   database: Database,
   input: LinkCitizenInput
 ): Promise<LinkCitizenOutcome> =>
   await runAsActor(database, input.actorId, async (tx) => {
+    const documentNumber = normalizeDocumentNumber(input.documentNumber);
     const mine = await tx.query.citizen.findFirst({
       where: eq(citizen.userId, input.userId),
       columns: { id: true, documentType: true, documentNumber: true },
@@ -57,7 +60,7 @@ export const linkCitizen = async (
     if (mine) {
       const same =
         mine.documentType === input.documentType &&
-        mine.documentNumber === input.documentNumber;
+        mine.documentNumber === documentNumber;
       return same
         ? { ok: true, citizenId: mine.id, created: false }
         : { ok: false, reason: "user_already_linked" };
@@ -66,7 +69,7 @@ export const linkCitizen = async (
     const byDocument = await tx.query.citizen.findFirst({
       where: and(
         eq(citizen.documentType, input.documentType),
-        eq(citizen.documentNumber, input.documentNumber)
+        eq(citizen.documentNumber, documentNumber)
       ),
       columns: { id: true, userId: true, email: true },
     });
@@ -89,7 +92,7 @@ export const linkCitizen = async (
       .values({
         userId: input.userId,
         documentType: input.documentType,
-        documentNumber: input.documentNumber,
+        documentNumber,
         email: input.email,
         ...splitName(input.name),
       })

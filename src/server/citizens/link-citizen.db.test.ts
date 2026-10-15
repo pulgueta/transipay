@@ -94,6 +94,19 @@ describe(linkCitizen, () => {
     });
   });
 
+  it("finds the registered citizen when the number has another case", async () => {
+    const stored = `AB${unique().toUpperCase()}`;
+    const user = await seedUser();
+    const citizenId = await seedCitizen(stored, null, user.email);
+
+    const outcome = await linkCitizen(
+      appDatabase,
+      input(user, stored.toLowerCase())
+    );
+
+    expect(outcome).toStrictEqual({ ok: true, citizenId, created: false });
+  });
+
   it("uses the full name as the first name when there is one word", async () => {
     const user = await seedUser("Madonna");
     const outcome = await linkCitizen(appDatabase, input(user, unique()));
@@ -108,7 +121,7 @@ describe(linkCitizen, () => {
   });
 
   it("links the registered citizen when its email is the user email", async () => {
-    const documentNumber = unique();
+    const documentNumber = unique().toUpperCase();
     const user = await seedUser();
     const citizenId = await seedCitizen(
       documentNumber,
@@ -127,7 +140,7 @@ describe(linkCitizen, () => {
   });
 
   it("refuses to link a registered citizen that has no email", async () => {
-    const documentNumber = unique();
+    const documentNumber = unique().toUpperCase();
     const citizenId = await seedCitizen(documentNumber);
     const user = await seedUser();
 
@@ -143,7 +156,7 @@ describe(linkCitizen, () => {
   });
 
   it("refuses to link a registered citizen with a different email", async () => {
-    const documentNumber = unique();
+    const documentNumber = unique().toUpperCase();
     const citizenId = await seedCitizen(
       documentNumber,
       null,
@@ -164,7 +177,7 @@ describe(linkCitizen, () => {
 
   it("does nothing the second time for the same user and document", async () => {
     const user = await seedUser();
-    const documentNumber = unique();
+    const documentNumber = unique().toUpperCase();
     const first = await linkCitizen(appDatabase, input(user, documentNumber));
     const second = await linkCitizen(appDatabase, input(user, documentNumber));
 
@@ -180,7 +193,7 @@ describe(linkCitizen, () => {
 
   it("refuses a document that belongs to another user", async () => {
     const owner = await seedUser();
-    const documentNumber = unique();
+    const documentNumber = unique().toUpperCase();
     const citizenId = await seedCitizen(documentNumber, owner.id);
     const user = await seedUser();
 

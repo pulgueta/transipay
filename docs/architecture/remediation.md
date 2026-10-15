@@ -84,6 +84,7 @@ The audit trigger runs as the caller. The application role must have INSERT on `
 - The local database port listens only on `127.0.0.1`.
 - A staff member works only with the entities of their `staff_member` rows (`staffScopeFor`). The admin works with all entities. Each staff read and write of entity data (obligations, payment reviews, payouts, appointments, course sessions, attendance) uses this scope. A record outside the scope reads as not found, and a write for an entity outside the scope is refused.
 - A document number is not a secret. The server links an account to a registered citizen only when the email of the citizen record is the email of the account. Otherwise staff must link it.
+- A document number has one canonical form: no spaces, points, or hyphens, and uppercase letters (`normalizeDocumentNumber`). `documentNumberSchema` gives this form to each server function, and the CHECK `citizen_document_number_canonical_check` refuses other forms (migration 0019). Thus "ab-1.234" and "AB1234" are one identity.
 - After sign-in, sign-up, sign-out, and a document link, the client removes all cached queries, because the query keys do not include the user or the citizen.
 
 ### Open product decisions

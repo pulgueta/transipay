@@ -46,7 +46,7 @@ const seedWorld = async (scheduledIn = "-1 hour") => {
   const citizenId = await queryId(
     `insert into citizen (document_type, document_number, first_name, last_name)
      values ('CC', $1, 'Ana', 'Rojas') returning id`,
-    [unique()]
+    [unique().toUpperCase()]
   );
   const appointmentId = await queryId(
     `insert into appointment (citizen_id, entity_id, branch_id, procedure_type_id, scheduled_at)
