@@ -24,6 +24,7 @@ import { FieldDescription, FieldGroup } from "@/components/ui/field";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatAmount } from "@/lib/format-amount";
 import {
   listEntitiesFn,
   listInfractionsFn,
@@ -33,8 +34,6 @@ import {
   createFineFn,
   createProcedureFn,
 } from "@/server/obligations/staff-functions";
-
-import { formatAmount } from "../payments/-format-amount";
 
 type StoredObligation = Awaited<ReturnType<typeof createFineFn>>;
 

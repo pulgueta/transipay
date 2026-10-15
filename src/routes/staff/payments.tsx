@@ -28,13 +28,12 @@ import { PageHeader } from "@/components/staff/page-header";
 import { SortableHeader } from "@/components/staff/sortable-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatAmount } from "@/lib/format-amount";
 import type { PaymentAttemptReviewReason } from "@/server/db/schema/payments";
 import {
   clearPaymentReviewFn,
   listPaymentsUnderReviewFn,
 } from "@/server/payments/functions";
-
-import { formatAmount } from "../payments/-format-amount";
 
 const REVIEW_REASON_LABELS: Record<PaymentAttemptReviewReason, string> = {
   second_approval: "Second approval (possible overpayment)",

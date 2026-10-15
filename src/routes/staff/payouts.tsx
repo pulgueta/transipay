@@ -55,6 +55,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { canUser } from "@/lib/auth/permissions";
+import { formatAmount } from "@/lib/format-amount";
 import type {
   PayoutReviewReason,
   PayoutStatus,
@@ -65,8 +66,6 @@ import {
   listPayoutsFn,
   reconcilePayoutsFn,
 } from "@/server/payouts/functions";
-
-import { formatAmount } from "../payments/-format-amount";
 
 /** The payout statuses, for the filter. The schema file owns `PAYOUT_STATUSES`, but it loads Drizzle. */
 const STATUS_VALUES = [
