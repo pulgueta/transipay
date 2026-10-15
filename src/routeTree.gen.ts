@@ -10,6 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccountRouteImport } from './routes/account'
+import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as PaymentsPaymentIdRouteImport } from './routes/payments/$paymentId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiJobsRunRouteImport } from './routes/api/jobs/run'
@@ -19,6 +22,21 @@ import { Route as ApiWebhooksWompiPayoutsRouteImport } from './routes/api/webhoo
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignUpRoute = SignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PaymentsPaymentIdRoute = PaymentsPaymentIdRouteImport.update({
@@ -49,6 +67,9 @@ const ApiWebhooksWompiPayoutsRoute = ApiWebhooksWompiPayoutsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
   '/payments/$paymentId': typeof PaymentsPaymentIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/jobs/run': typeof ApiJobsRunRoute
@@ -57,6 +78,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
   '/payments/$paymentId': typeof PaymentsPaymentIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/jobs/run': typeof ApiJobsRunRoute
@@ -66,6 +90,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
   '/payments/$paymentId': typeof PaymentsPaymentIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/jobs/run': typeof ApiJobsRunRoute
@@ -76,6 +103,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
+    | '/sign-in'
+    | '/sign-up'
     | '/payments/$paymentId'
     | '/api/auth/$'
     | '/api/jobs/run'
@@ -84,6 +114,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account'
+    | '/sign-in'
+    | '/sign-up'
     | '/payments/$paymentId'
     | '/api/auth/$'
     | '/api/jobs/run'
@@ -92,6 +125,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/account'
+    | '/sign-in'
+    | '/sign-up'
     | '/payments/$paymentId'
     | '/api/auth/$'
     | '/api/jobs/run'
@@ -101,6 +137,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRoute
+  SignInRoute: typeof SignInRoute
+  SignUpRoute: typeof SignUpRoute
   PaymentsPaymentIdRoute: typeof PaymentsPaymentIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiJobsRunRoute: typeof ApiJobsRunRoute
@@ -115,6 +154,27 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof SignUpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/payments/$paymentId': {
@@ -157,6 +217,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRoute,
+  SignInRoute: SignInRoute,
+  SignUpRoute: SignUpRoute,
   PaymentsPaymentIdRoute: PaymentsPaymentIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiJobsRunRoute: ApiJobsRunRoute,
