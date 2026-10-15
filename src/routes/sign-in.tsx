@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Link,
   createFileRoute,
@@ -19,12 +20,14 @@ import {
 } from "@/components/ui/card";
 import { authClient } from "@/lib/auth/client";
 import { sanitizeRedirect } from "@/lib/auth/guards";
+import { reloadForNewSession } from "@/lib/auth/session-change";
 
 /** `redirect` is the page to go back to after sign-in. `sanitizeRedirect` keeps only a path in this app. */
 const searchSchema = z.object({ redirect: z.string().optional() });
 
 const SignInPage = () => {
   const redirectTo = sanitizeRedirect(Route.useSearch().redirect);
+  const queryClient = useQueryClient();
   const router = useRouter();
   const navigate = useNavigate();
 
@@ -36,7 +39,7 @@ const SignInPage = () => {
         : (error.message ?? "We could not sign you in. Try again.");
     }
     // The root route loads the session again on navigation.
-    await router.invalidate();
+    await reloadForNewSession(queryClient, router);
     await navigate({ href: redirectTo });
     return null;
   };

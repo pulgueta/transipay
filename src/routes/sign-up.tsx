@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Link,
   createFileRoute,
@@ -20,12 +21,14 @@ import {
 } from "@/components/ui/card";
 import { authClient } from "@/lib/auth/client";
 import { sanitizeRedirect } from "@/lib/auth/guards";
+import { reloadForNewSession } from "@/lib/auth/session-change";
 import { linkCitizenFn } from "@/server/citizens/functions";
 
 const searchSchema = z.object({ redirect: z.string().optional() });
 
 const SignUpPage = () => {
   const redirectTo = sanitizeRedirect(Route.useSearch().redirect);
+  const queryClient = useQueryClient();
   const router = useRouter();
   const navigate = useNavigate();
   const linkCitizen = useServerFn(linkCitizenFn);
@@ -41,7 +44,7 @@ const SignUpPage = () => {
         ? "An account with this email exists. Sign in instead."
         : (error.message ?? "We could not create the account. Try again.");
     }
-    await router.invalidate();
+    await reloadForNewSession(queryClient, router);
     try {
       await linkCitizen({ data: { documentType, documentNumber } });
     } catch {
