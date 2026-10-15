@@ -63,6 +63,14 @@ const seedWorld = async (scheduledIn = "-1 hour") => {
   };
 };
 
+const auditActors = async (recordId: string, action: string) => {
+  const result = await database.pool.query<{ actor_user_id: string | null }>(
+    "select actor_user_id from audit_log where table_name = 'appointment' and record_id = $1 and action = $2",
+    [recordId, action]
+  );
+  return result.rows.map((row) => row.actor_user_id);
+};
+
 const appointmentState = async (id: string) => {
   const row = await database.pool.query<{ status: string }>(
     "select status from appointment where id = $1",
@@ -81,8 +89,7 @@ describe("staff appointments", () => {
     await database.pool.end();
   });
 
-  // The appointment table has no audit trigger (see drizzle/0001_audit_trigger.sql), so there is no actor check.
-  it("marks a scheduled appointment as attended", async () => {
+  it("marks a scheduled appointment as attended and records the actor", async () => {
     const world = await seedWorld();
 
     const outcome = await updateAppointmentStatus(appDatabase, {
@@ -100,6 +107,9 @@ describe("staff appointments", () => {
     await expect(appointmentState(world.appointmentId)).resolves.toBe(
       "attended"
     );
+    await expect(
+      auditActors(world.appointmentId, "update")
+    ).resolves.toStrictEqual([world.actorId]);
   });
 
   it("refuses a second change, an appointment of another entity, and an unknown id", async () => {

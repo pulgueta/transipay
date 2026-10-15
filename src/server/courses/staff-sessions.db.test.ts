@@ -96,8 +96,7 @@ describe("staff course sessions", () => {
     await database.pool.end();
   });
 
-  // The course_session table has no audit trigger (see drizzle/0001_audit_trigger.sql), so there is no actor check.
-  it("creates a session at a branch of the entity", async () => {
+  it("creates a session at a branch of the entity and records the actor", async () => {
     const world = await seedWorld();
 
     const outcome = await createCourseSession(appDatabase, sessionInput(world));
@@ -114,6 +113,11 @@ describe("staff course sessions", () => {
       [outcome.ok ? outcome.session.id : ""]
     );
     expect(stored.rows).toStrictEqual([{ capacity: 20 }]);
+    const audit = await database.pool.query<{ actor_user_id: string }>(
+      "select actor_user_id from audit_log where table_name = 'course_session' and record_id = $1 and action = 'insert'",
+      [outcome.ok ? outcome.session.id : ""]
+    );
+    expect(audit.rows).toStrictEqual([{ actor_user_id: world.actorId }]);
   });
 
   it("refuses a branch of another entity, an entity outside the scope, and an end before the start", async () => {
