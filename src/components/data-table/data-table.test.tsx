@@ -67,7 +67,7 @@ describe("DataTable visibility", () => {
 
     expect(
       screen
-        .getByRole("cell", { name: "No records to show." })
+        .getByRole("cell", { name: "No hay registros para mostrar." })
         .getAttribute("colspan")
     ).toBe("1");
   });

@@ -3,66 +3,34 @@ import { getRequestHeaders } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import type { Role } from "@/lib/auth/permissions";
-import { auth, createAuth } from "@/server/auth";
+import { createAuth } from "@/server/auth";
+import { db } from "@/server/db/client";
 import { withActor } from "@/server/db/with-actor";
 import { requirePermission } from "@/server/middleware/auth";
+
+import { listUsers } from "./list";
 
 const userInput = z.object({ userId: z.uuid() });
 
 export const USERS_PAGE_SIZE = 25;
 
-/**
- * Lists the users for the staff users page, newest first.
- * The admin plugin searches one field: a search with "@" looks in the email, else in the name.
- * The plugin pages with an offset. It is the only list in the app that does, because the plugin owns the query.
- */
+/** Lists the users for the staff users page, newest first, with a keyset on `id` (see `listUsers`). */
 export const listUsersFn = createServerFn({ method: "GET" })
   .middleware([requirePermission({ user: ["list"] })])
   .validator(
     z.object({
       search: z.string().trim().max(100).optional(),
-      offset: z.int().min(0).default(0),
+      cursor: z.uuid().optional(),
     })
   )
-  .handler(async ({ data }) => {
-    const search = data.search ?? "";
-    const searchQuery =
-      search === ""
-        ? {}
-        : {
-            searchValue: search,
-            searchField: search.includes("@")
-              ? ("email" as const)
-              : ("name" as const),
-            searchOperator: "contains" as const,
-          };
-    const result = await auth.api.listUsers({
-      headers: getRequestHeaders(),
-      query: {
+  .handler(
+    async ({ data }) =>
+      await listUsers(db, {
+        search: data.search,
+        cursor: data.cursor,
         limit: USERS_PAGE_SIZE,
-        offset: data.offset,
-        sortBy: "createdAt",
-        sortDirection: "desc",
-        ...searchQuery,
-      },
-    });
-    const users = result.users.map((user) => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role ?? null,
-      banned: user.banned === true,
-      banReason: user.banReason ?? null,
-      banExpires: user.banExpires ?? null,
-      createdAt: user.createdAt,
-    }));
-    const nextOffset = data.offset + users.length;
-    return {
-      users,
-      total: result.total,
-      nextOffset: nextOffset < result.total ? nextOffset : null,
-    };
-  });
+      })
+  );
 
 export const setUserRoleFn = createServerFn({ method: "POST" })
   .middleware([requirePermission({ user: ["set-role"] })])

@@ -1,13 +1,13 @@
 const TIME_ZONE = "America/Bogota";
 
-const dateTimeFormat = new Intl.DateTimeFormat("en-US", {
+const dateTimeFormat = new Intl.DateTimeFormat("es-CO", {
   timeZone: TIME_ZONE,
   dateStyle: "medium",
   timeStyle: "short",
 });
 
 // A `date` column is a calendar date. UTC keeps the same date for every reader.
-const dateFormat = new Intl.DateTimeFormat("en-US", {
+const dateFormat = new Intl.DateTimeFormat("es-CO", {
   timeZone: "UTC",
   dateStyle: "medium",
 });
@@ -15,10 +15,10 @@ const dateFormat = new Intl.DateTimeFormat("en-US", {
 // en-CA gives YYYY-MM-DD.
 const isoDateFormat = new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE });
 
-/** Shows an instant as a date and time in Bogota, for example "Oct 14, 2026, 10:30 AM". */
+/** Shows an instant as a date and time in Bogota, for example "14/10/2026, 10:30 a. m.". */
 export const formatBogotaDateTime = (date: Date) => dateTimeFormat.format(date);
 
-/** Shows a `date` column value ("YYYY-MM-DD") as a date, for example "Oct 20, 2026". */
+/** Shows a `date` column value ("YYYY-MM-DD") as a date, for example "20/10/2026". */
 export const formatBogotaDate = (date: string) =>
   dateFormat.format(new Date(date));
 

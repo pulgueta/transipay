@@ -67,7 +67,8 @@ The audit trigger runs as the caller. The application role must have INSERT on `
 - better-auth admin endpoints are in `disabledPaths`, so HTTP clients cannot call them. Our server functions call them through `createAuth(tx)` inside `withActor(actorId, tx => ...)`. The admin write and the actor setting then use the same connection and the same transaction.
 - A notification keeps its content and recipient as a snapshot that does not change. The database rejects UPDATE of the snapshot columns and rejects DELETE.
 - `appointment`, `course_session`, and `course_enrollment` have the audit trigger (migration 0018). Staff close appointments and record course attendance, and an attendance gives a fine discount.
-- Staff record course attendance only after the session ends (database clock), because each result closes the enrollment. A session discount is from 1% to 99%, and an attendance that makes a fine free is refused, because a fine is settled only by a payment.
+- `citizen` has the audit trigger (migration 0020). A document link gives a user access to the obligations and payments of the citizen.
+- Staff record course attendance only after the session ends (database clock), because each result closes the enrollment. A session discount is from 1% to 99%, and an attendance that makes a fine free is refused, because a fine is settled only by a payment. The CHECK `course_session_discount_percent_check` also refuses 0 and 100 (migration 0020).
 
 ### Limit
 
@@ -83,6 +84,7 @@ The audit trigger runs as the caller. The application role must have INSERT on `
 - A response that depends on the session has `Cache-Control: private, no-store`.
 - The local database port listens only on `127.0.0.1`.
 - A staff member works only with the entities of their `staff_member` rows (`staffScopeFor`). The admin works with all entities. Each staff read and write of entity data (obligations, payment reviews, payouts, appointments, course sessions, attendance) uses this scope. A record outside the scope reads as not found, and a write for an entity outside the scope is refused.
+- Each `staff_member` row has the role of the user in that entity. A staff read or write of entity data needs the permission in two roles: the platform role (`requirePermission`) and the role in the entity (`entityRoleAllows`, `entityScopeFilter`). For example, a platform supervisor who is a cashier in entity B cannot create an obligation for B. A role with no permission set (`instructor`) gives no permission.
 - A document number is not a secret. The server links an account to a registered citizen only when the email of the citizen record is the email of the account. Otherwise staff must link it.
 - A document number has one canonical form: no spaces, points, or hyphens, and uppercase letters (`normalizeDocumentNumber`). `documentNumberSchema` gives this form to each server function, and the CHECK `citizen_document_number_canonical_check` refuses other forms (migration 0019). Thus "ab-1.234" and "AB1234" are one identity.
 - After sign-in, sign-up, sign-out, and a document link, the client removes all cached queries, because the query keys do not include the user or the citizen.

@@ -44,7 +44,7 @@ export const PayButton = ({
         size={size}
         variant={variant}
       >
-        {checkout.isPending ? "Opening the payment…" : children}
+        {checkout.isPending ? "Abriendo el pago…" : children}
       </Button>
       {checkout.isError ? (
         <p className="text-destructive text-sm" role="alert">

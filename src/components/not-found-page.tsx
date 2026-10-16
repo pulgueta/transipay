@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 
 export const NotFoundPage = () => (
   <section className="mx-auto flex max-w-md flex-col gap-4 py-16">
-    <h1 className="text-2xl font-semibold tracking-tight">Page not found</h1>
+    <h1 className="text-2xl font-semibold tracking-tight">
+      Página no encontrada
+    </h1>
     <p className="text-muted-foreground">
-      This page does not exist. Make sure that the address is correct.
+      Esta página no existe. Revise que la dirección sea correcta.
     </p>
     <Button
       className="self-start"
@@ -14,7 +16,7 @@ export const NotFoundPage = () => (
       render={<Link to="/" />}
       variant="outline"
     >
-      Go to the home page
+      Ir al inicio
     </Button>
   </section>
 );

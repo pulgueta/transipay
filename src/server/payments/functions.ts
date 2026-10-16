@@ -25,21 +25,22 @@ const CHECKOUT_MESSAGES: Record<
   Exclude<CheckoutRefusal["reason"], "other_amount_open">,
   string
 > = {
-  obligation_not_found: "We cannot find this obligation.",
-  installment_not_found: "We cannot find this installment.",
-  obligation_not_payable: "This obligation is paid or void. You cannot pay it.",
+  obligation_not_found: "No encontramos esta obligación.",
+  installment_not_found: "No encontramos esta cuota.",
+  obligation_not_payable:
+    "Esta obligación está pagada o anulada. No puede pagarla.",
   installment_required:
-    "This obligation has a payment agreement. Select an installment to pay.",
+    "Esta obligación tiene un acuerdo de pago. Seleccione una cuota para pagar.",
   installment_not_allowed:
-    "This obligation has no payment agreement. Pay the full amount.",
-  installment_not_payable: "This installment is paid.",
-  nothing_due: "This obligation has no amount to pay.",
+    "Esta obligación no tiene acuerdo de pago. Pague el valor total.",
+  installment_not_payable: "Esta cuota ya está pagada.",
+  nothing_due: "Esta obligación no tiene valor por pagar.",
   earlier_payment_unavailable:
-    "We cannot check the status of an earlier payment now. Try again in a few minutes.",
+    "No podemos revisar el estado de un pago anterior ahora. Intente de nuevo en unos minutos.",
   payment_in_progress:
-    "A payment for this obligation is in progress. Wait for its result before you pay again.",
+    "Hay un pago en proceso para esta obligación. Espere su resultado antes de pagar de nuevo.",
   payment_under_review:
-    "Staff must examine an earlier payment for this obligation. Do not pay again. We will contact you.",
+    "El personal debe revisar un pago anterior de esta obligación. No pague de nuevo. Nos comunicaremos con usted.",
 };
 
 const CHECKOUT_STATUSES: Record<CheckoutRefusal["reason"], number> = {
@@ -68,7 +69,7 @@ const checkoutError = (refusal: CheckoutRefusal) =>
   httpError(
     CHECKOUT_STATUSES[refusal.reason],
     refusal.reason === "other_amount_open"
-      ? `An earlier payment link with a different amount is open until ${formatBogotaTime(refusal.until)}. Wait until then to pay again.`
+      ? `Un enlace de pago anterior con otro valor está abierto hasta las ${formatBogotaTime(refusal.until)}. Espere hasta esa hora para pagar de nuevo.`
       : CHECKOUT_MESSAGES[refusal.reason]
   );
 
@@ -81,7 +82,10 @@ export const getAcceptanceTokensFn = createServerFn({ method: "GET" })
     const personalDataAuth = merchant?.presigned_personal_data_auth;
 
     if (error || !acceptance || !personalDataAuth) {
-      throw httpError(502, "We cannot get the payment terms now. Try again.");
+      throw httpError(
+        502,
+        "No podemos obtener los términos de pago ahora. Intente de nuevo."
+      );
     }
 
     return {
@@ -216,7 +220,7 @@ export const refreshPaymentFn = createServerFn({ method: "POST" })
     if (result.kind === "unavailable") {
       throw httpError(
         503,
-        "We cannot get the payment status now. Try again in a few minutes."
+        "No podemos obtener el estado del pago ahora. Intente de nuevo en unos minutos."
       );
     }
     return await readPaymentView(current.id, context.user);
@@ -235,8 +239,8 @@ export const listPaymentsUnderReviewFn = createServerFn({ method: "GET" })
   );
 
 const CLEAR_REVIEW_MESSAGES = {
-  attempt_not_found: "We cannot find this payment attempt.",
-  not_under_review: "This payment attempt is not under review.",
+  attempt_not_found: "No encontramos este intento de pago.",
+  not_under_review: "Este intento de pago no está en revisión.",
 } as const;
 
 /** Marks an attempt as examined: its review reason becomes null. Returns the attempt as stored after the write. */

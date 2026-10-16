@@ -1,5 +1,6 @@
 import "@tanstack/react-start/server-only";
 import { and, eq } from "drizzle-orm";
+import { DatabaseError } from "pg";
 
 import type { Database, Transaction } from "@/server/db/client";
 import { citizen, vehicle } from "@/server/db/schema/citizens";
@@ -12,7 +13,7 @@ import {
   procedureType,
 } from "@/server/db/schema/obligations";
 import { runAsActor } from "@/server/db/with-actor";
-import { isInScope } from "@/server/staff/scope";
+import { entityRoleAllows } from "@/server/staff/scope";
 import type { StaffScope } from "@/server/staff/scope";
 
 export type StoredObligation = Pick<
@@ -46,7 +47,7 @@ interface CommonInput {
   dueOn: string | null;
   /** The plate of the vehicle, or null when the obligation has no vehicle. */
   plate: string | null;
-  /** The entities of the staff member. The creditor entity must be one of them. */
+  /** The entities of the staff member. Their role in the creditor entity must allow `obligation: create`. */
   scope: StaffScope;
 }
 
@@ -82,7 +83,9 @@ const checkCommon = async (
   input: CommonInput,
   requiredKind: "transit_authority" | null
 ): Promise<{ vehicleId: string | null } | Refused> => {
-  if (!isInScope(input.scope, input.entityId)) {
+  if (
+    !entityRoleAllows(input.scope, input.entityId, { obligation: ["create"] })
+  ) {
     return { ok: false, reason: "entity_not_in_scope" };
   }
   const [target] = await tx
@@ -155,6 +158,33 @@ const insertObligation = async (
   return stored;
 };
 
+/** True when the error (or its cause) is the unique violation of the obligation number for the entity. */
+const isNumberInUseError = (error: Error) => {
+  const cause = error.cause instanceof DatabaseError ? error.cause : error;
+  return (
+    cause instanceof DatabaseError &&
+    cause.code === "23505" &&
+    cause.constraint === "obligation_entity_id_number_key"
+  );
+};
+
+/**
+ * Two concurrent requests can both pass the check for a used number. Then the unique constraint
+ * refuses the second insert, and this function returns `number_in_use` for it.
+ */
+const refuseUsedNumber = async (
+  create: () => Promise<CreateObligationOutcome>
+): Promise<CreateObligationOutcome> => {
+  try {
+    return await create();
+  } catch (error) {
+    if (error instanceof Error && isNumberInUseError(error)) {
+      return { ok: false, reason: "number_in_use" };
+    }
+    throw error;
+  }
+};
+
 /**
  * Registers a fine: one obligation row and one fine row, in one transaction with the actor.
  * Only the transit authority issues fines. The amount is the catalog amount at issue time.
@@ -163,38 +193,41 @@ export const createFine = async (
   database: Database,
   input: CreateFineInput
 ): Promise<CreateObligationOutcome> =>
-  await runAsActor(database, input.actorId, async (tx) => {
-    const common = await checkCommon(tx, input, "transit_authority");
-    if ("ok" in common) {
-      return common;
-    }
-    const [catalog] = await tx
-      .select({
-        amountInCents: infraction.amountInCents,
-        isActive: infraction.isActive,
-      })
-      .from(infraction)
-      .where(eq(infraction.id, input.infractionId));
-    if (!catalog?.isActive) {
-      return { ok: false, reason: "infraction_not_found" };
-    }
+  await refuseUsedNumber(
+    async () =>
+      await runAsActor(database, input.actorId, async (tx) => {
+        const common = await checkCommon(tx, input, "transit_authority");
+        if ("ok" in common) {
+          return common;
+        }
+        const [catalog] = await tx
+          .select({
+            amountInCents: infraction.amountInCents,
+            isActive: infraction.isActive,
+          })
+          .from(infraction)
+          .where(eq(infraction.id, input.infractionId));
+        if (!catalog?.isActive) {
+          return { ok: false, reason: "infraction_not_found" };
+        }
 
-    const stored = await insertObligation(
-      tx,
-      input,
-      "fine",
-      catalog.amountInCents
-    );
-    await tx.insert(fine).values({
-      obligationId: stored.id,
-      infractionId: input.infractionId,
-      vehicleId: common.vehicleId,
-      location: input.location,
-      occurredAt: input.occurredAt,
-      agentCode: input.agentCode,
-    });
-    return { ok: true, obligation: stored };
-  });
+        const stored = await insertObligation(
+          tx,
+          input,
+          "fine",
+          catalog.amountInCents
+        );
+        await tx.insert(fine).values({
+          obligationId: stored.id,
+          infractionId: input.infractionId,
+          vehicleId: common.vehicleId,
+          location: input.location,
+          occurredAt: input.occurredAt,
+          agentCode: input.agentCode,
+        });
+        return { ok: true, obligation: stored };
+      })
+  );
 
 /**
  * Registers a procedure: one obligation row and one procedure row, in one transaction with the actor.
@@ -204,35 +237,38 @@ export const createProcedure = async (
   database: Database,
   input: CreateProcedureInput
 ): Promise<CreateObligationOutcome> =>
-  await runAsActor(database, input.actorId, async (tx) => {
-    const common = await checkCommon(tx, input, null);
-    if ("ok" in common) {
-      return common;
-    }
-    const [type] = await tx
-      .select({ amountInCents: procedureType.amountInCents })
-      .from(procedureType)
-      .where(
-        and(
-          eq(procedureType.id, input.procedureTypeId),
-          eq(procedureType.entityId, input.entityId)
-        )
-      );
-    if (type === undefined) {
-      return { ok: false, reason: "procedure_type_not_found" };
-    }
+  await refuseUsedNumber(
+    async () =>
+      await runAsActor(database, input.actorId, async (tx) => {
+        const common = await checkCommon(tx, input, null);
+        if ("ok" in common) {
+          return common;
+        }
+        const [type] = await tx
+          .select({ amountInCents: procedureType.amountInCents })
+          .from(procedureType)
+          .where(
+            and(
+              eq(procedureType.id, input.procedureTypeId),
+              eq(procedureType.entityId, input.entityId)
+            )
+          );
+        if (type === undefined) {
+          return { ok: false, reason: "procedure_type_not_found" };
+        }
 
-    const stored = await insertObligation(
-      tx,
-      input,
-      "procedure",
-      type.amountInCents
-    );
-    await tx.insert(procedure).values({
-      obligationId: stored.id,
-      entityId: input.entityId,
-      procedureTypeId: input.procedureTypeId,
-      vehicleId: common.vehicleId,
-    });
-    return { ok: true, obligation: stored };
-  });
+        const stored = await insertObligation(
+          tx,
+          input,
+          "procedure",
+          type.amountInCents
+        );
+        await tx.insert(procedure).values({
+          obligationId: stored.id,
+          entityId: input.entityId,
+          procedureTypeId: input.procedureTypeId,
+          vehicleId: common.vehicleId,
+        });
+        return { ok: true, obligation: stored };
+      })
+  );

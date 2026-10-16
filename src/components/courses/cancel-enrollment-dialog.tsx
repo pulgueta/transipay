@@ -39,14 +39,14 @@ export const CancelEnrollmentDialog = ({
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        Cancel
+        Cancelar
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Cancel this enrollment?</DialogTitle>
+          <DialogTitle>¿Cancelar esta inscripción?</DialogTitle>
           <DialogDescription>
-            Session on {formatBogotaDateTime(startsAt)}. The fine keeps its full
-            amount. You can enroll in another session later.
+            Sesión del {formatBogotaDateTime(startsAt)}. El comparendo conserva
+            su valor completo. Puede inscribirse en otra sesión más adelante.
           </DialogDescription>
         </DialogHeader>
         {cancel.isError ? (
@@ -62,7 +62,7 @@ export const CancelEnrollmentDialog = ({
             }}
             variant="outline"
           >
-            Keep it
+            Conservar inscripción
           </Button>
           <Button
             disabled={cancel.isPending}
@@ -71,7 +71,7 @@ export const CancelEnrollmentDialog = ({
             }}
             variant="destructive"
           >
-            {cancel.isPending ? "Cancelling…" : "Cancel the enrollment"}
+            {cancel.isPending ? "Cancelando…" : "Cancelar inscripción"}
           </Button>
         </DialogFooter>
       </DialogContent>

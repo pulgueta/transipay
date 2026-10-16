@@ -18,64 +18,64 @@ interface Service {
 const SERVICES: Service[] = [
   {
     icon: IconReceipt,
-    title: "Pay fines and procedures",
+    title: "Pague comparendos y trámites",
     description:
-      "See each obligation with its amount and status. Pay it online with a card, PSE, or Nequi through Wompi.",
+      "Vea cada obligación con su valor y estado. Páguela en línea con tarjeta, PSE o Nequi a través de Wompi.",
   },
   {
     icon: IconCalendarEvent,
-    title: "Book an appointment",
+    title: "Agende una cita",
     description:
-      "Choose a date and time at the ITTB, a CDA, or a CEA. Cancel it from the same page if your plans change.",
+      "Elija fecha y hora en el ITTB, un CDA o un CEA. Si sus planes cambian, cancélela desde la misma página.",
   },
   {
     icon: IconSchool,
-    title: "Take a course for a fine discount",
+    title: "Tome un curso para obtener descuento en su comparendo",
     description:
-      "Enroll in a pedagogical course at a CEA. The discount applies to the fine when you complete it.",
+      "Inscríbase en un curso de seguridad vial en un CEA. El descuento se aplica al comparendo cuando usted asiste.",
   },
   {
     icon: IconCalendarRepeat,
-    title: "Pay in installments",
+    title: "Pague por cuotas",
     description:
-      "When the ITTB approves a payment agreement, pay each installment on its date from your obligations.",
+      "Cuando el ITTB aprueba un acuerdo de pago, pague cada cuota en su fecha desde sus obligaciones.",
   },
 ];
 
 const PAYMENT_STEPS = [
   {
-    title: "Find the obligation",
+    title: "Busque la obligación",
     description:
-      "Sign in with your document. Your fines and procedures appear with the amount due.",
+      "Inicie sesión con su correo y contraseña. Sus comparendos y trámites aparecen con el valor a pagar.",
   },
   {
-    title: "Pay through Wompi",
+    title: "Pague a través de Wompi",
     description:
-      "Press Pay. Wompi opens the checkout, and you choose the payment method.",
+      "Presione Pagar. Wompi abre la pasarela de pago y usted elige el medio de pago.",
   },
   {
-    title: "See the result",
+    title: "Consulte el resultado",
     description:
-      "Transipay records the result from Wompi and marks the obligation as paid. You can check the status at any time.",
+      "Transipay registra el resultado de Wompi y marca la obligación como pagada. Puede consultar el estado en cualquier momento.",
   },
 ];
 
 const ENTITIES = [
-  "ITTB, the transit authority",
-  "CDAs, the inspection centers",
-  "CEAs, the driving schools",
-  "Collectors",
+  "ITTB, la autoridad de tránsito",
+  "CDA, los centros de diagnóstico automotor",
+  "CEA, las escuelas de conducción",
+  "Recaudadores",
 ];
 
 const Hero = ({ signedIn }: { signedIn: boolean }) => (
   <section className="grid items-center gap-10 py-8 lg:grid-cols-12 lg:py-16">
     <div className="flex flex-col gap-6 lg:col-span-6">
       <h1 className="text-4xl font-semibold tracking-tight text-balance md:text-5xl">
-        Pay your transit obligations in Barrancabermeja online
+        Pague en línea sus obligaciones de tránsito en Barrancabermeja
       </h1>
       <p className="text-muted-foreground max-w-[50ch] text-lg">
-        Find your fines and procedures, book an appointment, and pay from one
-        place. One portal for all transit entities.
+        Consulte sus comparendos y trámites, agende una cita y pague desde un
+        solo lugar. Un portal para todas las entidades de tránsito.
       </p>
       <div className="flex flex-wrap gap-3">
         {signedIn ? (
@@ -85,7 +85,7 @@ const Hero = ({ signedIn }: { signedIn: boolean }) => (
               render={<Link to="/obligations" />}
               size="lg"
             >
-              Find my obligations
+              Consultar mis obligaciones
             </Button>
             <Button
               nativeButton={false}
@@ -93,7 +93,7 @@ const Hero = ({ signedIn }: { signedIn: boolean }) => (
               size="lg"
               variant="outline"
             >
-              Book an appointment
+              Agendar una cita
             </Button>
           </>
         ) : (
@@ -105,7 +105,7 @@ const Hero = ({ signedIn }: { signedIn: boolean }) => (
               }
               size="lg"
             >
-              Find my obligations
+              Consultar mis obligaciones
             </Button>
             <Button
               nativeButton={false}
@@ -113,7 +113,7 @@ const Hero = ({ signedIn }: { signedIn: boolean }) => (
               size="lg"
               variant="outline"
             >
-              Create account
+              Crear cuenta
             </Button>
           </>
         )}
@@ -122,11 +122,11 @@ const Hero = ({ signedIn }: { signedIn: boolean }) => (
     <div className="lg:col-span-6">
       {/* Placeholder photo until the ITTB gives one. 4:3 keeps the space while it loads. */}
       <img
-        alt="A street with cars and motorcycles in Barrancabermeja"
+        alt="Una vía con vehículos"
         className="aspect-4/3 w-full rounded-lg border object-cover"
         fetchPriority="high"
         height={900}
-        src="https://picsum.photos/seed/transipay-barrancabermeja-transit/1200/900"
+        src="https://picsum.photos/seed/transipay-road-traffic-07/1200/900"
         width={1200}
       />
     </div>
@@ -136,7 +136,7 @@ const Hero = ({ signedIn }: { signedIn: boolean }) => (
 const Services = () => (
   <section className="flex flex-col gap-10 py-16">
     <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
-      What you can do here
+      Lo que puede hacer aquí
     </h2>
     <ul className="grid gap-x-10 gap-y-8 md:grid-cols-2">
       {SERVICES.map((service) => (
@@ -161,7 +161,7 @@ const Services = () => (
 const HowPaymentWorks = () => (
   <section className="grid gap-8 border-t py-16 lg:grid-cols-12">
     <h2 className="text-2xl font-semibold tracking-tight md:text-3xl lg:col-span-4">
-      How a payment works
+      Cómo funciona un pago
     </h2>
     <ol className="flex flex-col divide-y lg:col-span-8">
       {PAYMENT_STEPS.map((step) => (
@@ -178,7 +178,9 @@ const HowPaymentWorks = () => (
 
 const TrustStrip = () => (
   <section className="flex flex-col gap-4 border-t py-10">
-    <p className="text-sm font-medium">The entities that work in Transipay</p>
+    <p className="text-sm font-medium">
+      Las entidades que trabajan en Transipay
+    </p>
     <ul className="text-muted-foreground flex flex-wrap gap-x-8 gap-y-2 text-sm">
       {ENTITIES.map((entity) => (
         <li key={entity}>{entity}</li>

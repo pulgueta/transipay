@@ -34,14 +34,14 @@ export const listCourseSessionsFn = createServerFn({ method: "GET" })
   );
 
 const CREATE_MESSAGES: Record<CreateSessionRefusal, string> = {
-  entity_not_in_scope: "You are not a staff member of this entity.",
-  entity_inactive: "This entity is not active.",
+  entity_not_in_scope:
+    "Su rol en esta entidad no le permite hacer esta operación.",
+  entity_inactive: "Esta entidad no está activa.",
   entity_cannot_give_courses:
-    "This entity cannot give courses. Select a CEA or the transit authority.",
-  branch_not_found:
-    "This branch does not belong to the entity, or it is not active.",
-  ends_before_start: "The end must be after the start.",
-  discount_out_of_range: "Enter a discount from 1% to 99%.",
+    "Esta entidad no puede dictar cursos. Seleccione un CEA o el organismo de tránsito.",
+  branch_not_found: "Esta sede no pertenece a la entidad o no está activa.",
+  ends_before_start: "El fin debe ser después del inicio.",
+  discount_out_of_range: "Escriba un descuento de 1 % a 99 %.",
 };
 
 const CREATE_STATUSES: Record<CreateSessionRefusal, number> = {
@@ -94,7 +94,7 @@ export const listSessionEnrollmentsFn = createServerFn({ method: "GET" })
       scope: await staffScopeFor(db, context.user),
     });
     if (rows === null) {
-      throw httpError(404, "We cannot find this course session.");
+      throw httpError(404, "No encontramos esta sesión del curso.");
     }
     return rows;
   });
@@ -103,12 +103,12 @@ const ATTENDANCE_MESSAGES: Record<
   Extract<RecordAttendanceOutcome, { ok: false }>["reason"],
   string
 > = {
-  enrollment_not_found: "We cannot find this enrollment.",
-  not_enrolled: "The attendance of this enrollment is already recorded.",
+  enrollment_not_found: "No encontramos esta inscripción.",
+  not_enrolled: "La asistencia de esta inscripción ya está registrada.",
   not_ended:
-    "This session did not end. You can record the attendance after its end.",
+    "Esta sesión no ha terminado. Puede registrar la asistencia cuando termine.",
   full_discount_not_supported:
-    "The session discount makes the fine free. You cannot record this attendance, because a fine closes only with a payment.",
+    "El descuento de la sesión deja el comparendo en cero. No puede registrar esta asistencia, porque un comparendo solo se cierra con un pago.",
 };
 
 /** Records the outcome and returns the enrollment and the obligation as stored after the write. */

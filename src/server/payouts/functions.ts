@@ -7,7 +7,7 @@ import { pageInputSchema } from "@/server/db/pagination";
 import { PAYOUT_STATUSES } from "@/server/db/schema/payments";
 import { httpError } from "@/server/http-error";
 import { requirePermission } from "@/server/middleware/auth";
-import { isInScope, staffScopeFor } from "@/server/staff/scope";
+import { entityRoleAllows, staffScopeFor } from "@/server/staff/scope";
 import { getWompiPayouts } from "@/server/wompi";
 
 import type { PayoutDeps } from "./port";
@@ -20,7 +20,10 @@ export const listPayoutBanksFn = createServerFn({ method: "GET" })
   .handler(async () => {
     const [error, banks] = await getWompiPayouts().listBanks();
     if (error) {
-      throw httpError(502, "We cannot get the bank list now. Try again.");
+      throw httpError(
+        502,
+        "No podemos obtener la lista de bancos ahora. Intente de nuevo."
+      );
     }
     return banks.map((bank) => ({
       id: bank.id,
@@ -64,7 +67,7 @@ const payoutDeps = (actorId: string): PayoutDeps => ({
  * and does not make a second payout. The payout row is queued with a snapshot of the bank account before the Wompi call,
  * so a lost response does not lose the payout. The returned status comes from the database.
  * The final status comes through the payouts webhook or reconciliation.
- * The entity must be in the scope of the staff member. This check comes before the idempotency key.
+ * The role of the staff member in the entity must allow `payout: create`. This check comes before the idempotency key.
  */
 export const createPayoutFn = createServerFn({ method: "POST" })
   .middleware([requirePermission({ payout: ["create"] })])
@@ -77,8 +80,15 @@ export const createPayoutFn = createServerFn({ method: "POST" })
     })
   )
   .handler(async ({ context, data }) => {
-    if (!isInScope(await staffScopeFor(db, context.user), data.entityId)) {
-      throw httpError(403, "You do not work for this entity.");
+    if (
+      !entityRoleAllows(await staffScopeFor(db, context.user), data.entityId, {
+        payout: ["create"],
+      })
+    ) {
+      throw httpError(
+        403,
+        "Su rol en esta entidad no le permite hacer esta operación."
+      );
     }
     const result = await createPayout(payoutDeps(context.actorId), data);
     switch (result.kind) {
@@ -88,22 +98,25 @@ export const createPayoutFn = createServerFn({ method: "POST" })
       case "conflict": {
         throw httpError(
           409,
-          "This request key is used by another payout. Start a new payout."
+          "Otra dispersión usa esta clave de solicitud. Empiece una dispersión nueva."
         );
       }
       case "not_configured": {
-        throw httpError(503, "Payouts are not configured on this server.");
+        throw httpError(
+          503,
+          "Las dispersiones no están configuradas en este servidor."
+        );
       }
       case "entity_not_found": {
-        throw httpError(404, "We cannot find this entity.");
+        throw httpError(404, "No encontramos esta entidad.");
       }
       case "entity_inactive": {
-        throw httpError(409, "This entity is not active.");
+        throw httpError(409, "Esta entidad no está activa.");
       }
       case "no_default_account": {
         throw httpError(
           409,
-          "This entity has no default bank account. Add one before you send a payout."
+          "Esta entidad no tiene una cuenta bancaria predeterminada. Agregue una antes de enviar una dispersión."
         );
       }
       default: {

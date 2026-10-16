@@ -1,13 +1,37 @@
 import { randomUUID } from "node:crypto";
+import { setTimeout as sleep } from "node:timers/promises";
 
 import { drizzle } from "drizzle-orm/node-postgres";
+import type { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 
 import { schema } from "@/server/db/client";
 import type { Database } from "@/server/db/client";
 import { createTestDatabase } from "@/server/db/testing";
+import { staffScopeFor } from "@/server/staff/scope";
 
 import { createFine, createProcedure } from "./staff-create";
+
+/** Polls until a session waits on a transaction lock for an insert into `obligation`. Fails after 5 s. */
+const waitForInsertLock = async (client: Pool) => {
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    // oxlint-disable-next-line no-await-in-loop -- One poll at a time.
+    const activity = await client.query(
+      `select pid from pg_stat_activity
+        where datname = current_database()
+          and wait_event_type = 'Lock'
+          and wait_event = 'transactionid'
+          and query ilike '%insert into "obligation"%'`
+    );
+    if (activity.rows.length > 0) {
+      return;
+    }
+    // oxlint-disable-next-line no-await-in-loop -- One poll at a time.
+    await sleep(10);
+  }
+  throw new Error("createFine did not wait on the obligation insert.");
+};
 
 const FINE_AMOUNT = 5_600_000;
 const PROCEDURE_AMOUNT = 120_000;
@@ -174,6 +198,32 @@ describe("staff obligations", () => {
     });
   });
 
+  it("refuses a used number when a concurrent insert commits the same number first", async () => {
+    const world = await seedWorld();
+    const input = fineInput(world);
+    // The other insert is not committed yet, so the check for a used number finds nothing.
+    const other = await database.pool.connect();
+    try {
+      await other.query("begin");
+      await other.query(
+        `insert into obligation (citizen_id, entity_id, kind, number, amount_in_cents)
+         values ($1, $2, 'fine', $3, 1000)`,
+        [world.citizenId, world.entityId, input.number]
+      );
+      const pending = createFine(appDatabase, input);
+      // Commit the other insert only when the insert of `createFine` waits on the unique index.
+      await waitForInsertLock(database.pool);
+      await other.query("commit");
+
+      await expect(pending).resolves.toStrictEqual({
+        ok: false,
+        reason: "number_in_use",
+      });
+    } finally {
+      other.release();
+    }
+  });
+
   it("creates a procedure with the amount of its type, and refuses a type of another entity", async () => {
     const world = await seedWorld();
     const number = `P-${unique()}`;
@@ -232,7 +282,10 @@ describe("staff obligations", () => {
   it("refuses a fine or a procedure for an entity outside the staff scope", async () => {
     const world = await seedWorld();
     const ownEntityId = await seedEntity();
-    const scope = { kind: "entities" as const, entityIds: [ownEntityId] };
+    const scope = {
+      kind: "entities" as const,
+      memberships: [{ entityId: ownEntityId, role: "supervisor" as const }],
+    };
 
     await expect(
       createFine(appDatabase, { ...fineInput(world), scope })
@@ -260,9 +313,39 @@ describe("staff obligations", () => {
     const world = await seedWorld();
     const outcome = await createFine(appDatabase, {
       ...fineInput(world),
-      scope: { kind: "entities", entityIds: [world.entityId] },
+      scope: {
+        kind: "entities",
+        memberships: [
+          { entityId: world.entityId, role: "supervisor" as const },
+        ],
+      },
     });
 
     expect(outcome.ok).toBeTruthy();
+  });
+
+  it("uses the role of the user in each entity, not the platform role", async () => {
+    const world = await seedWorld();
+    const entityB = world.entityId;
+    const entityA = await seedEntity();
+    // A platform supervisor who is a supervisor in entity A and only a cashier in entity B.
+    await database.pool.query(
+      `insert into staff_member (user_id, entity_id, role) values ($1, $2, 'supervisor'), ($1, $3, 'cashier')`,
+      [world.actorId, entityA, entityB]
+    );
+    const scope = await staffScopeFor(appDatabase, {
+      id: world.actorId,
+      role: "supervisor",
+    });
+
+    await expect(
+      createFine(appDatabase, { ...fineInput(world), scope })
+    ).resolves.toStrictEqual({ ok: false, reason: "entity_not_in_scope" });
+    const inA = await createFine(appDatabase, {
+      ...fineInput(world),
+      entityId: entityA,
+      scope,
+    });
+    expect(inA.ok).toBeTruthy();
   });
 });

@@ -12,19 +12,19 @@ describe(navLinksFor, () => {
 
   it("shows the Staff link to a role that can open a staff section", () => {
     expect(labels("scheduler")).toStrictEqual([
-      "Obligations",
-      "Appointments",
-      "Courses",
-      "Staff",
+      "Obligaciones",
+      "Citas",
+      "Cursos",
+      "Funcionarios",
     ]);
   });
 
   it("does not show the Staff link to a role with no staff section", () => {
     expect(labels("cashier")).toStrictEqual([
-      "Obligations",
-      "Appointments",
-      "Courses",
+      "Obligaciones",
+      "Citas",
+      "Cursos",
     ]);
-    expect(labels("citizen")).not.toContain("Staff");
+    expect(labels("citizen")).not.toContain("Funcionarios");
   });
 });

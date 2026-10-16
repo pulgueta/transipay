@@ -40,28 +40,32 @@ const SignUpPage = () => {
   }: SignUpValues) => {
     const { error } = await authClient.signUp.email(account);
     if (error) {
+      // better-auth messages are in English, so the page shows its own text.
       return error.code === "USER_ALREADY_EXISTS"
-        ? "An account with this email exists. Sign in instead."
-        : (error.message ?? "We could not create the account. Try again.");
+        ? "Ya existe una cuenta con este correo. Inicie sesión."
+        : "No pudimos crear la cuenta. Intente de nuevo.";
     }
-    await reloadForNewSession(queryClient, router);
+    let linked = true;
     try {
       await linkCitizen({ data: { documentType, documentNumber } });
     } catch {
-      // The account exists and the user is signed in. The account page shows the document form again.
-      await navigate({ to: "/account" });
-      return null;
+      linked = false;
     }
-    await navigate({ href: redirectTo });
+    // Load the routes and queries again only after the link, so that no page caches the account without its citizen.
+    await reloadForNewSession(queryClient, router);
+    // When the link is refused, the account exists and the user is signed in. The account page shows the document form again.
+    await (linked
+      ? navigate({ href: redirectTo })
+      : navigate({ to: "/account" }));
     return null;
   };
 
   return (
     <Card className="mx-auto w-full max-w-sm">
       <CardHeader>
-        <CardTitle>Create account</CardTitle>
+        <CardTitle>Crear cuenta</CardTitle>
         <CardDescription>
-          Your document links the account to your fines and procedures.
+          Su documento une la cuenta con sus comparendos y trámites.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -69,13 +73,13 @@ const SignUpPage = () => {
       </CardContent>
       <CardFooter className="text-muted-foreground text-sm">
         <p>
-          Already have an account?{" "}
+          ¿Ya tiene una cuenta?{" "}
           <Link
             className="text-foreground font-medium underline underline-offset-4"
             search={{ redirect: redirectTo === "/" ? undefined : redirectTo }}
             to="/sign-in"
           >
-            Sign in
+            Iniciar sesión
           </Link>
         </p>
       </CardFooter>
@@ -90,6 +94,6 @@ export const Route = createFileRoute("/sign-up")({
       redirect({ href: sanitizeRedirect(search.redirect), throw: true });
     }
   },
-  head: () => ({ meta: [{ title: "Create account | Transipay" }] }),
+  head: () => ({ meta: [{ title: "Crear cuenta | Transipay" }] }),
   component: SignUpPage,
 });

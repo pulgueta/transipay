@@ -26,12 +26,10 @@ const searchSchema = z.object({
 
 const PageHeader = () => (
   <div className="flex flex-col gap-1">
-    <h1 className="text-2xl font-semibold tracking-tight">
-      Book an appointment
-    </h1>
+    <h1 className="text-2xl font-semibold tracking-tight">Agendar cita</h1>
     <p className="text-muted-foreground">
-      Select the entity, the branch, the procedure, and a time. You get the
-      confirmation on this site.
+      Seleccione la entidad, la sede, el trámite y la hora. La confirmación
+      aparece en este sitio.
     </p>
   </div>
 );
@@ -49,7 +47,7 @@ const NewAppointmentPage = () => {
     } catch (error) {
       return error instanceof Error
         ? error.message
-        : "We could not book the appointment. Try again.";
+        : "No pudimos agendar la cita. Intente de nuevo.";
     }
     await queryClient.invalidateQueries({ queryKey: APPOINTMENTS_KEY });
     await navigate({ to: "/appointments" });
@@ -68,15 +66,15 @@ const NewAppointmentPage = () => {
       ) : (
         <div className="flex flex-col gap-3">
           <p className="text-muted-foreground">
-            An appointment is booked for your document. Add it to your account
-            to book one.
+            Las citas se agendan con su documento. Agréguelo a su cuenta para
+            agendar una.
           </p>
           <Button
             className="self-start"
             nativeButton={false}
             render={<Link to="/account" />}
           >
-            Open my account
+            Ir a mi cuenta
           </Button>
         </div>
       )}
@@ -94,11 +92,11 @@ export const Route = createFileRoute("/appointments/new")({
     // oxlint-disable-next-line typescript/no-deprecated
     await context.queryClient.ensureQueryData(bookingOptionsQueryOptions);
   },
-  head: () => ({ meta: [{ title: "Book an appointment | Transipay" }] }),
+  head: () => ({ meta: [{ title: "Agendar cita | Transipay" }] }),
   pendingComponent: () => (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
       <PageHeader />
-      <div aria-busy aria-label="Loading" className="flex flex-col gap-5">
+      <div aria-busy aria-label="Cargando" className="flex flex-col gap-5">
         <Skeleton className="h-14 w-full" />
         <Skeleton className="h-14 w-full" />
         <Skeleton className="h-14 w-full" />

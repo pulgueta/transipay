@@ -114,7 +114,7 @@ export const courseSession = pgTable(
     check("course_session_capacity_check", sql`${table.capacity} > 0`),
     check(
       "course_session_discount_percent_check",
-      sql`${table.discountPercent} between 0 and 100`
+      sql`${table.discountPercent} between 1 and 99`
     ),
   ]
 );

@@ -25,31 +25,31 @@ interface SectionRule extends StaffSection {
 const SECTIONS: SectionRule[] = [
   {
     to: "/staff/users",
-    label: "Users",
+    label: "Usuarios",
     icon: IconUsers,
     anyOf: [{ user: ["list"] }],
   },
   {
     to: "/staff/payouts",
-    label: "Payouts",
+    label: "Dispersiones",
     icon: IconSend,
     anyOf: [{ payout: ["read"] }],
   },
   {
     to: "/staff/payments",
-    label: "Payments",
+    label: "Pagos",
     icon: IconCreditCard,
     anyOf: [{ payment: ["review"] }],
   },
   {
     to: "/staff/obligations",
-    label: "Obligations",
+    label: "Obligaciones",
     icon: IconFileInvoice,
     anyOf: [{ obligation: ["create"] }],
   },
   {
     to: "/staff/schedule",
-    label: "Schedule",
+    label: "Agenda",
     icon: IconCalendarEvent,
     anyOf: [{ appointment: ["update"] }, { course: ["create"] }],
   },

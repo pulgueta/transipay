@@ -11,14 +11,14 @@ import {
 describe(formatBogotaDateTime, () => {
   it("shows the instant in the Bogota time zone", () => {
     expect(formatBogotaDateTime(new Date("2026-10-14T15:30:00Z"))).toBe(
-      "Oct 14, 2026, 10:30 AM"
+      "14/10/2026, 10:30 a. m."
     );
   });
 });
 
 describe(formatBogotaDate, () => {
   it("shows a calendar date without a time zone shift", () => {
-    expect(formatBogotaDate("2026-10-20")).toBe("Oct 20, 2026");
+    expect(formatBogotaDate("2026-10-20")).toBe("20/10/2026");
   });
 });
 

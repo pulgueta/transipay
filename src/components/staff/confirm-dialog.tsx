@@ -47,7 +47,9 @@ export const ConfirmDialog = ({
       </DialogHeader>
       <InlineError error={error} />
       <DialogFooter>
-        <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+        <DialogClose render={<Button variant="outline" />}>
+          Cancelar
+        </DialogClose>
         <Button
           disabled={isPending}
           onClick={onConfirm}

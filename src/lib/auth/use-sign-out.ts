@@ -14,9 +14,8 @@ export const useSignOut = () => {
     mutationFn: async () => {
       const { error } = await authClient.signOut();
       if (error) {
-        throw new Error(
-          error.message ?? "We could not sign you out. Try again."
-        );
+        // better-auth messages are in English, so the page shows its own text.
+        throw new Error("No pudimos cerrar la sesión. Intente de nuevo.");
       }
     },
     onSuccess: async () => {

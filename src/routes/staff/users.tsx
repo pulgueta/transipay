@@ -60,7 +60,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { banDaysToSeconds } from "@/lib/auth/ban-duration";
 import { isRole } from "@/lib/auth/permissions";
 import type { Role } from "@/lib/auth/permissions";
-import { roleNames } from "@/lib/auth/roles";
+import { ROLE_LABELS, roleLabel, roleNames } from "@/lib/auth/roles";
 import {
   banUserFn,
   listUsersFn,
@@ -71,23 +71,25 @@ import {
 
 const searchSchema = z.object({ q: z.string().optional() });
 
+const noCursor = (): string | undefined => undefined;
+
 const usersQueryOptions = (search: string | undefined) =>
   infiniteQueryOptions({
     queryKey: ["staff", "users", search ?? ""],
     queryFn: async ({ pageParam }) =>
-      await listUsersFn({ data: { search, offset: pageParam } }),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
+      await listUsersFn({ data: { search, cursor: pageParam } }),
+    initialPageParam: noCursor(),
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
 
 type UserRow = Awaited<ReturnType<typeof listUsersFn>>["users"][number];
 
 const ROLE_ITEMS: { value: Role; label: string }[] = [
-  { value: "citizen", label: "Citizen" },
-  { value: "cashier", label: "Cashier" },
-  { value: "scheduler", label: "Scheduler" },
-  { value: "supervisor", label: "Supervisor" },
-  { value: "admin", label: "Admin" },
+  { value: "citizen", label: ROLE_LABELS.citizen },
+  { value: "cashier", label: ROLE_LABELS.cashier },
+  { value: "scheduler", label: ROLE_LABELS.scheduler },
+  { value: "supervisor", label: ROLE_LABELS.supervisor },
+  { value: "admin", label: ROLE_LABELS.admin },
 ];
 
 const features = tableFeatures({
@@ -149,7 +151,7 @@ const UserActions = ({ user }: { user: UserRow }) => {
         <DropdownMenuTrigger
           render={
             <Button
-              aria-label={`Actions for ${user.email}`}
+              aria-label={`Acciones para ${user.email}`}
               size="icon-sm"
               variant="ghost"
             />
@@ -164,7 +166,7 @@ const UserActions = ({ user }: { user: UserRow }) => {
                 setAction("role");
               }}
             >
-              Change role
+              Cambiar rol
             </DropdownMenuItem>
             {user.banned ? (
               <DropdownMenuItem
@@ -173,7 +175,7 @@ const UserActions = ({ user }: { user: UserRow }) => {
                   unbanMutation.mutate();
                 }}
               >
-                Remove ban
+                Quitar suspensión
               </DropdownMenuItem>
             ) : (
               <DropdownMenuItem
@@ -181,7 +183,7 @@ const UserActions = ({ user }: { user: UserRow }) => {
                   setAction("ban");
                 }}
               >
-                Ban user
+                Suspender usuario
               </DropdownMenuItem>
             )}
           </DropdownMenuGroup>
@@ -193,7 +195,7 @@ const UserActions = ({ user }: { user: UserRow }) => {
               }}
               variant="destructive"
             >
-              Delete user
+              Eliminar usuario
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>
@@ -208,14 +210,14 @@ const UserActions = ({ user }: { user: UserRow }) => {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Change role</DialogTitle>
+            <DialogTitle>Cambiar rol</DialogTitle>
             <DialogDescription>
-              The new role of {user.email} applies to the next request.
+              El nuevo rol de {user.email} aplica desde la próxima solicitud.
             </DialogDescription>
           </DialogHeader>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor={`role-${user.id}`}>Role</FieldLabel>
+              <FieldLabel htmlFor={`role-${user.id}`}>Rol</FieldLabel>
               <Select
                 items={ROLE_ITEMS}
                 onValueChange={(value) => {
@@ -243,7 +245,7 @@ const UserActions = ({ user }: { user: UserRow }) => {
           <InlineError error={roleMutation.error} />
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>
-              Cancel
+              Cancelar
             </DialogClose>
             <Button
               disabled={roleMutation.isPending}
@@ -254,7 +256,7 @@ const UserActions = ({ user }: { user: UserRow }) => {
               {roleMutation.isPending ? (
                 <Spinner data-icon="inline-start" />
               ) : null}
-              Save role
+              Guardar rol
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -275,16 +277,16 @@ const UserActions = ({ user }: { user: UserRow }) => {
             }}
           >
             <DialogHeader>
-              <DialogTitle>Ban user</DialogTitle>
+              <DialogTitle>Suspender usuario</DialogTitle>
               <DialogDescription>
-                {user.email} cannot sign in while the ban is active. The reason
-                is stored with the ban.
+                {user.email} no puede iniciar sesión mientras la suspensión esté
+                activa. El motivo se guarda con la suspensión.
               </DialogDescription>
             </DialogHeader>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor={`ban-reason-${user.id}`}>
-                  Reason
+                  Motivo
                 </FieldLabel>
                 <Input
                   id={`ban-reason-${user.id}`}
@@ -296,7 +298,7 @@ const UserActions = ({ user }: { user: UserRow }) => {
               </Field>
               <Field>
                 <FieldLabel htmlFor={`ban-days-${user.id}`}>
-                  Duration in days (empty: no end)
+                  Duración en días (vacío: sin fin)
                 </FieldLabel>
                 <Input
                   id={`ban-days-${user.id}`}
@@ -313,13 +315,13 @@ const UserActions = ({ user }: { user: UserRow }) => {
             <InlineError error={banMutation.error} />
             <DialogFooter>
               <DialogClose render={<Button variant="outline" />}>
-                Cancel
+                Cancelar
               </DialogClose>
               <Button disabled={banMutation.isPending} type="submit">
                 {banMutation.isPending ? (
                   <Spinner data-icon="inline-start" />
                 ) : null}
-                Ban user
+                Suspender usuario
               </Button>
             </DialogFooter>
           </form>
@@ -327,8 +329,8 @@ const UserActions = ({ user }: { user: UserRow }) => {
       </Dialog>
 
       <ConfirmDialog
-        confirmLabel="Delete user"
-        description={`This deletes the account of ${user.email} and its sessions. The audit log keeps the change. You cannot undo it.`}
+        confirmLabel="Eliminar usuario"
+        description={`Esto elimina la cuenta de ${user.email} y sus sesiones. El registro de auditoría guarda el cambio. No se puede deshacer.`}
         destructive
         error={removeMutation.error}
         isPending={removeMutation.isPending}
@@ -339,7 +341,7 @@ const UserActions = ({ user }: { user: UserRow }) => {
           setAction(open ? "remove" : null);
         }}
         open={action === "remove"}
-        title="Delete user"
+        title="Eliminar usuario"
       />
     </>
   );
@@ -347,11 +349,11 @@ const UserActions = ({ user }: { user: UserRow }) => {
 
 const columns = helper.columns([
   helper.accessor("name", {
-    header: ({ column }) => <SortableHeader column={column} label="Name" />,
+    header: ({ column }) => <SortableHeader column={column} label="Nombre" />,
     sortFn: "alphanumeric",
   }),
   helper.accessor("email", {
-    header: ({ column }) => <SortableHeader column={column} label="Email" />,
+    header: ({ column }) => <SortableHeader column={column} label="Correo" />,
     sortFn: "alphanumeric",
     cell: ({ getValue }) => <span className="break-all">{getValue()}</span>,
   }),
@@ -362,14 +364,14 @@ const columns = helper.columns([
       <span className="flex flex-wrap gap-1">
         {roleNames(getValue()).map((role) => (
           <Badge key={role} variant="secondary">
-            {role}
+            {roleLabel(role)}
           </Badge>
         ))}
       </span>
     ),
   }),
   helper.accessor("banned", {
-    header: "Status",
+    header: "Estado",
     enableSorting: false,
     cell: ({ row }) =>
       row.original.banned ? (
@@ -378,21 +380,21 @@ const columns = helper.columns([
           variant="destructive"
         >
           {row.original.banExpires
-            ? `Banned until ${formatDateTime(row.original.banExpires)}`
-            : "Banned"}
+            ? `Suspendido hasta ${formatDateTime(row.original.banExpires)}`
+            : "Suspendido"}
         </Badge>
       ) : (
-        <Badge variant="outline">Active</Badge>
+        <Badge variant="outline">Activo</Badge>
       ),
   }),
   helper.accessor("createdAt", {
-    header: ({ column }) => <SortableHeader column={column} label="Created" />,
+    header: ({ column }) => <SortableHeader column={column} label="Creado" />,
     sortFn: "datetime",
     cell: ({ getValue }) => formatDateTime(getValue()),
   }),
   helper.display({
     id: "actions",
-    header: () => <span className="sr-only">Actions</span>,
+    header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => <UserActions user={row.original} />,
   }),
 ]);
@@ -420,8 +422,8 @@ const UsersPage = () => {
   return (
     <>
       <PageHeader
-        description="The accounts of citizens and staff. Change a role, ban an account, or delete it."
-        title="Users"
+        description="Las cuentas de ciudadanos y funcionarios. Cambie un rol, suspenda una cuenta o elimínela."
+        title="Usuarios"
       />
       <search>
         <form
@@ -433,24 +435,27 @@ const UsersPage = () => {
           }}
         >
           <Input
-            aria-label="Search by name or email"
+            aria-label="Buscar por nombre o correo"
             onChange={(event) => {
               setDraft(event.target.value);
             }}
-            placeholder="Name or email"
+            placeholder="Nombre o correo"
             type="search"
             value={draft}
           />
           <Button type="submit" variant="outline">
             <IconSearch data-icon="inline-start" strokeWidth={1.75} />
-            Search
+            Buscar
           </Button>
         </form>
       </search>
       <p className="text-muted-foreground text-sm">
-        {data.length} of {total} users
+        {data.length} de {total} usuarios
       </p>
-      <DataTable emptyMessage="No users match the search." table={table} />
+      <DataTable
+        emptyMessage="Ningún usuario coincide con la búsqueda."
+        table={table}
+      />
       <LoadMore
         error={query.error}
         hasNextPage={query.hasNextPage}
@@ -473,6 +478,6 @@ export const Route = createFileRoute("/staff/users")({
       usersQueryOptions(deps.q)
     );
   },
-  head: () => ({ meta: [{ title: "Users | Staff | Transipay" }] }),
+  head: () => ({ meta: [{ title: "Usuarios | Funcionarios | Transipay" }] }),
   component: UsersPage,
 });

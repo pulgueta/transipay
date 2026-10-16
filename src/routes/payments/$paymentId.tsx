@@ -44,49 +44,50 @@ interface StatusContent {
 const STATUS_CONTENT: Record<ResultState, StatusContent> = {
   pending: {
     icon: IconClock,
-    title: "Payment in progress",
+    title: "Pago en proceso",
     description:
-      "We are waiting for the result from the bank. This can take a few minutes.",
+      "Estamos esperando la respuesta del banco. Esto puede tardar unos minutos.",
     canRetry: false,
   },
   approved: {
     icon: IconCircleCheck,
-    title: "Payment approved",
-    description: "We received the payment. You do not need to do more.",
+    title: "Pago aprobado",
+    description: "Recibimos el pago. No tiene que hacer nada más.",
     canRetry: false,
   },
   declined: {
     icon: IconCircleX,
-    title: "Payment declined",
+    title: "Pago rechazado",
     description:
-      "The bank did not approve the payment, so we did not collect money. Try again with the same or a different payment method.",
+      "El banco no aprobó el pago, así que no se cobró dinero. Intente de nuevo con el mismo medio de pago o con otro.",
     canRetry: true,
   },
   error: {
     icon: IconAlertTriangle,
-    title: "Payment not completed",
+    title: "Pago no completado",
     description:
-      "An error stopped the payment, so we did not collect money. Try again.",
+      "Un error detuvo el pago, así que no se cobró dinero. Intente de nuevo.",
     canRetry: true,
   },
   voided: {
     icon: IconCircleX,
-    title: "Payment cancelled",
-    description: "This payment was cancelled. Try again to pay the obligation.",
+    title: "Pago anulado",
+    description:
+      "Este pago fue anulado. Intente de nuevo para pagar la obligación.",
     canRetry: true,
   },
   expired: {
     icon: IconClock,
-    title: "Payment link expired",
+    title: "El enlace de pago venció",
     description:
-      "This checkout expired, so we did not collect money. Pay again to get a new link.",
+      "Este enlace de pago venció, así que no se cobró dinero. Pague de nuevo para obtener un enlace nuevo.",
     canRetry: true,
   },
   review: {
     icon: IconEyeSearch,
-    title: "Payment under review",
+    title: "Pago en revisión",
     description:
-      "We received a payment, but staff must examine it before we can confirm it. Do not pay again. We will contact you.",
+      "Recibimos un pago, pero el personal debe revisarlo antes de confirmarlo. No pague de nuevo. Nos comunicaremos con usted.",
     canRetry: false,
   },
 };
@@ -119,7 +120,7 @@ const RetryPayment = ({
           checkout.mutate();
         }}
       >
-        {checkout.isPending ? "Opening the payment…" : "Try again"}
+        {checkout.isPending ? "Abriendo el pago…" : "Intentar de nuevo"}
       </Button>
       {checkout.isError ? (
         <p className="text-destructive text-sm" role="alert">
@@ -154,7 +155,7 @@ const RefreshPayment = ({ paymentId }: { paymentId: string }) => {
         }}
         variant="outline"
       >
-        {refresh.isPending ? "Getting the status…" : "Refresh the status"}
+        {refresh.isPending ? "Consultando el estado…" : "Actualizar estado"}
       </Button>
       {refresh.isError ? (
         // A failed refresh keeps the last status on the page.
@@ -182,9 +183,9 @@ const PaymentResult = () => {
       </div>
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-        <dt className="text-muted-foreground">Amount</dt>
+        <dt className="text-muted-foreground">Valor</dt>
         <dd>{formatAmount(payment.amountInCents, payment.currency)}</dd>
-        <dt className="text-muted-foreground">Reference</dt>
+        <dt className="text-muted-foreground">Referencia</dt>
         <dd className="break-all">{payment.reference}</dd>
       </dl>
 
@@ -205,7 +206,7 @@ const PaymentResult = () => {
           render={<Link to="/" />}
           variant="outline"
         >
-          Go to the home page
+          Ir al inicio
         </Button>
       ) : null}
     </section>
@@ -223,6 +224,6 @@ export const Route = createFileRoute("/payments/$paymentId")({
       paymentQueryOptions(params.paymentId)
     );
   },
-  head: () => ({ meta: [{ title: "Payment status | Transipay" }] }),
+  head: () => ({ meta: [{ title: "Estado del pago | Transipay" }] }),
   component: PaymentResult,
 });

@@ -1,6 +1,6 @@
 const BOGOTA = "America/Bogota";
 
-/** Day, month, year, hour, and minute in Bogota time, for example "14 oct 2026, 09:30". */
+/** Day, month, year, hour, and minute in Bogota time, for example "14 de oct de 2026, 09:30". */
 export const formatDateTime = (value: Date | string) =>
   new Intl.DateTimeFormat("es-CO", {
     timeZone: BOGOTA,

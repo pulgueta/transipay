@@ -9,12 +9,12 @@ export interface NavLink {
 
 /** The pages of a signed-in citizen. */
 const CITIZEN_LINKS: NavLink[] = [
-  { to: "/obligations", label: "Obligations" },
-  { to: "/appointments", label: "Appointments" },
-  { to: "/courses", label: "Courses" },
+  { to: "/obligations", label: "Obligaciones" },
+  { to: "/appointments", label: "Citas" },
+  { to: "/courses", label: "Cursos" },
 ];
 
-const STAFF_LINK: NavLink = { to: "/staff", label: "Staff" };
+const STAFF_LINK: NavLink = { to: "/staff", label: "Funcionarios" };
 
 /** The header links for the session. The Staff link shows only when the role can open a staff section. */
 export const navLinksFor = (

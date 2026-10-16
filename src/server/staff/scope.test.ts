@@ -1,36 +1,76 @@
 import { describe, expect, it } from "vitest";
 
-import { isInScope, resolveStaffScope } from "./scope";
+import { entitiesAllowing, entityRoleAllows, resolveStaffScope } from "./scope";
+import type { StaffScope } from "./scope";
+
+const scope: StaffScope = {
+  kind: "entities",
+  memberships: [
+    { entityId: "a", role: "supervisor" },
+    { entityId: "b", role: "cashier" },
+    { entityId: "c", role: "instructor" },
+    { entityId: "d", role: "admin" },
+  ],
+};
 
 describe(resolveStaffScope, () => {
   it("gives the admin every entity", () => {
     expect(resolveStaffScope("admin", [])).toStrictEqual({ kind: "all" });
-    expect(resolveStaffScope("citizen,admin", ["e1"])).toStrictEqual({
-      kind: "all",
-    });
+    expect(
+      resolveStaffScope("citizen,admin", [{ entityId: "e1", role: "cashier" }])
+    ).toStrictEqual({ kind: "all" });
   });
 
-  it("limits other staff to the entities of their memberships", () => {
-    expect(resolveStaffScope("scheduler", ["e1", "e2"])).toStrictEqual({
+  it("limits other staff to their memberships, with the role in each entity", () => {
+    expect(
+      resolveStaffScope("scheduler", [{ entityId: "e1", role: "scheduler" }])
+    ).toStrictEqual({
       kind: "entities",
-      entityIds: ["e1", "e2"],
+      memberships: [{ entityId: "e1", role: "scheduler" }],
     });
     expect(resolveStaffScope("supervisor", [])).toStrictEqual({
       kind: "entities",
-      entityIds: [],
+      memberships: [],
     });
   });
 });
 
-describe(isInScope, () => {
-  it("accepts every entity for the admin scope", () => {
-    expect(isInScope({ kind: "all" }, "e9")).toBeTruthy();
+describe(entityRoleAllows, () => {
+  it("accepts every entity and permission for the admin scope", () => {
+    expect(
+      entityRoleAllows({ kind: "all" }, "e9", { payout: ["create"] })
+    ).toBeTruthy();
   });
 
-  it("accepts only the entities of the memberships", () => {
-    const scope = { kind: "entities" as const, entityIds: ["e1", "e2"] };
-    expect(isInScope(scope, "e2")).toBeTruthy();
-    expect(isInScope(scope, "e9")).toBeFalsy();
-    expect(isInScope({ kind: "entities", entityIds: [] }, "e1")).toBeFalsy();
+  it("checks the role of the membership for the entity, not another membership", () => {
+    expect(
+      entityRoleAllows(scope, "a", { obligation: ["create"] })
+    ).toBeTruthy();
+    expect(
+      entityRoleAllows(scope, "b", { obligation: ["create"] })
+    ).toBeFalsy();
+    expect(entityRoleAllows(scope, "b", { payment: ["create"] })).toBeTruthy();
+    expect(entityRoleAllows(scope, "d", { payout: ["create"] })).toBeTruthy();
+    expect(entityRoleAllows(scope, "z", { obligation: ["read"] })).toBeFalsy();
+  });
+
+  it("refuses a role that has no permission set", () => {
+    expect(entityRoleAllows(scope, "c", { course: ["read"] })).toBeFalsy();
+  });
+});
+
+describe(entitiesAllowing, () => {
+  it("gives null for the admin scope, because the admin has all entities", () => {
+    expect(entitiesAllowing({ kind: "all" }, { course: ["read"] })).toBeNull();
+  });
+
+  it("gives only the entities where the role has the permissions", () => {
+    expect(entitiesAllowing(scope, { obligation: ["create"] })).toStrictEqual([
+      "a",
+      "d",
+    ]);
+    expect(entitiesAllowing(scope, { payout: ["create"] })).toStrictEqual([
+      "d",
+    ]);
   });
 });

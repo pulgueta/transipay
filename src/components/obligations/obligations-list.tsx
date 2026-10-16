@@ -17,11 +17,11 @@ import { ObligationStateBadge } from "./obligation-state-badge";
 
 const CURRENCY = "COP";
 
-/** "1 of 3 installments paid", or null without an active agreement. */
+/** "1 de 3 cuotas pagadas", or null without an active agreement. */
 export const installmentsSummary = (agreement: ObligationView["agreement"]) =>
   agreement === null
     ? null
-    : `${agreement.paidCount} of ${agreement.installmentCount} installments paid`;
+    : `${agreement.paidCount} de ${agreement.installmentCount} cuotas pagadas`;
 
 const ObligationLink = ({ item }: { item: ObligationView }) => (
   <Link
@@ -37,13 +37,13 @@ const features = tableFeatures({});
 const helper = createColumnHelper<typeof features, ObligationView>();
 const columns = helper.columns([
   helper.accessor("kind", {
-    header: "Kind",
+    header: "Tipo",
     cell: ({ getValue }) => (
       <Badge variant="outline">{KIND_LABELS[getValue()]}</Badge>
     ),
   }),
   helper.accessor("description", {
-    header: "Description",
+    header: "Descripción",
     cell: ({ row }) => (
       <div className="flex flex-col gap-0.5">
         <ObligationLink item={row.original} />
@@ -54,18 +54,18 @@ const columns = helper.columns([
     ),
   }),
   helper.accessor("dueOn", {
-    header: "Due",
+    header: "Vence",
     cell: ({ getValue }) => {
       const dueOn = getValue();
       return dueOn === null ? (
-        <span className="text-muted-foreground">No date</span>
+        <span className="text-muted-foreground">Sin fecha</span>
       ) : (
         formatBogotaDate(dueOn)
       );
     },
   }),
   helper.accessor("amountDueInCents", {
-    header: () => <span className="block text-right">Amount due</span>,
+    header: () => <span className="block text-right">Valor a pagar</span>,
     cell: ({ getValue }) => (
       <span className="block text-right tabular-nums">
         {formatAmount(getValue(), CURRENCY)}
@@ -73,7 +73,7 @@ const columns = helper.columns([
     ),
   }),
   helper.accessor("state", {
-    header: "Status",
+    header: "Estado",
     cell: ({ row }) => (
       <div className="flex flex-col items-start gap-1">
         <ObligationStateBadge state={row.original.state} />
@@ -97,7 +97,9 @@ const ObligationsTable = ({ items }: { items: ObligationView[] }) => {
   });
   useTanStackTableDevtools(table);
 
-  return <DataTable emptyMessage="No obligations to show." table={table} />;
+  return (
+    <DataTable emptyMessage="No hay obligaciones para mostrar." table={table} />
+  );
 };
 
 /** One obligation as a block, for a small screen. */
@@ -112,17 +114,17 @@ const ObligationCard = ({ item }: { item: ObligationView }) => (
       {item.entityName} · {item.number}
     </p>
     <dl className="grid grid-cols-2 gap-x-4 text-sm">
-      <dt className="text-muted-foreground">Amount due</dt>
+      <dt className="text-muted-foreground">Valor a pagar</dt>
       <dd className="text-right tabular-nums">
         {formatAmount(item.amountDueInCents, CURRENCY)}
       </dd>
-      <dt className="text-muted-foreground">Due</dt>
+      <dt className="text-muted-foreground">Vence</dt>
       <dd className="text-right">
-        {item.dueOn === null ? "No date" : formatBogotaDate(item.dueOn)}
+        {item.dueOn === null ? "Sin fecha" : formatBogotaDate(item.dueOn)}
       </dd>
       {item.agreement === null ? null : (
         <>
-          <dt className="text-muted-foreground">Installments</dt>
+          <dt className="text-muted-foreground">Cuotas</dt>
           <dd className="text-right">{installmentsSummary(item.agreement)}</dd>
         </>
       )}

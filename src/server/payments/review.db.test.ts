@@ -203,7 +203,10 @@ describe("payments under review", () => {
     const actorId = await seedUser("supervisor");
     const own = await seedApprovedPayment("target_not_payable");
     const other = await seedApprovedPayment("target_not_payable");
-    const scope = { kind: "entities" as const, entityIds: [own.entityId] };
+    const scope = {
+      kind: "entities" as const,
+      memberships: [{ entityId: own.entityId, role: "supervisor" as const }],
+    };
 
     const page = await listPaymentsUnderReview(appDatabase, {
       limit: 100,

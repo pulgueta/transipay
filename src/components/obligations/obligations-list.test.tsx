@@ -49,7 +49,7 @@ describe(ObligationsList, () => {
     expect(
       screen.getAllByText("C02 Parked in a no-parking zone").length
     ).toBeGreaterThan(0);
-    expect(screen.getAllByText("Overdue").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Vencida").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/10\.000/u).length).toBeGreaterThan(0);
   });
 
@@ -67,8 +67,8 @@ describe(ObligationsList, () => {
       />
     );
 
-    expect(
-      screen.getAllByText("1 of 3 installments paid").length
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("1 de 3 cuotas pagadas").length).toBeGreaterThan(
+      0
+    );
   });
 });

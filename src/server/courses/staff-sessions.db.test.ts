@@ -48,7 +48,10 @@ const sessionInput = (world: Awaited<ReturnType<typeof seedWorld>>) => ({
   endsAt: new Date("2026-11-02T17:00:00Z"),
   capacity: 20,
   discountPercent: 50,
-  scope: { kind: "entities" as const, entityIds: [world.entityId] },
+  scope: {
+    kind: "entities" as const,
+    memberships: [{ entityId: world.entityId, role: "scheduler" as const }],
+  },
 });
 
 /** A fine of a new citizen, enrolled in the session with the status. */
@@ -133,7 +136,12 @@ describe("staff course sessions", () => {
     await expect(
       createCourseSession(appDatabase, {
         ...sessionInput(world),
-        scope: { kind: "entities", entityIds: [other.entityId] },
+        scope: {
+          kind: "entities",
+          memberships: [
+            { entityId: other.entityId, role: "scheduler" as const },
+          ],
+        },
       })
     ).resolves.toStrictEqual({ ok: false, reason: "entity_not_in_scope" });
     await expect(
@@ -155,6 +163,23 @@ describe("staff course sessions", () => {
           discountPercent,
         })
       ).resolves.toStrictEqual({ ok: false, reason: "discount_out_of_range" });
+    }
+  });
+
+  it("has a database CHECK that refuses a stored discount of 0 or 100 percent", async () => {
+    const world = await seedWorld();
+
+    for (const discountPercent of [0, 100]) {
+      // oxlint-disable-next-line no-await-in-loop -- Each insert is independent. The order does not matter.
+      await expect(
+        database.pool.query(
+          `insert into course_session (entity_id, branch_id, starts_at, ends_at, capacity, discount_percent)
+           values ($1, $2, now(), now() + interval '1 hour', 10, $3)`,
+          [world.entityId, world.branchId, discountPercent]
+        )
+      ).rejects.toMatchObject({
+        constraint: "course_session_discount_percent_check",
+      });
     }
   });
 
@@ -197,7 +222,10 @@ describe("staff course sessions", () => {
     await seedEnrollment(world, created.session.id, "cancelled");
 
     const page = await listCourseSessions(appDatabase, {
-      scope: { kind: "entities", entityIds: [world.entityId] },
+      scope: {
+        kind: "entities",
+        memberships: [{ entityId: world.entityId, role: "scheduler" as const }],
+      },
       limit: 100,
     });
     const ids = page.items.map((item) => item.id);

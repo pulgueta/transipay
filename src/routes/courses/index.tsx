@@ -21,10 +21,10 @@ import { formatBogotaDateTime } from "@/lib/dates";
 import type { EnrollmentStatus } from "@/server/db/schema/scheduling";
 
 const ENROLLMENT_LABELS: Record<EnrollmentStatus, string> = {
-  enrolled: "Enrolled",
-  attended: "Attended",
-  absent: "Absent",
-  cancelled: "Cancelled",
+  enrolled: "Inscrito",
+  attended: "Asistió",
+  absent: "No asistió",
+  cancelled: "Cancelada",
 };
 
 const ENROLLMENT_VARIANTS: Record<
@@ -39,10 +39,10 @@ const ENROLLMENT_VARIANTS: Record<
 
 const PageHeader = () => (
   <div className="flex flex-col gap-1">
-    <h1 className="text-2xl font-semibold tracking-tight">Courses</h1>
+    <h1 className="text-2xl font-semibold tracking-tight">Cursos</h1>
     <p className="text-muted-foreground">
-      Pedagogical courses that give a discount on a fine. Enroll in a session
-      with a free seat.
+      Cursos pedagógicos que dan descuento en un comparendo. Inscríbase en una
+      sesión con cupos libres.
     </p>
   </div>
 );
@@ -53,15 +53,15 @@ const NoDocument = () => (
       <EmptyMedia variant="icon">
         <IconId strokeWidth={1.75} />
       </EmptyMedia>
-      <EmptyTitle>Link your document first</EmptyTitle>
+      <EmptyTitle>Primero vincule su documento</EmptyTitle>
       <EmptyDescription>
-        The discount applies to a fine on your document. Add it to your account
-        to enroll.
+        El descuento se aplica a un comparendo de su documento. Agréguelo a su
+        cuenta para inscribirse.
       </EmptyDescription>
     </EmptyHeader>
     <EmptyContent>
       <Button nativeButton={false} render={<Link to="/account" />}>
-        Open my account
+        Ir a mi cuenta
       </Button>
     </EmptyContent>
   </Empty>
@@ -73,10 +73,10 @@ const NoSessions = () => (
       <EmptyMedia variant="icon">
         <IconSchool strokeWidth={1.75} />
       </EmptyMedia>
-      <EmptyTitle>No open sessions</EmptyTitle>
+      <EmptyTitle>No hay sesiones abiertas</EmptyTitle>
       <EmptyDescription>
-        No course session is open now. Come back later, or ask a CEA for its
-        next dates.
+        En este momento no hay sesiones de curso abiertas. Vuelva más tarde o
+        pregunte en un CEA por las próximas fechas.
       </EmptyDescription>
     </EmptyHeader>
   </Empty>
@@ -91,7 +91,7 @@ const CoursesPage = () => {
       {data.hasCitizen ? null : <NoDocument />}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">Open sessions</h2>
+        <h2 className="text-base font-semibold">Sesiones abiertas</h2>
         {data.sessions.length === 0 ? (
           <NoSessions />
         ) : (
@@ -110,15 +110,15 @@ const CoursesPage = () => {
                     {session.branchAddress}
                   </p>
                   <p className="text-sm">
-                    {session.discountPercent}% discount ·{" "}
+                    {session.discountPercent}% de descuento ·{" "}
                     {session.seatsLeft > 0
-                      ? `${session.seatsLeft} of ${session.capacity} seats free`
-                      : "No seats free"}
+                      ? `${session.seatsLeft} de ${session.capacity} cupos libres`
+                      : "Sin cupos libres"}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
                   {session.enrolled ? (
-                    <Badge variant="secondary">Enrolled</Badge>
+                    <Badge variant="secondary">Inscrito</Badge>
                   ) : null}
                   {data.hasCitizen &&
                   !session.enrolled &&
@@ -140,15 +140,15 @@ const CoursesPage = () => {
         data.fines.length === 0 &&
         data.sessions.length > 0 ? (
           <p className="text-muted-foreground text-sm">
-            You have no pending fine without a course, so there is nothing to
-            discount.
+            No tiene comparendos pendientes sin curso, así que no hay nada para
+            descontar.
           </p>
         ) : null}
       </section>
 
       {data.enrollments.length > 0 ? (
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold">My enrollments</h2>
+          <h2 className="text-base font-semibold">Mis inscripciones</h2>
           <ul className="divide-y">
             {data.enrollments.map((item) => (
               <li
@@ -163,8 +163,8 @@ const CoursesPage = () => {
                     {item.entityName} · {item.branchName}
                   </p>
                   <p className="text-sm">
-                    Fine {item.obligationNumber} · {item.discountPercent}%
-                    discount
+                    Comparendo {item.obligationNumber} · {item.discountPercent}%
+                    de descuento
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -196,11 +196,11 @@ export const Route = createFileRoute("/courses/")({
     // oxlint-disable-next-line typescript/no-deprecated
     await context.queryClient.ensureQueryData(coursesQueryOptions);
   },
-  head: () => ({ meta: [{ title: "Courses | Transipay" }] }),
+  head: () => ({ meta: [{ title: "Cursos | Transipay" }] }),
   pendingComponent: () => (
     <div className="flex flex-col gap-8">
       <PageHeader />
-      <div aria-busy aria-label="Loading" className="flex flex-col gap-3">
+      <div aria-busy aria-label="Cargando" className="flex flex-col gap-3">
         <Skeleton className="h-5 w-32" />
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-24 w-full" />

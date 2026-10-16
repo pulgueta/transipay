@@ -6,7 +6,7 @@ import type { StaffSection } from "./sections";
 export const StaffNav = ({ sections }: { sections: StaffSection[] }) => (
   <>
     <nav
-      aria-label="Staff sections"
+      aria-label="Secciones de funcionarios"
       className="-mx-4 flex gap-1 overflow-x-auto border-b px-4 md:hidden"
     >
       {sections.map((section) => (
@@ -21,7 +21,7 @@ export const StaffNav = ({ sections }: { sections: StaffSection[] }) => (
       ))}
     </nav>
     <nav
-      aria-label="Staff sections"
+      aria-label="Secciones de funcionarios"
       className="hidden w-48 shrink-0 flex-col gap-0.5 md:flex"
     >
       {sections.map((section) => (
