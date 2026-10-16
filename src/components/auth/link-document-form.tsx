@@ -43,8 +43,8 @@ export const LinkDocumentForm = ({ onLink }: LinkDocumentFormProps) => {
           {(field) => (
             <field.SelectField
               items={DOCUMENT_TYPE_ITEMS}
-              label="Document type"
-              placeholder="Select a document type"
+              label="Tipo de documento"
+              placeholder="Seleccione un tipo de documento"
             />
           )}
         </form.AppField>
@@ -53,13 +53,13 @@ export const LinkDocumentForm = ({ onLink }: LinkDocumentFormProps) => {
             <field.TextField
               autoComplete="off"
               inputMode="numeric"
-              label="Document number"
+              label="Número de documento"
             />
           )}
         </form.AppField>
       </FieldGroup>
       <form.AppForm>
-        <form.SubmitButton>Link the document</form.SubmitButton>
+        <form.SubmitButton>Vincular documento</form.SubmitButton>
       </form.AppForm>
     </form>
   );

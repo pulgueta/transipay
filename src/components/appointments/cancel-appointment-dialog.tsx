@@ -44,14 +44,14 @@ export const CancelAppointmentDialog = ({
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        Cancel
+        Cancelar
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Cancel this appointment?</DialogTitle>
+          <DialogTitle>¿Cancelar esta cita?</DialogTitle>
           <DialogDescription>
-            {procedureTypeName} on {formatBogotaDateTime(scheduledAt)}. You can
-            book a new appointment at any time.
+            {procedureTypeName} el {formatBogotaDateTime(scheduledAt)}. Puede
+            agendar una nueva cita en cualquier momento.
           </DialogDescription>
         </DialogHeader>
         {cancel.isError ? (
@@ -67,7 +67,7 @@ export const CancelAppointmentDialog = ({
             }}
             variant="outline"
           >
-            Keep it
+            Conservar cita
           </Button>
           <Button
             disabled={cancel.isPending}
@@ -76,7 +76,7 @@ export const CancelAppointmentDialog = ({
             }}
             variant="destructive"
           >
-            {cancel.isPending ? "Cancelling…" : "Cancel the appointment"}
+            {cancel.isPending ? "Cancelando…" : "Cancelar cita"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -41,7 +41,7 @@ export const ThemeToggle = () => {
 
   return (
     <Button
-      aria-label={isDark ? "Use light mode" : "Use dark mode"}
+      aria-label={isDark ? "Usar modo claro" : "Usar modo oscuro"}
       onClick={toggle}
       size="icon"
       variant="ghost"

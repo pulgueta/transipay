@@ -25,7 +25,7 @@ interface RouterContext {
 
 const RootDocument = ({ children }: { children: ReactNode }) => (
   // The head script sets the `dark` class before React hydrates, so the class differs from the server HTML.
-  <html lang="en" suppressHydrationWarning>
+  <html lang="es-CO" suppressHydrationWarning>
     <head>
       <HeadContent />
     </head>

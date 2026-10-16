@@ -15,11 +15,11 @@ import { FormError } from "./form-error";
 export const MIN_PASSWORD_LENGTH = 12;
 
 const signUpSchema = z.object({
-  name: z.string().trim().min(2, "Enter your full name."),
-  email: z.email("Enter your email address."),
+  name: z.string().trim().min(2, "Escriba su nombre completo."),
+  email: z.email("Escriba su correo electrónico."),
   password: z
     .string()
-    .min(MIN_PASSWORD_LENGTH, `Use ${MIN_PASSWORD_LENGTH} characters or more.`),
+    .min(MIN_PASSWORD_LENGTH, `Use ${MIN_PASSWORD_LENGTH} caracteres o más.`),
   documentType: documentTypeSchema,
   documentNumber: documentNumberSchema,
 });
@@ -66,11 +66,17 @@ export const SignUpForm = ({ onSignUp }: SignUpFormProps) => {
       <FormError message={formError} />
       <FieldGroup>
         <form.AppField name="name">
-          {(field) => <field.TextField autoComplete="name" label="Full name" />}
+          {(field) => (
+            <field.TextField autoComplete="name" label="Nombre completo" />
+          )}
         </form.AppField>
         <form.AppField name="email">
           {(field) => (
-            <field.TextField autoComplete="email" label="Email" type="email" />
+            <field.TextField
+              autoComplete="email"
+              label="Correo electrónico"
+              type="email"
+            />
           )}
         </form.AppField>
         <form.AppField name="password">
@@ -78,20 +84,20 @@ export const SignUpForm = ({ onSignUp }: SignUpFormProps) => {
             <field.TextField
               aria-describedby="sign-up-password-hint"
               autoComplete="new-password"
-              label="Password"
+              label="Contraseña"
               type="password"
             />
           )}
         </form.AppField>
         <FieldDescription id="sign-up-password-hint">
-          Use {MIN_PASSWORD_LENGTH} characters or more.
+          Use {MIN_PASSWORD_LENGTH} caracteres o más.
         </FieldDescription>
         <form.AppField name="documentType">
           {(field) => (
             <field.SelectField
               items={DOCUMENT_TYPE_ITEMS}
-              label="Document type"
-              placeholder="Select a document type"
+              label="Tipo de documento"
+              placeholder="Seleccione un tipo de documento"
             />
           )}
         </form.AppField>
@@ -101,16 +107,16 @@ export const SignUpForm = ({ onSignUp }: SignUpFormProps) => {
               aria-describedby="sign-up-document-hint"
               autoComplete="off"
               inputMode="numeric"
-              label="Document number"
+              label="Número de documento"
             />
           )}
         </form.AppField>
         <FieldDescription id="sign-up-document-hint">
-          We use it to find your fines and procedures.
+          Lo usamos para buscar sus comparendos y trámites.
         </FieldDescription>
       </FieldGroup>
       <form.AppForm>
-        <form.SubmitButton>Create account</form.SubmitButton>
+        <form.SubmitButton>Crear cuenta</form.SubmitButton>
       </form.AppForm>
     </form>
   );

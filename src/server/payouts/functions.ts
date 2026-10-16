@@ -20,7 +20,10 @@ export const listPayoutBanksFn = createServerFn({ method: "GET" })
   .handler(async () => {
     const [error, banks] = await getWompiPayouts().listBanks();
     if (error) {
-      throw httpError(502, "We cannot get the bank list now. Try again.");
+      throw httpError(
+        502,
+        "No podemos obtener la lista de bancos ahora. Intente de nuevo."
+      );
     }
     return banks.map((bank) => ({
       id: bank.id,
@@ -84,7 +87,7 @@ export const createPayoutFn = createServerFn({ method: "POST" })
     ) {
       throw httpError(
         403,
-        "Your role for this entity does not let you do this operation."
+        "Su rol en esta entidad no le permite hacer esta operación."
       );
     }
     const result = await createPayout(payoutDeps(context.actorId), data);
@@ -95,22 +98,25 @@ export const createPayoutFn = createServerFn({ method: "POST" })
       case "conflict": {
         throw httpError(
           409,
-          "This request key is used by another payout. Start a new payout."
+          "Otra dispersión usa esta clave de solicitud. Empiece una dispersión nueva."
         );
       }
       case "not_configured": {
-        throw httpError(503, "Payouts are not configured on this server.");
+        throw httpError(
+          503,
+          "Las dispersiones no están configuradas en este servidor."
+        );
       }
       case "entity_not_found": {
-        throw httpError(404, "We cannot find this entity.");
+        throw httpError(404, "No encontramos esta entidad.");
       }
       case "entity_inactive": {
-        throw httpError(409, "This entity is not active.");
+        throw httpError(409, "Esta entidad no está activa.");
       }
       case "no_default_account": {
         throw httpError(
           409,
-          "This entity has no default bank account. Add one before you send a payout."
+          "Esta entidad no tiene una cuenta bancaria predeterminada. Agregue una antes de enviar una dispersión."
         );
       }
       default: {

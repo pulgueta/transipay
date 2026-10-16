@@ -16,30 +16,30 @@ import type { CancelRefusal } from "./decisions";
 
 /** The citizen reads these messages, so each one says what to do next. */
 const BOOK_MESSAGES: Record<BookRefusal, string> = {
-  no_citizen: "Link your document in your account before you book.",
-  too_soon: "Select a time at least one hour from now.",
-  branch_not_found: "This branch is not available. Select another branch.",
+  no_citizen: "Vincule su documento en su cuenta antes de agendar.",
+  too_soon: "Seleccione una hora con al menos una hora de anticipación.",
+  branch_not_found: "Esta sede no está disponible. Seleccione otra sede.",
   procedure_type_not_found:
-    "This procedure is not available at the entity. Select another procedure.",
+    "Este trámite no está disponible en la entidad. Seleccione otro trámite.",
   obligation_not_found:
-    "This procedure obligation is not pending. Book without an obligation.",
+    "La obligación de este trámite no está pendiente. Agende sin obligación.",
   obligation_mismatch:
-    "This obligation is for a different entity or procedure. Select the entity and procedure of the obligation.",
+    "Esta obligación es de otra entidad u otro trámite. Seleccione la entidad y el trámite de la obligación.",
 };
 
 const CANCEL_MESSAGES: Record<CancelRefusal, string> = {
-  not_scheduled: "This appointment is not scheduled, so you cannot cancel it.",
-  in_the_past: "This appointment already started, so you cannot cancel it.",
+  not_scheduled: "Esta cita no está programada, por eso no puede cancelarla.",
+  in_the_past: "Esta cita ya empezó, por eso no puede cancelarla.",
 };
 
 export const bookingSchema = z.object({
-  entityId: z.uuid("Select an entity."),
-  branchId: z.uuid("Select a branch."),
-  procedureTypeId: z.uuid("Select a procedure."),
+  entityId: z.uuid("Seleccione una entidad."),
+  branchId: z.uuid("Seleccione una sede."),
+  procedureTypeId: z.uuid("Seleccione un trámite."),
   obligationId: z.uuid().optional(),
   scheduledAt: z.iso.datetime({
     offset: true,
-    message: "Select a date and time.",
+    message: "Seleccione una fecha y una hora.",
   }),
 });
 

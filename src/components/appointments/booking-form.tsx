@@ -17,11 +17,11 @@ type BookingOptions = Awaited<ReturnType<typeof readBookingOptions>>;
 const NO_OBLIGATION = "none";
 
 const formSchema = z.object({
-  entityId: z.string().min(1, "Select an entity."),
-  branchId: z.string().min(1, "Select a branch."),
-  procedureTypeId: z.string().min(1, "Select a procedure."),
+  entityId: z.string().min(1, "Seleccione una entidad."),
+  branchId: z.string().min(1, "Seleccione una sede."),
+  procedureTypeId: z.string().min(1, "Seleccione un trámite."),
   obligationId: z.string(),
-  scheduledAt: z.string().min(1, "Select a date and time."),
+  scheduledAt: z.string().min(1, "Seleccione la fecha y la hora."),
 });
 
 export interface BookingValues {
@@ -114,8 +114,8 @@ export const BookingForm = ({
           {(field) => (
             <field.SelectField
               items={entityItems}
-              label="Entity"
-              placeholder="Select an entity"
+              label="Entidad"
+              placeholder="Seleccione una entidad"
             />
           )}
         </form.AppField>
@@ -141,9 +141,11 @@ export const BookingForm = ({
                   {(field) => (
                     <field.SelectField
                       items={branchItems}
-                      label="Branch"
+                      label="Sede"
                       placeholder={
-                        selected ? "Select a branch" : "Select an entity first"
+                        selected
+                          ? "Seleccione una sede"
+                          : "Primero seleccione una entidad"
                       }
                     />
                   )}
@@ -160,11 +162,11 @@ export const BookingForm = ({
                   {(field) => (
                     <field.SelectField
                       items={typeItems}
-                      label="Procedure"
+                      label="Trámite"
                       placeholder={
                         selected
-                          ? "Select a procedure"
-                          : "Select an entity first"
+                          ? "Seleccione un trámite"
+                          : "Primero seleccione una entidad"
                       }
                     />
                   )}
@@ -190,7 +192,7 @@ export const BookingForm = ({
               return null;
             }
             const obligationItems = [
-              { value: NO_OBLIGATION, label: "No obligation" },
+              { value: NO_OBLIGATION, label: "Sin obligación" },
               ...matching.map((item) => ({
                 value: item.id,
                 label: `${item.number} · ${item.entityName}`,
@@ -201,8 +203,8 @@ export const BookingForm = ({
                 {(field) => (
                   <field.SelectField
                     items={obligationItems}
-                    label="Pending procedure (optional)"
-                    placeholder="No obligation"
+                    label="Trámite pendiente (opcional)"
+                    placeholder="Sin obligación"
                   />
                 )}
               </form.AppField>
@@ -212,15 +214,15 @@ export const BookingForm = ({
         <form.AppField name="scheduledAt">
           {(field) => (
             <field.DateTimeField
-              description="Select a time at least one hour from now."
-              label="Date and time (Bogota time)"
+              description="Seleccione una hora con al menos una hora de anticipación."
+              label="Fecha y hora (hora de Colombia)"
               min={min}
             />
           )}
         </form.AppField>
       </FieldGroup>
       <form.AppForm>
-        <form.SubmitButton>Book the appointment</form.SubmitButton>
+        <form.SubmitButton>Agendar cita</form.SubmitButton>
       </form.AppForm>
     </form>
   );

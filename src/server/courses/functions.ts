@@ -13,16 +13,16 @@ const ENROLL_MESSAGES: Record<
   Extract<EnrollOutcome, { ok: false }>["reason"],
   string
 > = {
-  no_citizen: "Link your document in your account before you enroll.",
+  no_citizen: "Vincule su documento en su cuenta antes de inscribirse.",
   session_not_found:
-    "This course session is not available. Select another one.",
-  session_started: "This course session already started. Select another one.",
-  session_full: "This course session is full. Select another one.",
-  already_enrolled: "You are already enrolled in this course session.",
+    "Esta sesión del curso no está disponible. Seleccione otra.",
+  session_started: "Esta sesión del curso ya empezó. Seleccione otra.",
+  session_full: "Esta sesión del curso no tiene cupos. Seleccione otra.",
+  already_enrolled: "Usted ya está inscrito en esta sesión del curso.",
   obligation_not_eligible:
-    "The discount applies to a pending fine of yours. Select one of your fines.",
+    "El descuento aplica a un comparendo pendiente suyo. Seleccione uno de sus comparendos.",
   fine_already_enrolled:
-    "This fine already has a course enrollment. Select another fine, or cancel that enrollment.",
+    "Este comparendo ya tiene una inscripción a un curso. Seleccione otro comparendo o cancele esa inscripción.",
 };
 
 /** The open course sessions, the enrollments of the signed-in citizen, and the fines that can get a discount. */
@@ -67,7 +67,7 @@ export const cancelEnrollmentFn = createServerFn({ method: "POST" })
       }
       throw httpError(
         409,
-        "This enrollment cannot be cancelled: the session started or you did not attend it."
+        "No puede cancelar esta inscripción: la sesión ya empezó o usted no asistió."
       );
     }
     return outcome.enrollment;

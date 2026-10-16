@@ -104,8 +104,8 @@ const appointmentHelper = createColumnHelper<typeof features, AppointmentRow>();
 const sessionHelper = createColumnHelper<typeof features, SessionRow>();
 
 const OUTCOME_LABELS: Record<StaffAppointmentOutcome, string> = {
-  attended: "Attended",
-  no_show: "No show",
+  attended: "Asistió",
+  no_show: "No asistió",
 };
 
 /** How often the time gates of the page read the time again. */
@@ -147,7 +147,7 @@ const AppointmentActions = ({ row }: { row: AppointmentRow }) => {
       </span>
       {notStarted ? (
         <span className="text-muted-foreground text-xs">
-          Available after the appointment time.
+          Disponible después de la hora de la cita.
         </span>
       ) : null}
       <InlineError error={update.error} />
@@ -157,12 +157,14 @@ const AppointmentActions = ({ row }: { row: AppointmentRow }) => {
 
 const appointmentColumns = appointmentHelper.columns([
   appointmentHelper.accessor("scheduledAt", {
-    header: ({ column }) => <SortableHeader column={column} label="When" />,
+    header: ({ column }) => <SortableHeader column={column} label="Fecha" />,
     sortFn: "datetime",
     cell: ({ getValue }) => formatDateTime(getValue()),
   }),
   appointmentHelper.accessor("citizenName", {
-    header: ({ column }) => <SortableHeader column={column} label="Citizen" />,
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Ciudadano" />
+    ),
     sortFn: "alphanumeric",
     cell: ({ row }) => (
       <span className="flex flex-col">
@@ -174,18 +176,16 @@ const appointmentColumns = appointmentHelper.columns([
     ),
   }),
   appointmentHelper.accessor("procedureName", {
-    header: ({ column }) => (
-      <SortableHeader column={column} label="Procedure" />
-    ),
+    header: ({ column }) => <SortableHeader column={column} label="Trámite" />,
     sortFn: "alphanumeric",
   }),
   appointmentHelper.accessor("branchName", {
-    header: ({ column }) => <SortableHeader column={column} label="Branch" />,
+    header: ({ column }) => <SortableHeader column={column} label="Sede" />,
     sortFn: "alphanumeric",
   }),
   appointmentHelper.display({
     id: "actions",
-    header: () => <span className="sr-only">Actions</span>,
+    header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => <AppointmentActions row={row.original} />,
   }),
 ]);
@@ -208,10 +208,10 @@ const AppointmentsTab = () => {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-muted-foreground text-sm">
-        Scheduled appointments of your entities, earliest first. Close each one
-        after its time.
+        Citas programadas de sus entidades, de la más cercana a la más lejana.
+        Cierre cada una después de su hora.
       </p>
-      <DataTable emptyMessage="No scheduled appointments." table={table} />
+      <DataTable emptyMessage="No hay citas programadas." table={table} />
       <LoadMore
         error={query.error}
         hasNextPage={query.hasNextPage}
@@ -225,16 +225,16 @@ const AppointmentsTab = () => {
 };
 
 const sessionSchema = z.object({
-  entityId: z.uuid("Select an entity."),
-  branchId: z.uuid("Select a branch."),
-  startsAt: z.string().min(1, "Enter the start."),
-  endsAt: z.string().min(1, "Enter the end."),
+  entityId: z.uuid("Seleccione una entidad."),
+  branchId: z.uuid("Seleccione una sede."),
+  startsAt: z.string().min(1, "Escriba la hora de inicio."),
+  endsAt: z.string().min(1, "Escriba la hora de fin."),
   capacity: z
     .string()
-    .regex(/^[1-9]\d{0,3}$/u, "Enter a whole number larger than zero."),
+    .regex(/^[1-9]\d{0,3}$/u, "Escriba un número entero mayor que cero."),
   discountPercent: z
     .string()
-    .regex(/^[1-9]\d?$/u, "Enter a whole number from 1 to 99."),
+    .regex(/^[1-9]\d?$/u, "Escriba un número entero de 1 a 99."),
 });
 
 /** The form of the dialog. It mounts when the dialog opens, so a new dialog starts empty. */
@@ -284,7 +284,7 @@ const NewSessionForm = ({ onCreated }: { onCreated: () => void }) => {
         setSubmitError(
           error instanceof Error
             ? error
-            : new Error("We could not create the session. Try again.")
+            : new Error("No pudimos crear la sesión. Intente de nuevo.")
         );
       }
     },
@@ -311,9 +311,10 @@ const NewSessionForm = ({ onCreated }: { onCreated: () => void }) => {
       }}
     >
       <DialogHeader>
-        <DialogTitle>New course session</DialogTitle>
+        <DialogTitle>Nueva sesión de curso</DialogTitle>
         <DialogDescription>
-          Citizens enroll a fine in the session. Attendance gives the discount.
+          Los ciudadanos inscriben un comparendo en la sesión. La asistencia da
+          el descuento.
         </DialogDescription>
       </DialogHeader>
       {entities.isPending ? (
@@ -324,8 +325,8 @@ const NewSessionForm = ({ onCreated }: { onCreated: () => void }) => {
             {(field) => (
               <field.SelectField
                 items={entityItems}
-                label="Entity"
-                placeholder="Select an entity"
+                label="Entidad"
+                placeholder="Seleccione una entidad"
               />
             )}
           </form.AppField>
@@ -333,9 +334,11 @@ const NewSessionForm = ({ onCreated }: { onCreated: () => void }) => {
             {(field) => (
               <field.SelectField
                 items={branchItems}
-                label="Branch"
+                label="Sede"
                 placeholder={
-                  entityId === "" ? "Select an entity first" : "Select a branch"
+                  entityId === ""
+                    ? "Primero seleccione una entidad"
+                    : "Seleccione una sede"
                 }
               />
             )}
@@ -343,7 +346,7 @@ const NewSessionForm = ({ onCreated }: { onCreated: () => void }) => {
           <form.AppField name="startsAt">
             {(field) => (
               <field.TextField
-                label="Starts at (Bogota time)"
+                label="Inicio (hora de Colombia)"
                 type="datetime-local"
               />
             )}
@@ -351,28 +354,31 @@ const NewSessionForm = ({ onCreated }: { onCreated: () => void }) => {
           <form.AppField name="endsAt">
             {(field) => (
               <field.TextField
-                label="Ends at (Bogota time)"
+                label="Fin (hora de Colombia)"
                 type="datetime-local"
               />
             )}
           </form.AppField>
           <form.AppField name="capacity">
-            {(field) => (
-              <field.TextField inputMode="numeric" label="Capacity" />
-            )}
+            {(field) => <field.TextField inputMode="numeric" label="Cupos" />}
           </form.AppField>
           <form.AppField name="discountPercent">
             {(field) => (
-              <field.TextField inputMode="numeric" label="Discount percent" />
+              <field.TextField
+                inputMode="numeric"
+                label="Porcentaje de descuento"
+              />
             )}
           </form.AppField>
         </FieldGroup>
       )}
       <InlineError error={entities.error ?? branches.error ?? submitError} />
       <DialogFooter>
-        <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+        <DialogClose render={<Button variant="outline" />}>
+          Cancelar
+        </DialogClose>
         <form.AppForm>
-          <form.SubmitButton>Create session</form.SubmitButton>
+          <form.SubmitButton>Crear sesión</form.SubmitButton>
         </form.AppForm>
       </DialogFooter>
     </form>
@@ -387,7 +393,7 @@ const NewSessionDialog = () => {
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger render={<Button />}>
         <IconPlus data-icon="inline-start" strokeWidth={1.75} />
-        New session
+        Nueva sesión
       </DialogTrigger>
       <DialogContent>
         {open ? (
@@ -407,42 +413,46 @@ const NewSessionDialog = () => {
 
 const sessionColumns = sessionHelper.columns([
   sessionHelper.accessor("startsAt", {
-    header: ({ column }) => <SortableHeader column={column} label="Starts" />,
+    header: ({ column }) => <SortableHeader column={column} label="Inicio" />,
     sortFn: "datetime",
     cell: ({ row }) => (
       <span className="flex flex-col">
         <span>{formatDateTime(row.original.startsAt)}</span>
         <span className="text-muted-foreground text-xs">
-          Ends {formatDateTime(row.original.endsAt)}
+          Termina: {formatDateTime(row.original.endsAt)}
         </span>
       </span>
     ),
   }),
   sessionHelper.accessor("entityName", {
-    header: ({ column }) => <SortableHeader column={column} label="Entity" />,
+    header: ({ column }) => <SortableHeader column={column} label="Entidad" />,
     sortFn: "alphanumeric",
   }),
   sessionHelper.accessor("branchName", {
-    header: ({ column }) => <SortableHeader column={column} label="Branch" />,
+    header: ({ column }) => <SortableHeader column={column} label="Sede" />,
     sortFn: "alphanumeric",
   }),
   sessionHelper.accessor("enrolledCount", {
-    header: ({ column }) => <SortableHeader column={column} label="Enrolled" />,
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Inscritos" />
+    ),
     sortFn: "basic",
     cell: ({ row }) => (
       <span className="tabular-nums">
-        {row.original.enrolledCount} of {row.original.capacity}
+        {row.original.enrolledCount} de {row.original.capacity}
       </span>
     ),
   }),
   sessionHelper.accessor("discountPercent", {
-    header: ({ column }) => <SortableHeader column={column} label="Discount" />,
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Descuento" />
+    ),
     sortFn: "basic",
     cell: ({ getValue }) => <Badge variant="secondary">{getValue()}%</Badge>,
   }),
   sessionHelper.display({
     id: "actions",
-    header: () => <span className="sr-only">Actions</span>,
+    header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => <AttendanceDialog session={row.original} />,
   }),
 ]);
@@ -466,12 +476,12 @@ const SessionsTab = () => {
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
         <p className="text-muted-foreground text-sm">
-          Course sessions of your entities, newest first, with the enrollments
-          that are not cancelled.
+          Sesiones de curso de sus entidades, de la más reciente a la más
+          antigua, con las inscripciones que no están canceladas.
         </p>
         <NewSessionDialog />
       </div>
-      <DataTable emptyMessage="No course sessions yet." table={table} />
+      <DataTable emptyMessage="Aún no hay sesiones de curso." table={table} />
       <LoadMore
         error={query.error}
         hasNextPage={query.hasNextPage}
@@ -493,16 +503,16 @@ const SchedulePage = () => {
   return (
     <>
       <PageHeader
-        description="Appointments and course sessions of the entities where you are a staff member."
-        title="Schedule"
+        description="Citas y sesiones de curso de las entidades donde usted trabaja."
+        title="Agenda"
       />
       <Tabs defaultValue={canAppointments ? "appointments" : "courses"}>
         <TabsList>
           {canAppointments ? (
-            <TabsTrigger value="appointments">Appointments</TabsTrigger>
+            <TabsTrigger value="appointments">Citas</TabsTrigger>
           ) : null}
           {canCourses ? (
-            <TabsTrigger value="courses">Course sessions</TabsTrigger>
+            <TabsTrigger value="courses">Sesiones de curso</TabsTrigger>
           ) : null}
         </TabsList>
         {canAppointments ? (
@@ -535,6 +545,6 @@ export const Route = createFileRoute("/staff/schedule")({
         : undefined,
     ]);
   },
-  head: () => ({ meta: [{ title: "Schedule | Staff | Transipay" }] }),
+  head: () => ({ meta: [{ title: "Agenda | Funcionarios | Transipay" }] }),
   component: SchedulePage,
 });

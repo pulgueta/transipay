@@ -47,7 +47,7 @@ export const CitizenFinder = ({
       const parsed = documentSchema.safeParse({ documentType, documentNumber });
       if (!parsed.success) {
         throw new Error(
-          parsed.error.issues.at(0)?.message ?? "Check the document."
+          parsed.error.issues.at(0)?.message ?? "Revise el documento."
         );
       }
       return await findCitizen({ data: parsed.data });
@@ -60,7 +60,7 @@ export const CitizenFinder = ({
       <FieldGroup className="sm:flex-row sm:items-end">
         <Field className="sm:w-56">
           <FieldLabel htmlFor={`${idPrefix}-document-type`}>
-            Document type
+            Tipo de documento
           </FieldLabel>
           <Select
             items={DOCUMENT_TYPE_ITEMS}
@@ -87,7 +87,7 @@ export const CitizenFinder = ({
         </Field>
         <Field>
           <FieldLabel htmlFor={`${idPrefix}-document-number`}>
-            Document number
+            Número de documento
           </FieldLabel>
           <Input
             id={`${idPrefix}-document-number`}
@@ -113,18 +113,19 @@ export const CitizenFinder = ({
           ) : (
             <IconSearch data-icon="inline-start" strokeWidth={1.75} />
           )}
-          Find citizen
+          Buscar ciudadano
         </Button>
       </FieldGroup>
       <InlineError error={inputError ?? find.error} />
       {find.isSuccess && citizen === null ? (
         <p className="text-muted-foreground text-sm">
-          No citizen has this document. The citizen must be registered first.
+          Ningún ciudadano tiene este documento. Primero debe registrar al
+          ciudadano.
         </p>
       ) : null}
       {citizen === null ? null : (
         <output className="text-sm">
-          Citizen:{" "}
+          Ciudadano:{" "}
           <span className="font-medium">
             {citizen.firstName} {citizen.lastName}
           </span>{" "}

@@ -24,7 +24,7 @@ export const authMiddleware = createMiddleware({ type: "function" }).server(
 
     if (!result) {
       setResponseStatus(401);
-      throw new Error("You must sign in to do this operation.");
+      throw new Error("Debe iniciar sesión para hacer esta operación.");
     }
 
     if (
@@ -37,7 +37,7 @@ export const authMiddleware = createMiddleware({ type: "function" }).server(
       });
       if (!canImpersonate(adminUser, new Date())) {
         setResponseStatus(401);
-        throw new Error("You must sign in to do this operation.");
+        throw new Error("Debe iniciar sesión para hacer esta operación.");
       }
     }
 
@@ -61,7 +61,7 @@ export const requirePermission = (permissions: Permissions) =>
 
       if (!success) {
         setResponseStatus(403);
-        throw new Error("You do not have permission to do this operation.");
+        throw new Error("No tiene permiso para hacer esta operación.");
       }
 
       return await next();

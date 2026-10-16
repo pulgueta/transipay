@@ -29,10 +29,10 @@ type EnrollmentRow = Awaited<
 >[number];
 
 const STATUS_LABELS: Record<EnrollmentStatus, string> = {
-  enrolled: "Enrolled",
-  attended: "Attended",
-  absent: "Absent",
-  cancelled: "Cancelled",
+  enrolled: "Inscrito",
+  attended: "Asistió",
+  absent: "No asistió",
+  cancelled: "Cancelada",
 };
 
 const enrollmentsKey = (courseSessionId: string) => [
@@ -73,7 +73,7 @@ const EnrollmentItem = ({
         <span className="flex flex-col">
           <span>{row.citizenName}</span>
           <span className="text-muted-foreground text-xs">
-            {row.citizenDocument} · Fine {row.obligationNumber}
+            {row.citizenDocument} · Comparendo {row.obligationNumber}
           </span>
         </span>
         {row.status === "enrolled" ? (
@@ -86,7 +86,7 @@ const EnrollmentItem = ({
               size="sm"
               variant="outline"
             >
-              Attended
+              Asistió
             </Button>
             <Button
               disabled={!ended || record.isPending}
@@ -96,7 +96,7 @@ const EnrollmentItem = ({
               size="sm"
               variant="outline"
             >
-              Absent
+              No asistió
             </Button>
           </span>
         ) : (
@@ -130,7 +130,7 @@ const EnrollmentList = ({
   if (enrollments.data.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
-        No citizens are enrolled in this session.
+        No hay ciudadanos inscritos en esta sesión.
       </p>
     );
   }
@@ -162,22 +162,24 @@ export const AttendanceDialog = ({
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        Attendance
+        Asistencia
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Attendance</DialogTitle>
+          <DialogTitle>Asistencia</DialogTitle>
           <DialogDescription>
             {ended
-              ? "Record the result for each citizen. When a citizen attended, the fine gets the session discount."
-              : "This session has not ended. You can record the attendance after it ends."}
+              ? "Registre el resultado de cada ciudadano. Cuando un ciudadano asiste, el comparendo recibe el descuento de la sesión."
+              : "Esta sesión aún no termina. Puede registrar la asistencia cuando termine."}
           </DialogDescription>
         </DialogHeader>
         {open ? (
           <EnrollmentList courseSessionId={session.id} ended={ended} />
         ) : null}
         <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>Close</DialogClose>
+          <DialogClose render={<Button variant="outline" />}>
+            Cerrar
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -61,7 +61,7 @@ const UserMenu = ({ session }: { session: AppSession }) => {
           </DropdownMenuLabel>
           <DropdownMenuItem render={<Link to="/account" />}>
             <IconUserCircle strokeWidth={1.75} />
-            Account
+            Mi cuenta
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
@@ -73,7 +73,7 @@ const UserMenu = ({ session }: { session: AppSession }) => {
             }}
           >
             <IconLogout strokeWidth={1.75} />
-            Sign out
+            Cerrar sesión
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
@@ -89,10 +89,10 @@ const SignedOutActions = () => (
       size="sm"
       variant="ghost"
     >
-      Sign in
+      Iniciar sesión
     </Button>
     <Button nativeButton={false} render={<Link to="/sign-up" />} size="sm">
-      Create account
+      Crear cuenta
     </Button>
   </>
 );
@@ -104,25 +104,25 @@ const MobileMenu = ({ session }: { session: AppSession | null }) => {
     <Sheet>
       <SheetTrigger
         render={
-          <Button aria-label="Open the menu" size="icon" variant="ghost" />
+          <Button aria-label="Abrir el menú" size="icon" variant="ghost" />
         }
       >
         <IconMenu2 strokeWidth={1.75} />
       </SheetTrigger>
       <SheetContent side="left">
         <SheetHeader>
-          <SheetTitle>Menu</SheetTitle>
+          <SheetTitle>Menú</SheetTitle>
           <SheetDescription className="sr-only">
-            The pages of Transipay.
+            Las páginas de Transipay.
           </SheetDescription>
         </SheetHeader>
-        <nav aria-label="Main" className="flex flex-col gap-1 px-4">
+        <nav aria-label="Principal" className="flex flex-col gap-1 px-4">
           <SheetClose
             className="rounded-md px-2 py-2 text-base font-medium"
             nativeButton={false}
             render={<Link to="/" />}
           >
-            Home
+            Inicio
           </SheetClose>
           {navLinksFor(session).map((link) => (
             <SheetClose
@@ -151,7 +151,7 @@ const MobileMenu = ({ session }: { session: AppSession | null }) => {
                   />
                 }
               >
-                Account
+                Mi cuenta
               </SheetClose>
               <Button
                 disabled={signOut.isPending}
@@ -160,7 +160,7 @@ const MobileMenu = ({ session }: { session: AppSession | null }) => {
                 }}
                 variant="ghost"
               >
-                Sign out
+                Cerrar sesión
               </Button>
             </>
           ) : (
@@ -175,7 +175,7 @@ const MobileMenu = ({ session }: { session: AppSession | null }) => {
                   />
                 }
               >
-                Sign in
+                Iniciar sesión
               </SheetClose>
               <SheetClose
                 nativeButton={false}
@@ -186,7 +186,7 @@ const MobileMenu = ({ session }: { session: AppSession | null }) => {
                   />
                 }
               >
-                Create account
+                Crear cuenta
               </SheetClose>
             </>
           )}
@@ -203,7 +203,7 @@ export const AppHeader = ({ session }: { session: AppSession | null }) => (
       <Link className="shrink-0 text-base font-semibold tracking-tight" to="/">
         Transipay
       </Link>
-      <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
+      <nav aria-label="Principal" className="hidden items-center gap-1 md:flex">
         {navLinksFor(session).map((link) => (
           <Link
             className="text-muted-foreground hover:text-foreground data-[status=active]:text-foreground rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors"

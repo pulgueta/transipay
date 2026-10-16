@@ -4,13 +4,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SignInForm } from "./sign-in-form";
 
 const fillAndSubmit = (email: string, password: string) => {
-  fireEvent.change(screen.getByLabelText("Email"), {
+  fireEvent.change(screen.getByLabelText("Correo electrónico"), {
     target: { value: email },
   });
-  fireEvent.change(screen.getByLabelText("Password"), {
+  fireEvent.change(screen.getByLabelText("Contraseña"), {
     target: { value: password },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+  fireEvent.click(screen.getByRole("button", { name: "Iniciar sesión" }));
 };
 
 describe(SignInForm, () => {
@@ -19,12 +19,17 @@ describe(SignInForm, () => {
   it("renders the email and password fields", () => {
     render(<SignInForm onSignIn={async () => await Promise.resolve(null)} />);
 
-    expect(screen.getByLabelText("Email")).toHaveProperty("type", "email");
-    expect(screen.getByLabelText("Password")).toHaveProperty(
+    expect(screen.getByLabelText("Correo electrónico")).toHaveProperty(
+      "type",
+      "email"
+    );
+    expect(screen.getByLabelText("Contraseña")).toHaveProperty(
       "type",
       "password"
     );
-    expect(screen.getByRole("button", { name: "Sign in" })).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: "Iniciar sesión" })
+    ).toBeDefined();
   });
 
   it("shows the field errors and does not sign in with empty fields", async () => {
@@ -33,12 +38,12 @@ describe(SignInForm, () => {
     );
     render(<SignInForm onSignIn={onSignIn} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Iniciar sesión" }));
 
     const alerts = await screen.findAllByRole("alert");
     expect(alerts.map((alert) => alert.textContent)).toStrictEqual([
-      "Enter your email address.",
-      "Enter your password.",
+      "Escriba su correo electrónico.",
+      "Escriba su contraseña.",
     ]);
     expect(onSignIn).not.toHaveBeenCalled();
   });
@@ -65,10 +70,9 @@ describe(SignInForm, () => {
     fillAndSubmit("ana@example.com", "correct horse battery");
 
     await vi.waitFor(() => {
-      expect(screen.getByRole("button", { name: "Sign in" })).toHaveProperty(
-        "disabled",
-        false
-      );
+      expect(
+        screen.getByRole("button", { name: "Iniciar sesión" })
+      ).toHaveProperty("disabled", false);
     });
     expect(screen.queryByRole("alert")).toBeNull();
   });

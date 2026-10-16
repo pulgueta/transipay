@@ -16,13 +16,13 @@ export const ErrorPage = ({ reset }: ErrorComponentProps) => {
   return (
     <section className="mx-auto flex max-w-md flex-col gap-4 py-16">
       <h1 className="text-2xl font-semibold tracking-tight">
-        An error occurred
+        Ocurrió un error
       </h1>
       <p className="text-muted-foreground">
-        We cannot show this page now. Try again.
+        No pudimos mostrar esta página. Intente de nuevo.
       </p>
       <Button className="self-start" onClick={retry}>
-        Try again
+        Intentar de nuevo
       </Button>
     </section>
   );

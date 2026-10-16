@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { z } from "zod";
 
 import { useAppForm } from "@/components/form/use-app-form";
+import { STATE_LABELS } from "@/components/obligations/obligation-labels";
 import { CitizenFinder } from "@/components/staff/citizen-finder";
 import type { FoundCitizen } from "@/components/staff/citizen-finder";
 import { formatDay } from "@/components/staff/format";
@@ -45,30 +46,30 @@ const plateSchema = z
   .trim()
   .refine(
     (value) => value === "" || /^[A-Za-z0-9]{5,7}$/u.test(value),
-    "Enter 5 to 7 letters or digits, or leave it empty."
+    "Escriba de 5 a 7 letras o números, o deje el campo vacío."
   );
 
 const commonSchema = z.object({
-  entityId: z.uuid("Select an entity."),
-  number: z.string().trim().min(3, "Enter the official number."),
+  entityId: z.uuid("Seleccione una entidad."),
+  number: z.string().trim().min(3, "Escriba el número oficial."),
   dueOn: z
     .string()
     .refine(
       (value) => value === "" || z.iso.date().safeParse(value).success,
-      "Enter a valid date."
+      "Escriba una fecha válida."
     ),
   plate: plateSchema,
 });
 
 const fineSchema = commonSchema.extend({
-  infractionId: z.uuid("Select an infraction."),
-  location: z.string().trim().min(3, "Enter where it happened."),
-  occurredAt: z.string().min(1, "Enter when it happened."),
+  infractionId: z.uuid("Seleccione una infracción."),
+  location: z.string().trim().min(3, "Escriba dónde ocurrió."),
+  occurredAt: z.string().min(1, "Escriba cuándo ocurrió."),
   agentCode: optionalText,
 });
 
 const procedureSchema = commonSchema.extend({
-  procedureTypeId: z.uuid("Select a procedure type."),
+  procedureTypeId: z.uuid("Seleccione un tipo de trámite."),
 });
 
 const emptyToUndefined = (value: string) => (value === "" ? undefined : value);
@@ -81,23 +82,23 @@ const CreatedObligation = ({
 }) => (
   <Alert>
     <AlertTitle>
-      {obligation.kind === "fine" ? "Fine" : "Procedure"} {obligation.number}{" "}
-      registered
+      {obligation.kind === "fine" ? "Comparendo" : "Trámite"}{" "}
+      {obligation.number} registrado
     </AlertTitle>
     <AlertDescription>
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
         <dt>Id</dt>
         <dd className="font-mono text-xs">{obligation.id}</dd>
-        <dt>Status</dt>
+        <dt>Estado</dt>
         <dd>
-          <Badge variant="secondary">{obligation.status}</Badge>
+          <Badge variant="secondary">{STATE_LABELS[obligation.status]}</Badge>
         </dd>
-        <dt>Amount</dt>
+        <dt>Valor</dt>
         <dd>{formatAmount(obligation.amountInCents, "COP")}</dd>
-        <dt>Due on</dt>
+        <dt>Fecha límite</dt>
         <dd>
           {obligation.dueOn === null
-            ? "No due date"
+            ? "Sin fecha límite"
             : formatDay(obligation.dueOn)}
         </dd>
       </dl>
@@ -150,7 +151,7 @@ const NewFineForm = () => {
     onSubmit: async ({ value, formApi }) => {
       setSubmitError(null);
       if (citizen === null) {
-        setSubmitError(new Error("Find the citizen first."));
+        setSubmitError(new Error("Primero busque al ciudadano."));
         return;
       }
       const input = fineSchema.parse(value);
@@ -178,7 +179,7 @@ const NewFineForm = () => {
         setSubmitError(
           error instanceof Error
             ? error
-            : new Error("We could not register the fine. Try again.")
+            : new Error("No pudimos registrar el comparendo. Intente de nuevo.")
         );
       }
     },
@@ -203,8 +204,8 @@ const NewFineForm = () => {
             {(field) => (
               <field.SelectField
                 items={entityItems}
-                label="Entity"
-                placeholder="Select the transit authority"
+                label="Entidad"
+                placeholder="Seleccione la autoridad de tránsito"
               />
             )}
           </form.AppField>
@@ -212,33 +213,38 @@ const NewFineForm = () => {
             {(field) => (
               <field.SelectField
                 items={infractionItems}
-                label="Infraction"
-                placeholder="Select an infraction"
+                label="Infracción"
+                placeholder="Seleccione una infracción"
               />
             )}
           </form.AppField>
           <form.AppField name="number">
             {(field) => (
-              <field.TextField autoComplete="off" label="Fine number" />
+              <field.TextField
+                autoComplete="off"
+                label="Número del comparendo"
+              />
             )}
           </form.AppField>
           <form.AppField name="location">
-            {(field) => <field.TextField label="Location" />}
+            {(field) => <field.TextField label="Lugar" />}
           </form.AppField>
           <form.AppField name="occurredAt">
             {(field) => (
               <field.TextField
-                label="Occurred at (Bogota time)"
+                label="Fecha y hora de la infracción (hora de Colombia)"
                 type="datetime-local"
               />
             )}
           </form.AppField>
           <form.AppField name="agentCode">
-            {(field) => <field.TextField label="Agent code (optional)" />}
+            {(field) => (
+              <field.TextField label="Código del agente (opcional)" />
+            )}
           </form.AppField>
           <form.AppField name="dueOn">
             {(field) => (
-              <field.TextField label="Due on (optional)" type="date" />
+              <field.TextField label="Fecha límite (opcional)" type="date" />
             )}
           </form.AppField>
           <form.AppField name="plate">
@@ -246,19 +252,19 @@ const NewFineForm = () => {
               <field.TextField
                 aria-describedby="fine-plate-hint"
                 autoCapitalize="characters"
-                label="Plate (optional)"
+                label="Placa (opcional)"
               />
             )}
           </form.AppField>
           <FieldDescription id="fine-plate-hint">
-            The vehicle must be registered. Leave it empty for a fine without a
-            vehicle.
+            El vehículo debe estar registrado. Deje el campo vacío para un
+            comparendo sin vehículo.
           </FieldDescription>
         </FieldGroup>
       )}
       <InlineError error={entities.error ?? infractions.error ?? submitError} />
       <form.AppForm>
-        <form.SubmitButton>Register fine</form.SubmitButton>
+        <form.SubmitButton>Registrar comparendo</form.SubmitButton>
       </form.AppForm>
       {created === null ? null : <CreatedObligation obligation={created} />}
     </form>
@@ -293,7 +299,7 @@ const NewProcedureForm = () => {
     onSubmit: async ({ value, formApi }) => {
       setSubmitError(null);
       if (citizen === null) {
-        setSubmitError(new Error("Find the citizen first."));
+        setSubmitError(new Error("Primero busque al ciudadano."));
         return;
       }
       const input = procedureSchema.parse(value);
@@ -315,7 +321,7 @@ const NewProcedureForm = () => {
         setSubmitError(
           error instanceof Error
             ? error
-            : new Error("We could not register the procedure. Try again.")
+            : new Error("No pudimos registrar el trámite. Intente de nuevo.")
         );
       }
     },
@@ -358,8 +364,8 @@ const NewProcedureForm = () => {
             {(field) => (
               <field.SelectField
                 items={entityItems}
-                label="Entity"
-                placeholder="Select an entity"
+                label="Entidad"
+                placeholder="Seleccione una entidad"
               />
             )}
           </form.AppField>
@@ -367,30 +373,30 @@ const NewProcedureForm = () => {
             {(field) => (
               <field.SelectField
                 items={procedureTypeItems}
-                label="Procedure type"
+                label="Tipo de trámite"
                 placeholder={
                   entityId === ""
-                    ? "Select an entity first"
-                    : "Select a procedure type"
+                    ? "Primero seleccione una entidad"
+                    : "Seleccione un tipo de trámite"
                 }
               />
             )}
           </form.AppField>
           <form.AppField name="number">
             {(field) => (
-              <field.TextField autoComplete="off" label="Procedure number" />
+              <field.TextField autoComplete="off" label="Número del trámite" />
             )}
           </form.AppField>
           <form.AppField name="dueOn">
             {(field) => (
-              <field.TextField label="Due on (optional)" type="date" />
+              <field.TextField label="Fecha límite (opcional)" type="date" />
             )}
           </form.AppField>
           <form.AppField name="plate">
             {(field) => (
               <field.TextField
                 autoCapitalize="characters"
-                label="Plate (optional)"
+                label="Placa (opcional)"
               />
             )}
           </form.AppField>
@@ -400,7 +406,7 @@ const NewProcedureForm = () => {
         error={entities.error ?? procedureTypes.error ?? submitError}
       />
       <form.AppForm>
-        <form.SubmitButton>Register procedure</form.SubmitButton>
+        <form.SubmitButton>Registrar trámite</form.SubmitButton>
       </form.AppForm>
       {created === null ? null : <CreatedObligation obligation={created} />}
     </form>
@@ -410,21 +416,21 @@ const NewProcedureForm = () => {
 const ObligationsPage = () => (
   <>
     <PageHeader
-      description="Register a fine or a procedure for a citizen. The amount comes from the catalog."
-      title="Obligations"
+      description="Registre un comparendo o un trámite para un ciudadano. El valor viene del catálogo."
+      title="Obligaciones"
     />
     <Tabs defaultValue="fine">
       <TabsList>
-        <TabsTrigger value="fine">New fine</TabsTrigger>
-        <TabsTrigger value="procedure">New procedure</TabsTrigger>
+        <TabsTrigger value="fine">Nuevo comparendo</TabsTrigger>
+        <TabsTrigger value="procedure">Nuevo trámite</TabsTrigger>
       </TabsList>
       <TabsContent value="fine">
         <Card className="max-w-2xl">
           <CardHeader>
-            <CardTitle>New fine</CardTitle>
+            <CardTitle>Nuevo comparendo</CardTitle>
             <CardDescription>
-              Only the transit authority issues fines. The fine gets the
-              infraction amount of the catalog.
+              Solo la autoridad de tránsito expide comparendos. El comparendo
+              toma el valor de la infracción en el catálogo.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -435,10 +441,10 @@ const ObligationsPage = () => (
       <TabsContent value="procedure">
         <Card className="max-w-2xl">
           <CardHeader>
-            <CardTitle>New procedure</CardTitle>
+            <CardTitle>Nuevo trámite</CardTitle>
             <CardDescription>
-              The procedure gets the fee of its type. A type with no fee makes
-              an obligation with no amount to pay.
+              El trámite toma la tarifa de su tipo. Un tipo sin tarifa crea una
+              obligación sin valor a pagar.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -451,6 +457,8 @@ const ObligationsPage = () => (
 );
 
 export const Route = createFileRoute("/staff/obligations")({
-  head: () => ({ meta: [{ title: "Obligations | Staff | Transipay" }] }),
+  head: () => ({
+    meta: [{ title: "Obligaciones | Funcionarios | Transipay" }],
+  }),
   component: ObligationsPage,
 });

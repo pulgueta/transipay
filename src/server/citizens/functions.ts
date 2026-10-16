@@ -16,11 +16,11 @@ const LINK_MESSAGES: Record<
   string
 > = {
   document_belongs_to_other_user:
-    "This document is linked to another account. If it is yours, sign in with that account or contact the ITTB.",
+    "Este documento está vinculado a otra cuenta. Si es suyo, inicie sesión con esa cuenta o comuníquese con el ITTB.",
   document_needs_verification:
-    "We cannot link this document to your account automatically. Contact the transit authority to link it.",
+    "No podemos vincular este documento a su cuenta automáticamente. Comuníquese con el organismo de tránsito para vincularlo.",
   user_already_linked:
-    "Your account already has a document. Open your account to see it.",
+    "Su cuenta ya tiene un documento. Abra su cuenta para verlo.",
 };
 
 /** Links the signed-in user to the citizen with this document, or creates the citizen. */

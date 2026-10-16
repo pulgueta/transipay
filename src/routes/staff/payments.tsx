@@ -36,8 +36,8 @@ import {
 } from "@/server/payments/functions";
 
 const REVIEW_REASON_LABELS: Record<PaymentAttemptReviewReason, string> = {
-  second_approval: "Second approval (possible overpayment)",
-  target_not_payable: "Approved for an obligation that is not payable",
+  second_approval: "Segunda aprobación (posible pago doble)",
+  target_not_payable: "Aprobado para una obligación que no se puede pagar",
 };
 
 /** The first page has no cursor. A function keeps the `string | undefined` type of the page param. */
@@ -91,11 +91,11 @@ const ExaminedAction = ({ row }: { row: ReviewRow }) => {
         size="sm"
         variant="outline"
       >
-        Mark as examined
+        Marcar como revisado
       </Button>
       <ConfirmDialog
-        confirmLabel="Mark as examined"
-        description={`The review reason of the attempt for ${row.citizenName} (${formatAmount(row.amountInCents, row.currency)}) is removed. The payment and the obligation do not change. If the money must go back, do the refund separately.`}
+        confirmLabel="Marcar como revisado"
+        description={`Se quita el motivo de revisión del intento de ${row.citizenName} (${formatAmount(row.amountInCents, row.currency)}). El pago y la obligación no cambian. Si hay que devolver el dinero, haga el reembolso por separado.`}
         error={clear.error}
         isPending={clear.isPending}
         onConfirm={() => {
@@ -103,7 +103,7 @@ const ExaminedAction = ({ row }: { row: ReviewRow }) => {
         }}
         onOpenChange={setOpen}
         open={open}
-        title="Mark the payment as examined"
+        title="Marcar el pago como revisado"
       />
     </>
   );
@@ -111,7 +111,9 @@ const ExaminedAction = ({ row }: { row: ReviewRow }) => {
 
 const columns = helper.columns([
   helper.accessor("citizenDocument", {
-    header: ({ column }) => <SortableHeader column={column} label="Citizen" />,
+    header: ({ column }) => (
+      <SortableHeader column={column} label="Ciudadano" />
+    ),
     sortFn: "alphanumeric",
     cell: ({ row }) => (
       <span className="flex flex-col">
@@ -124,20 +126,20 @@ const columns = helper.columns([
   }),
   helper.accessor("obligationNumber", {
     header: ({ column }) => (
-      <SortableHeader column={column} label="Obligation" />
+      <SortableHeader column={column} label="Obligación" />
     ),
     sortFn: "alphanumeric",
     cell: ({ row }) => (
       <span className="flex items-center gap-1.5">
         <Badge variant="outline">
-          {row.original.obligationKind === "fine" ? "Fine" : "Procedure"}
+          {row.original.obligationKind === "fine" ? "Comparendo" : "Trámite"}
         </Badge>
         {row.original.obligationNumber}
       </span>
     ),
   }),
   helper.accessor("amountInCents", {
-    header: ({ column }) => <SortableHeader column={column} label="Amount" />,
+    header: ({ column }) => <SortableHeader column={column} label="Valor" />,
     sortFn: "basic",
     cell: ({ row }) => (
       <span className="tabular-nums">
@@ -146,7 +148,7 @@ const columns = helper.columns([
     ),
   }),
   helper.accessor("reviewReason", {
-    header: "Reason",
+    header: "Motivo",
     enableSorting: false,
     cell: ({ getValue }) => {
       const reason = getValue();
@@ -154,13 +156,13 @@ const columns = helper.columns([
     },
   }),
   helper.accessor("createdAt", {
-    header: ({ column }) => <SortableHeader column={column} label="Date" />,
+    header: ({ column }) => <SortableHeader column={column} label="Fecha" />,
     sortFn: "datetime",
     cell: ({ getValue }) => formatDateTime(getValue()),
   }),
   helper.display({
     id: "actions",
-    header: () => <span className="sr-only">Actions</span>,
+    header: () => <span className="sr-only">Acciones</span>,
     cell: ({ row }) => (
       <span className="flex items-center justify-end gap-1">
         <Button
@@ -174,7 +176,7 @@ const columns = helper.columns([
           size="sm"
           variant="ghost"
         >
-          Payment
+          Pago
           <IconExternalLink data-icon="inline-end" strokeWidth={1.75} />
         </Button>
         <ExaminedAction row={row.original} />
@@ -202,10 +204,13 @@ const PaymentsPage = () => {
   return (
     <>
       <PageHeader
-        description="Approved payment attempts that the gateway flagged. Examine each one, then mark it as examined."
-        title="Payments under review"
+        description="Intentos de pago aprobados que la pasarela marcó. Revise cada uno y luego márquelo como revisado."
+        title="Pagos en revisión"
       />
-      <DataTable emptyMessage="No payments wait for review." table={table} />
+      <DataTable
+        emptyMessage="No hay pagos pendientes de revisión."
+        table={table}
+      />
       <LoadMore
         error={query.error}
         hasNextPage={query.hasNextPage}
@@ -225,7 +230,7 @@ export const Route = createFileRoute("/staff/payments")({
     await context.queryClient.ensureInfiniteQueryData(reviewQueryOptions);
   },
   head: () => ({
-    meta: [{ title: "Payments under review | Staff | Transipay" }],
+    meta: [{ title: "Pagos en revisión | Funcionarios | Transipay" }],
   }),
   component: PaymentsPage,
 });

@@ -19,16 +19,16 @@ export const DOCUMENT_TYPE_LABELS: Record<
   (typeof DOCUMENT_TYPE_VALUES)[number],
   string
 > = {
-  CC: "Citizen ID (CC)",
-  CE: "Foreigner ID (CE)",
-  TI: "Identity card (TI)",
-  PP: "Passport (PP)",
-  NIT: "Tax ID (NIT)",
-  PEP: "Special stay permit (PEP)",
+  CC: "Cédula de ciudadanía (CC)",
+  CE: "Cédula de extranjería (CE)",
+  TI: "Tarjeta de identidad (TI)",
+  PP: "Pasaporte (PP)",
+  NIT: "NIT",
+  PEP: "Permiso especial de permanencia (PEP)",
 } satisfies Record<DocumentType, string>;
 
 export const documentTypeSchema = z.enum(DOCUMENT_TYPE_VALUES, {
-  message: "Select a document type.",
+  message: "Seleccione un tipo de documento.",
 });
 
 /**
@@ -43,7 +43,7 @@ export const documentNumberSchema = z
   .string()
   .transform(normalizeDocumentNumber)
   .pipe(
-    z.string().regex(/^[A-Z0-9]{4,20}$/u, "Enter 4 to 20 letters or numbers.")
+    z.string().regex(/^[A-Z0-9]{4,20}$/u, "Escriba de 4 a 20 letras o números.")
   );
 
 export const documentSchema = z.object({

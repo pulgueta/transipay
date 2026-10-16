@@ -26,7 +26,7 @@ export const LoadMore = ({
         variant="outline"
       >
         {isFetching ? <Spinner data-icon="inline-start" /> : null}
-        Load more
+        Cargar más
       </Button>
     ) : null}
     <InlineError error={error} />

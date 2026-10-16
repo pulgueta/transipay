@@ -79,13 +79,13 @@ const STATUS_VALUES = [
 ] as const satisfies readonly PayoutStatus[];
 
 const STATUS_LABELS: Record<PayoutStatus, string> = {
-  draft: "Draft",
-  queued: "Queued",
-  submitting: "Sending",
-  submitted: "Sent",
-  uncertain: "Uncertain",
-  paid: "Paid",
-  failed: "Failed",
+  draft: "Borrador",
+  queued: "En cola",
+  submitting: "Enviando",
+  submitted: "Enviada",
+  uncertain: "Incierta",
+  paid: "Pagada",
+  failed: "Fallida",
 };
 
 const STATUS_VARIANTS: Record<
@@ -102,8 +102,9 @@ const STATUS_VARIANTS: Record<
 };
 
 const REVIEW_REASON_LABELS: Record<PayoutReviewReason, string> = {
-  not_found_after_deadline: "Not found at Wompi after the retry deadline",
-  origin_account_missing: "No origin account stored",
+  not_found_after_deadline:
+    "No se encontró en Wompi después del plazo de reintento",
+  origin_account_missing: "No hay cuenta de origen guardada",
 };
 
 const ALL = "all";
@@ -139,11 +140,11 @@ const helper = createColumnHelper<typeof features, PayoutRow>();
 
 const columns = helper.columns([
   helper.accessor("entityName", {
-    header: ({ column }) => <SortableHeader column={column} label="Entity" />,
+    header: ({ column }) => <SortableHeader column={column} label="Entidad" />,
     sortFn: "alphanumeric",
   }),
   helper.accessor("amountInCents", {
-    header: ({ column }) => <SortableHeader column={column} label="Amount" />,
+    header: ({ column }) => <SortableHeader column={column} label="Valor" />,
     sortFn: "basic",
     cell: ({ row }) => (
       <span className="tabular-nums">
@@ -152,7 +153,7 @@ const columns = helper.columns([
     ),
   }),
   helper.accessor("status", {
-    header: ({ column }) => <SortableHeader column={column} label="Status" />,
+    header: ({ column }) => <SortableHeader column={column} label="Estado" />,
     sortFn: "alphanumeric",
     cell: ({ getValue }) => (
       <Badge variant={STATUS_VARIANTS[getValue()]}>
@@ -161,39 +162,39 @@ const columns = helper.columns([
     ),
   }),
   helper.accessor("reviewReason", {
-    header: "Review reason",
+    header: "Motivo de revisión",
     enableSorting: false,
     cell: ({ getValue }) => {
       const reason = getValue();
       return reason === null ? (
-        <span className="text-muted-foreground">None</span>
+        <span className="text-muted-foreground">Ninguno</span>
       ) : (
         REVIEW_REASON_LABELS[reason]
       );
     },
   }),
   helper.accessor("createdAt", {
-    header: ({ column }) => <SortableHeader column={column} label="Created" />,
+    header: ({ column }) => <SortableHeader column={column} label="Creada" />,
     sortFn: "datetime",
     cell: ({ getValue }) => formatDateTime(getValue()),
   }),
   helper.accessor("providerPayoutId", {
-    header: "Provider id",
+    header: "Id en Wompi",
     enableSorting: false,
     cell: ({ row }) => (
       <span className="font-mono text-xs" title={row.original.reference}>
-        {row.original.providerPayoutId ?? "Not sent"}
+        {row.original.providerPayoutId ?? "Sin enviar"}
       </span>
     ),
   }),
 ]);
 
 const payoutSchema = z.object({
-  entityId: z.uuid("Select an entity."),
+  entityId: z.uuid("Seleccione una entidad."),
   amount: z
     .string()
     .trim()
-    .regex(/^[1-9]\d*$/u, "Enter a whole amount in pesos, larger than zero."),
+    .regex(/^[1-9]\d*$/u, "Escriba un valor en pesos enteros, mayor que cero."),
 });
 
 /** The form of the dialog. It mounts when the dialog opens, so each payout gets a new idempotency key. */
@@ -239,7 +240,7 @@ const NewPayoutForm = ({
         setSubmitError(
           error instanceof Error
             ? error
-            : new Error("We could not send the payout. Try again.")
+            : new Error("No pudimos enviar la dispersión. Intente de nuevo.")
         );
       }
     },
@@ -255,10 +256,10 @@ const NewPayoutForm = ({
       }}
     >
       <DialogHeader>
-        <DialogTitle>New payout</DialogTitle>
+        <DialogTitle>Nueva dispersión</DialogTitle>
         <DialogDescription>
-          Sends money to the default bank account of the entity. A repeated
-          submit of this form does not send a second payout.
+          Envía dinero a la cuenta bancaria principal de la entidad. Si envía
+          este formulario de nuevo, no se hace una segunda dispersión.
         </DialogDescription>
       </DialogHeader>
       {targets.isPending ? (
@@ -269,11 +270,11 @@ const NewPayoutForm = ({
             {(field) => (
               <field.SelectField
                 items={items}
-                label="Entity"
+                label="Entidad"
                 placeholder={
                   items.length === 0
-                    ? "No entity has a default bank account"
-                    : "Select an entity"
+                    ? "Ninguna entidad tiene una cuenta bancaria principal"
+                    : "Seleccione una entidad"
                 }
               />
             )}
@@ -283,20 +284,22 @@ const NewPayoutForm = ({
               <field.TextField
                 aria-describedby="payout-amount-hint"
                 inputMode="numeric"
-                label="Amount in pesos (COP)"
+                label="Valor en pesos (COP)"
               />
             )}
           </form.AppField>
           <FieldDescription id="payout-amount-hint">
-            Whole pesos, without points or cents.
+            Pesos enteros, sin puntos ni centavos.
           </FieldDescription>
         </FieldGroup>
       )}
       <InlineError error={targets.error ?? submitError} />
       <DialogFooter>
-        <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+        <DialogClose render={<Button variant="outline" />}>
+          Cancelar
+        </DialogClose>
         <form.AppForm>
-          <form.SubmitButton>Send payout</form.SubmitButton>
+          <form.SubmitButton>Enviar dispersión</form.SubmitButton>
         </form.AppForm>
       </DialogFooter>
     </form>
@@ -316,7 +319,7 @@ const NewPayoutDialog = () => {
       <Dialog onOpenChange={setOpen} open={open}>
         <DialogTrigger render={<Button />}>
           <IconPlus data-icon="inline-start" strokeWidth={1.75} />
-          New payout
+          Nueva dispersión
         </DialogTrigger>
         <DialogContent>
           {open ? (
@@ -335,12 +338,12 @@ const NewPayoutDialog = () => {
       {created === null ? null : (
         <Alert>
           <AlertTitle>
-            Payout {created.payoutId.slice(0, 8)} is{" "}
+            Dispersión {created.payoutId.slice(0, 8)}:{" "}
             {STATUS_LABELS[created.status].toLowerCase()}
           </AlertTitle>
           <AlertDescription>
-            This is the status stored after the send. The final status comes
-            through the Wompi webhook or the next reconciliation.
+            Este es el estado guardado después del envío. El estado final llega
+            por el webhook de Wompi o en la próxima conciliación.
           </AlertDescription>
         </Alert>
       )}
@@ -372,11 +375,12 @@ const ReconcileButton = () => {
         ) : (
           <IconRefresh data-icon="inline-start" strokeWidth={1.75} />
         )}
-        Reconcile now
+        Conciliar ahora
       </Button>
       {run.isSuccess ? (
         <output className="text-muted-foreground text-sm">
-          Uncertain payouts reconciled. Sent {run.data.sent} queued payouts.
+          Se conciliaron las dispersiones inciertas. Se enviaron {run.data.sent}{" "}
+          dispersiones en cola.
         </output>
       ) : null}
       <InlineError error={run.error} />
@@ -415,11 +419,11 @@ const PayoutsPage = () => {
             </>
           ) : undefined
         }
-        description="Money sent to the transit entities through Wompi. An uncertain payout waits for reconciliation or for staff."
-        title="Payouts"
+        description="Dinero enviado a las entidades de tránsito a través de Wompi. Una dispersión incierta espera la conciliación o la revisión del personal."
+        title="Dispersiones"
       />
       <div className="flex items-center gap-2">
-        <Label htmlFor="payout-status">Status</Label>
+        <Label htmlFor="payout-status">Estado</Label>
         <Select
           onValueChange={(value) => {
             void navigate({
@@ -438,7 +442,7 @@ const PayoutsPage = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value={ALL}>All statuses</SelectItem>
+              <SelectItem value={ALL}>Todos los estados</SelectItem>
               {STATUS_VALUES.map((value) => (
                 <SelectItem key={value} value={value}>
                   {STATUS_LABELS[value]}
@@ -448,7 +452,10 @@ const PayoutsPage = () => {
           </SelectContent>
         </Select>
       </div>
-      <DataTable emptyMessage="No payouts with this status." table={table} />
+      <DataTable
+        emptyMessage="No hay dispersiones con este estado."
+        table={table}
+      />
       <LoadMore
         error={query.error}
         hasNextPage={query.hasNextPage}
@@ -471,6 +478,8 @@ export const Route = createFileRoute("/staff/payouts")({
       payoutsQueryOptions(deps.status)
     );
   },
-  head: () => ({ meta: [{ title: "Payouts | Staff | Transipay" }] }),
+  head: () => ({
+    meta: [{ title: "Dispersiones | Funcionarios | Transipay" }],
+  }),
   component: PayoutsPage,
 });

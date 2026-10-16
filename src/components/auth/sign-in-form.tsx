@@ -7,8 +7,8 @@ import { FieldGroup } from "@/components/ui/field";
 import { FormError } from "./form-error";
 
 const signInSchema = z.object({
-  email: z.email("Enter your email address."),
-  password: z.string().min(1, "Enter your password."),
+  email: z.email("Escriba su correo electrónico."),
+  password: z.string().min(1, "Escriba su contraseña."),
 });
 
 export type SignInValues = z.infer<typeof signInSchema>;
@@ -43,21 +43,25 @@ export const SignInForm = ({ onSignIn }: SignInFormProps) => {
       <FieldGroup>
         <form.AppField name="email">
           {(field) => (
-            <field.TextField autoComplete="email" label="Email" type="email" />
+            <field.TextField
+              autoComplete="email"
+              label="Correo electrónico"
+              type="email"
+            />
           )}
         </form.AppField>
         <form.AppField name="password">
           {(field) => (
             <field.TextField
               autoComplete="current-password"
-              label="Password"
+              label="Contraseña"
               type="password"
             />
           )}
         </form.AppField>
       </FieldGroup>
       <form.AppForm>
-        <form.SubmitButton>Sign in</form.SubmitButton>
+        <form.SubmitButton>Iniciar sesión</form.SubmitButton>
       </form.AppForm>
     </form>
   );

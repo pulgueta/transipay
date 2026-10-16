@@ -36,7 +36,9 @@ interface EnrollDialogProps {
   fines: Fine[];
 }
 
-const schema = z.object({ obligationId: z.string().min(1, "Select a fine.") });
+const schema = z.object({
+  obligationId: z.string().min(1, "Seleccione un comparendo."),
+});
 
 /** Asks which pending fine gets the discount, then enrolls the citizen and reloads the page data. */
 export const EnrollDialog = ({
@@ -67,7 +69,7 @@ export const EnrollDialog = ({
         setFormError(
           error instanceof Error
             ? error.message
-            : "We could not enroll you. Try again."
+            : "No pudimos inscribirlo. Intente de nuevo."
         );
         return;
       }
@@ -83,7 +85,7 @@ export const EnrollDialog = ({
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger render={<Button size="sm" />}>Enroll</DialogTrigger>
+      <DialogTrigger render={<Button size="sm" />}>Inscribirse</DialogTrigger>
       <DialogContent>
         <form
           className="flex flex-col gap-4"
@@ -94,11 +96,11 @@ export const EnrollDialog = ({
           }}
         >
           <DialogHeader>
-            <DialogTitle>Enroll in the course</DialogTitle>
+            <DialogTitle>Inscribirse en el curso</DialogTitle>
             <DialogDescription>
-              Session on {formatBogotaDateTime(startsAt)}. When staff record
-              that you attended, the fine gets a {discountPercent}% discount, if
-              you did not pay it yet.
+              Sesión del {formatBogotaDateTime(startsAt)}. Cuando el personal
+              registre su asistencia, el comparendo recibe un {discountPercent}%
+              de descuento, si aún no lo ha pagado.
             </DialogDescription>
           </DialogHeader>
           <FormError message={formError} />
@@ -107,8 +109,8 @@ export const EnrollDialog = ({
               {(field) => (
                 <field.SelectField
                   items={items}
-                  label="Fine that gets the discount"
-                  placeholder="Select a fine"
+                  label="Comparendo que recibe el descuento"
+                  placeholder="Seleccione un comparendo"
                 />
               )}
             </form.AppField>
@@ -121,10 +123,10 @@ export const EnrollDialog = ({
               type="button"
               variant="outline"
             >
-              Cancel
+              Cancelar
             </Button>
             <form.AppForm>
-              <form.SubmitButton>Enroll</form.SubmitButton>
+              <form.SubmitButton>Inscribirse</form.SubmitButton>
             </form.AppForm>
           </DialogFooter>
         </form>

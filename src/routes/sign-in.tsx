@@ -34,9 +34,13 @@ const SignInPage = () => {
   const signIn = async (values: SignInValues) => {
     const { error } = await authClient.signIn.email(values);
     if (error) {
-      return error.status === 401
-        ? "The email or password is not correct."
-        : (error.message ?? "We could not sign you in. Try again.");
+      // better-auth messages are in English, so the page shows its own text.
+      if (error.status === 401) {
+        return "El correo o la contraseña no son correctos.";
+      }
+      return error.code === "BANNED_USER"
+        ? "Su cuenta está suspendida. Comuníquese con el Tránsito para más información."
+        : "No pudimos iniciar la sesión. Intente de nuevo.";
     }
     // The root route loads the session again on navigation.
     await reloadForNewSession(queryClient, router);
@@ -47,9 +51,9 @@ const SignInPage = () => {
   return (
     <Card className="mx-auto w-full max-w-sm">
       <CardHeader>
-        <CardTitle>Sign in</CardTitle>
+        <CardTitle>Iniciar sesión</CardTitle>
         <CardDescription>
-          Use the email and password of your Transipay account.
+          Use el correo y la contraseña de su cuenta de Transipay.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -57,13 +61,13 @@ const SignInPage = () => {
       </CardContent>
       <CardFooter className="text-muted-foreground text-sm">
         <p>
-          No account yet?{" "}
+          ¿No tiene una cuenta?{" "}
           <Link
             className="text-foreground font-medium underline underline-offset-4"
             search={{ redirect: redirectTo === "/" ? undefined : redirectTo }}
             to="/sign-up"
           >
-            Create account
+            Crear cuenta
           </Link>
         </p>
       </CardFooter>
@@ -78,6 +82,6 @@ export const Route = createFileRoute("/sign-in")({
       redirect({ href: sanitizeRedirect(search.redirect), throw: true });
     }
   },
-  head: () => ({ meta: [{ title: "Sign in | Transipay" }] }),
+  head: () => ({ meta: [{ title: "Iniciar sesión | Transipay" }] }),
   component: SignInPage,
 });

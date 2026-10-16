@@ -30,11 +30,11 @@ export const listStaffAppointmentsFn = createServerFn({ method: "GET" })
   );
 
 const UPDATE_MESSAGES = {
-  appointment_not_found: "We cannot find this appointment.",
+  appointment_not_found: "No encontramos esta cita.",
   not_allowed:
-    "This appointment is not scheduled, so its status cannot change.",
+    "Esta cita no está programada, por eso su estado no puede cambiar.",
   not_started:
-    "This appointment did not start. You can record the outcome after its time.",
+    "Esta cita no ha empezado. Puede registrar el resultado después de su hora.",
 } as const;
 
 /** Closes an appointment as attended or no-show. Returns the appointment as stored after the write. */

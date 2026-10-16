@@ -18,9 +18,9 @@ import { requireSession } from "@/lib/auth/guards";
 
 const PageHeader = () => (
   <div className="flex flex-col gap-1">
-    <h1 className="text-2xl font-semibold tracking-tight">Obligations</h1>
+    <h1 className="text-2xl font-semibold tracking-tight">Obligaciones</h1>
     <p className="text-muted-foreground">
-      Your fines and procedures, with the amount due and the status of each one.
+      Sus comparendos y trámites, con el valor a pagar y el estado de cada uno.
     </p>
   </div>
 );
@@ -31,15 +31,15 @@ const NoDocument = () => (
       <EmptyMedia variant="icon">
         <IconId strokeWidth={1.75} />
       </EmptyMedia>
-      <EmptyTitle>Link your document first</EmptyTitle>
+      <EmptyTitle>Primero vincule su documento</EmptyTitle>
       <EmptyDescription>
-        We find your fines and procedures by your document. Add it to your
-        account to see them here.
+        Buscamos sus comparendos y trámites con su documento. Agréguelo a su
+        cuenta para verlos aquí.
       </EmptyDescription>
     </EmptyHeader>
     <EmptyContent>
       <Button nativeButton={false} render={<Link to="/account" />}>
-        Open my account
+        Ir a mi cuenta
       </Button>
     </EmptyContent>
   </Empty>
@@ -51,10 +51,10 @@ const NoObligations = () => (
       <EmptyMedia variant="icon">
         <IconFileDescription strokeWidth={1.75} />
       </EmptyMedia>
-      <EmptyTitle>No obligations</EmptyTitle>
+      <EmptyTitle>No tiene obligaciones</EmptyTitle>
       <EmptyDescription>
-        You have no fines or procedures on record. When an entity registers one
-        for your document, it shows here.
+        No tiene comparendos ni trámites registrados. Cuando una entidad
+        registre uno con su documento, aparecerá aquí.
       </EmptyDescription>
     </EmptyHeader>
   </Empty>
@@ -86,7 +86,7 @@ const ObligationsPage = () => {
           }}
           variant="outline"
         >
-          {query.isFetchingNextPage ? "Loading…" : "Load more"}
+          {query.isFetchingNextPage ? "Cargando…" : "Cargar más"}
         </Button>
       ) : null}
     </div>
@@ -102,7 +102,7 @@ export const Route = createFileRoute("/obligations/")({
     // oxlint-disable-next-line typescript/no-deprecated
     await context.queryClient.ensureInfiniteQueryData(obligationsQueryOptions);
   },
-  head: () => ({ meta: [{ title: "Obligations | Transipay" }] }),
+  head: () => ({ meta: [{ title: "Obligaciones | Transipay" }] }),
   pendingComponent: () => (
     <div className="flex flex-col gap-6">
       <PageHeader />

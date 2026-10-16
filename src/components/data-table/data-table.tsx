@@ -42,7 +42,7 @@ export const DataTable = <
   TData extends RowData,
 >({
   table,
-  emptyMessage = "No records to show.",
+  emptyMessage = "No hay registros para mostrar.",
 }: DataTableProps<TFeatures, TData>) => {
   const { rows } = table.getRowModel();
   const headerGroups = table.getHeaderGroups();

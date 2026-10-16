@@ -19,15 +19,15 @@ import { requireSession } from "@/lib/auth/guards";
 const PageHeader = ({ canBook }: { canBook: boolean }) => (
   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
     <div className="flex flex-col gap-1">
-      <h1 className="text-2xl font-semibold tracking-tight">Appointments</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Citas</h1>
       <p className="text-muted-foreground">
-        Your appointments at the ITTB, the CDAs, and the CEAs.
+        Sus citas en el ITTB, los CDA y los CEA.
       </p>
     </div>
     {canBook ? (
       <Button nativeButton={false} render={<Link to="/appointments/new" />}>
         <IconPlus data-icon="inline-start" strokeWidth={1.75} />
-        Book an appointment
+        Agendar cita
       </Button>
     ) : null}
   </div>
@@ -39,15 +39,15 @@ const NoDocument = () => (
       <EmptyMedia variant="icon">
         <IconId strokeWidth={1.75} />
       </EmptyMedia>
-      <EmptyTitle>Link your document first</EmptyTitle>
+      <EmptyTitle>Primero vincule su documento</EmptyTitle>
       <EmptyDescription>
-        An appointment is booked for your document. Add it to your account to
-        book one.
+        Las citas se agendan con su documento. Agréguelo a su cuenta para
+        agendar una.
       </EmptyDescription>
     </EmptyHeader>
     <EmptyContent>
       <Button nativeButton={false} render={<Link to="/account" />}>
-        Open my account
+        Ir a mi cuenta
       </Button>
     </EmptyContent>
   </Empty>
@@ -59,15 +59,15 @@ const NoAppointments = () => (
       <EmptyMedia variant="icon">
         <IconCalendarEvent strokeWidth={1.75} />
       </EmptyMedia>
-      <EmptyTitle>No appointments</EmptyTitle>
+      <EmptyTitle>No tiene citas</EmptyTitle>
       <EmptyDescription>
-        You have no upcoming appointments. Book one for a procedure at the
-        entity of your choice.
+        No tiene citas próximas. Agende una para un trámite en la entidad que
+        prefiera.
       </EmptyDescription>
     </EmptyHeader>
     <EmptyContent>
       <Button nativeButton={false} render={<Link to="/appointments/new" />}>
-        Book an appointment
+        Agendar cita
       </Button>
     </EmptyContent>
   </Empty>
@@ -89,7 +89,7 @@ const AppointmentsPage = () => {
     <div className="flex flex-col gap-8">
       <PageHeader canBook />
       <section className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold">Upcoming</h2>
+        <h2 className="text-base font-semibold">Próximas</h2>
         {data.upcoming.length === 0 ? (
           <NoAppointments />
         ) : (
@@ -98,7 +98,7 @@ const AppointmentsPage = () => {
       </section>
       {data.past.length > 0 ? (
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold">Past</h2>
+          <h2 className="text-base font-semibold">Anteriores</h2>
           <AppointmentsList items={data.past} />
         </section>
       ) : null}
@@ -115,11 +115,11 @@ export const Route = createFileRoute("/appointments/")({
     // oxlint-disable-next-line typescript/no-deprecated
     await context.queryClient.ensureQueryData(appointmentsQueryOptions);
   },
-  head: () => ({ meta: [{ title: "Appointments | Transipay" }] }),
+  head: () => ({ meta: [{ title: "Citas | Transipay" }] }),
   pendingComponent: () => (
     <div className="flex flex-col gap-8">
       <PageHeader canBook={false} />
-      <div aria-busy aria-label="Loading" className="flex flex-col gap-3">
+      <div aria-busy aria-label="Cargando" className="flex flex-col gap-3">
         <Skeleton className="h-5 w-24" />
         <Skeleton className="h-20 w-full" />
         <Skeleton className="h-20 w-full" />

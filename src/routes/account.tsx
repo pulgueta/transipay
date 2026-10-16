@@ -19,7 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { requireSession } from "@/lib/auth/guards";
-import { roleNames } from "@/lib/auth/roles";
+import { roleLabel, roleNames } from "@/lib/auth/roles";
 import { reloadForNewSession } from "@/lib/auth/session-change";
 import { useSignOut } from "@/lib/auth/use-sign-out";
 import { DOCUMENT_TYPE_LABELS } from "@/lib/citizens/document";
@@ -41,7 +41,7 @@ const LinkDocument = () => {
     } catch (error) {
       return error instanceof Error
         ? error.message
-        : "We could not link the document. Try again.";
+        : "No pudimos vincular el documento. Intente de nuevo.";
     }
     // Many cached queries depend on the citizen (obligations, appointments, courses), so load all of them again.
     await reloadForNewSession(queryClient, router);
@@ -51,11 +51,11 @@ const LinkDocument = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Link your document</CardTitle>
+        <CardTitle>Vincule su documento</CardTitle>
         <CardDescription>
-          Your account has no document yet. We need it to find your fines and
-          procedures. If the transit authority registered your document, the
-          email in that record must be the email of this account.
+          Su cuenta aún no tiene un documento. Lo necesitamos para buscar sus
+          comparendos y trámites. Si el Tránsito ya registró su documento, el
+          correo de ese registro debe ser el correo de esta cuenta.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -73,35 +73,35 @@ const AccountPage = () => {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Account</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Mi cuenta</h1>
         <p className="text-muted-foreground">
-          The data of your Transipay account.
+          Los datos de su cuenta de Transipay.
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Profile</CardTitle>
+          <CardTitle>Perfil</CardTitle>
         </CardHeader>
         <CardContent>
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
-            <dt className="text-muted-foreground">Name</dt>
+            <dt className="text-muted-foreground">Nombre</dt>
             <dd>{session.user.name}</dd>
-            <dt className="text-muted-foreground">Email</dt>
+            <dt className="text-muted-foreground">Correo electrónico</dt>
             <dd className="break-all">{session.user.email}</dd>
-            <dt className="text-muted-foreground">Role</dt>
+            <dt className="text-muted-foreground">Rol</dt>
             <dd className="flex flex-wrap gap-1">
               {roleNames(session.user.role).map((role) => (
                 <Badge key={role} variant="secondary">
-                  {role}
+                  {roleLabel(role)}
                 </Badge>
               ))}
             </dd>
-            <dt className="text-muted-foreground">Document</dt>
+            <dt className="text-muted-foreground">Documento</dt>
             <dd>
               {citizen
                 ? `${DOCUMENT_TYPE_LABELS[citizen.documentType]} ${citizen.documentNumber}`
-                : "No document"}
+                : "Sin documento"}
             </dd>
           </dl>
         </CardContent>
@@ -119,7 +119,7 @@ const AccountPage = () => {
           variant="outline"
         >
           <IconLogout data-icon="inline-start" strokeWidth={1.75} />
-          Sign out
+          Cerrar sesión
         </Button>
         {signOut.isError ? (
           <p className="text-destructive text-sm" role="alert">
@@ -141,6 +141,6 @@ export const Route = createFileRoute("/account")({
     // oxlint-disable-next-line typescript/no-deprecated
     await context.queryClient.ensureQueryData(myCitizenQueryOptions);
   },
-  head: () => ({ meta: [{ title: "Account | Transipay" }] }),
+  head: () => ({ meta: [{ title: "Mi cuenta | Transipay" }] }),
   component: AccountPage,
 });

@@ -31,18 +31,18 @@ import type {
 const CURRENCY = "COP";
 
 const INSTALLMENT_LABELS: Record<InstallmentStatus, string> = {
-  pending: "Pending",
-  paid: "Paid",
-  overdue: "Overdue",
+  pending: "Pendiente",
+  paid: "Pagada",
+  overdue: "Vencida",
 };
 
 const PAYMENT_LABELS: Record<PaymentStatus, string> = {
-  pending: "In progress",
-  approved: "Approved",
-  declined: "Declined",
-  voided: "Cancelled",
-  error: "Not completed",
-  expired: "Expired",
+  pending: "En proceso",
+  approved: "Aprobado",
+  declined: "Rechazado",
+  voided: "Anulado",
+  error: "No completado",
+  expired: "Vencido",
 };
 
 const SectionTitle = ({ children }: { children: string }) => (
@@ -72,37 +72,37 @@ const ObligationPage = () => {
           {obligation.description}
         </h1>
         <p className="text-muted-foreground">
-          {obligation.entityName} · Number {obligation.number} · Issued on{" "}
+          {obligation.entityName} · Número {obligation.number} · Expedida el{" "}
           {formatBogotaDateTime(obligation.issuedAt)}
         </p>
       </div>
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-        <dt className="text-muted-foreground">Amount</dt>
+        <dt className="text-muted-foreground">Valor</dt>
         <dd className="tabular-nums">
           {formatAmount(obligation.amountInCents, CURRENCY)}
         </dd>
         {obligation.discountInCents > 0 ? (
           <>
-            <dt className="text-muted-foreground">Discount</dt>
+            <dt className="text-muted-foreground">Descuento</dt>
             <dd className="tabular-nums">
               {formatAmount(obligation.discountInCents, CURRENCY)}
             </dd>
           </>
         ) : null}
-        <dt className="text-muted-foreground">Amount due</dt>
+        <dt className="text-muted-foreground">Valor a pagar</dt>
         <dd className="text-lg font-semibold tabular-nums">
           {formatAmount(obligation.amountDueInCents, CURRENCY)}
         </dd>
-        <dt className="text-muted-foreground">Due date</dt>
+        <dt className="text-muted-foreground">Fecha límite</dt>
         <dd>
           {obligation.dueOn === null
-            ? "No date"
+            ? "Sin fecha"
             : formatBogotaDate(obligation.dueOn)}
         </dd>
         {obligation.agreement === null ? null : (
           <>
-            <dt className="text-muted-foreground">Installments</dt>
+            <dt className="text-muted-foreground">Cuotas</dt>
             <dd>{installmentsSummary(obligation.agreement)}</dd>
           </>
         )}
@@ -110,11 +110,11 @@ const ObligationPage = () => {
 
       <div className="flex flex-wrap gap-3">
         {canPayInFull ? (
-          <PayButton obligationId={obligation.id}>Pay</PayButton>
+          <PayButton obligationId={obligation.id}>Pagar</PayButton>
         ) : null}
         {isOpen && !canPayInFull ? (
           <p className="text-muted-foreground self-center text-sm">
-            Nothing to pay
+            No hay valor a pagar
           </p>
         ) : null}
         {canBookAppointment ? (
@@ -129,26 +129,26 @@ const ObligationPage = () => {
             variant="outline"
           >
             <IconCalendarEvent data-icon="inline-start" strokeWidth={1.75} />
-            Book an appointment
+            Agendar cita
           </Button>
         ) : null}
       </div>
 
       {obligation.installments.length > 0 ? (
         <section className="flex flex-col gap-3">
-          <SectionTitle>Installments</SectionTitle>
+          <SectionTitle>Cuotas</SectionTitle>
           <p className="text-muted-foreground text-sm">
-            Pay each installment on its date. The obligation is paid when all
-            installments are paid.
+            Pague cada cuota en su fecha. La obligación queda pagada cuando
+            todas las cuotas estén pagadas.
           </p>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Number</TableHead>
-                <TableHead>Due</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="sr-only">Action</TableHead>
+                <TableHead>Número</TableHead>
+                <TableHead>Vence</TableHead>
+                <TableHead className="text-right">Valor</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="sr-only">Acción</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -177,7 +177,7 @@ const ObligationPage = () => {
                         size="sm"
                         variant="outline"
                       >
-                        Pay this installment
+                        Pagar esta cuota
                       </PayButton>
                     )}
                   </TableCell>
@@ -191,10 +191,10 @@ const ObligationPage = () => {
       <Separator />
 
       <section className="flex flex-col gap-3">
-        <SectionTitle>Recent payments</SectionTitle>
+        <SectionTitle>Pagos recientes</SectionTitle>
         {obligation.payments.length === 0 ? (
           <p className="text-muted-foreground text-sm">
-            No payments for this obligation yet.
+            Esta obligación aún no tiene pagos.
           </p>
         ) : (
           <ul className="divide-y">
@@ -213,7 +213,7 @@ const ObligationPage = () => {
                   </Link>
                   <span className="text-muted-foreground text-xs">
                     {formatBogotaDateTime(item.createdAt)}
-                    {item.installmentId === null ? "" : " · Installment"}
+                    {item.installmentId === null ? "" : " · Cuota"}
                   </span>
                 </div>
                 <Badge variant="outline">{PAYMENT_LABELS[item.status]}</Badge>
@@ -240,7 +240,7 @@ export const Route = createFileRoute("/obligations/$obligationId")({
       obligationQueryOptions(params.obligationId)
     );
   },
-  head: () => ({ meta: [{ title: "Obligation | Transipay" }] }),
+  head: () => ({ meta: [{ title: "Obligación | Transipay" }] }),
   pendingComponent: () => (
     <div className="mx-auto w-full max-w-3xl">
       <ObligationSkeleton />

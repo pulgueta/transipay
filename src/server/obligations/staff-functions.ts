@@ -17,18 +17,18 @@ import type {
 
 /** Staff read these messages. Each one says what to check. */
 const REFUSAL_MESSAGES: Record<CreateObligationRefusal, string> = {
-  citizen_not_found: "We cannot find this citizen. Find the citizen again.",
-  entity_not_found: "We cannot find this entity.",
+  citizen_not_found: "No encontramos a este ciudadano. Búsquelo de nuevo.",
+  entity_not_found: "No encontramos esta entidad.",
   entity_not_in_scope:
-    "Your role for this entity does not let you do this operation.",
-  entity_inactive: "This entity is not active.",
-  entity_not_transit_authority: "Only the transit authority can issue a fine.",
-  infraction_not_found: "This infraction is not in the active catalog.",
-  procedure_type_not_found:
-    "This procedure type does not belong to the entity.",
+    "Su rol en esta entidad no le permite hacer esta operación.",
+  entity_inactive: "Esta entidad no está activa.",
+  entity_not_transit_authority:
+    "Solo el organismo de tránsito puede registrar un comparendo.",
+  infraction_not_found: "Esta infracción no está en el catálogo activo.",
+  procedure_type_not_found: "Este tipo de trámite no pertenece a la entidad.",
   vehicle_not_found:
-    "No vehicle has this plate. Register the vehicle first, or leave the plate empty.",
-  number_in_use: "This entity already has an obligation with this number.",
+    "Ningún vehículo tiene esta placa. Registre primero el vehículo o deje la placa vacía.",
+  number_in_use: "Esta entidad ya tiene una obligación con este número.",
 };
 
 const REFUSAL_STATUSES: Record<CreateObligationRefusal, number> = {
@@ -57,7 +57,7 @@ const plateSchema = z
   .string()
   .trim()
   .toUpperCase()
-  .regex(/^[A-Z0-9]{5,7}$/u, "Enter 5 to 7 letters or digits.")
+  .regex(/^[A-Z0-9]{5,7}$/u, "Escriba de 5 a 7 letras o números.")
   .optional();
 
 const commonSchema = z.object({
