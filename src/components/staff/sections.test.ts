@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { sectionsFor } from "./sections";
+import { canOpenSection, sectionsFor } from "./sections";
 
 const paths = (role: string | null) =>
   sectionsFor(role).map((section) => section.to);
@@ -37,5 +37,27 @@ describe(sectionsFor, () => {
 
   it("joins the sections of a comma-separated role", () => {
     expect(paths("citizen,scheduler")).toStrictEqual(["/staff/schedule"]);
+  });
+});
+
+describe(canOpenSection, () => {
+  it("lets a role open a section that it can see", () => {
+    expect(canOpenSection("admin", "/staff/obligations")).toBeTruthy();
+    expect(canOpenSection("scheduler", "/staff/schedule")).toBeTruthy();
+  });
+
+  it.each([
+    ["cashier", "/staff/obligations"],
+    ["scheduler", "/staff/obligations"],
+    ["cashier", "/staff/schedule"],
+    ["supervisor", "/staff/users"],
+    ["scheduler", "/staff/payouts/"],
+  ])("does not let a %s open %s", (role, pathname) => {
+    expect(canOpenSection(role, pathname)).toBeFalsy();
+  });
+
+  it("does not decide for a path that is not a section", () => {
+    expect(canOpenSection("cashier", "/staff")).toBeTruthy();
+    expect(canOpenSection("cashier", "/staff/usersx")).toBeTruthy();
   });
 });

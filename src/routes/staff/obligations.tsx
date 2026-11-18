@@ -12,6 +12,7 @@ import type { FoundCitizen } from "@/components/staff/citizen-finder";
 import { formatDay } from "@/components/staff/format";
 import { InlineError } from "@/components/staff/inline-error";
 import { PageHeader } from "@/components/staff/page-header";
+import { requireSection } from "@/components/staff/sections";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -457,6 +458,9 @@ const ObligationsPage = () => (
 );
 
 export const Route = createFileRoute("/staff/obligations")({
+  beforeLoad: ({ context, location }) => {
+    requireSection(context.session.user.role, location.pathname);
+  },
   head: () => ({
     meta: [{ title: "Obligaciones | Funcionarios | Transipay" }],
   }),

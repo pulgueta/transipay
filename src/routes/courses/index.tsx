@@ -16,7 +16,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
-import { requireSession } from "@/lib/auth/guards";
+import { requirePermissions, requireSession } from "@/lib/auth/guards";
 import { formatBogotaDateTime } from "@/lib/dates";
 import type { EnrollmentStatus } from "@/server/db/schema/scheduling";
 
@@ -188,9 +188,11 @@ const CoursesPage = () => {
 };
 
 export const Route = createFileRoute("/courses/")({
-  beforeLoad: ({ context, location }) => ({
-    session: requireSession(context.session, location.href),
-  }),
+  beforeLoad: ({ context, location }) => {
+    const session = requireSession(context.session, location.href);
+    requirePermissions(session.user.role, { course: ["read"] });
+    return { session };
+  },
   loader: async ({ context }) => {
     // AGENTS.md: loaders use ensureQueryData. TanStack Query 5.104 marks it deprecated (see queryClient.query).
     // oxlint-disable-next-line typescript/no-deprecated

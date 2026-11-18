@@ -28,6 +28,7 @@ import { formatDateTime } from "@/components/staff/format";
 import { InlineError } from "@/components/staff/inline-error";
 import { LoadMore } from "@/components/staff/load-more";
 import { PageHeader } from "@/components/staff/page-header";
+import { requireSection } from "@/components/staff/sections";
 import { SortableHeader } from "@/components/staff/sortable-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -469,6 +470,9 @@ const PayoutsPage = () => {
 };
 
 export const Route = createFileRoute("/staff/payouts")({
+  beforeLoad: ({ context, location }) => {
+    requireSection(context.session.user.role, location.pathname);
+  },
   validateSearch: searchSchema,
   loaderDeps: ({ search }) => ({ status: search.status }),
   loader: async ({ context, deps }) => {

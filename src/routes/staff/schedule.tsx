@@ -30,6 +30,7 @@ import { formatDateTime } from "@/components/staff/format";
 import { InlineError } from "@/components/staff/inline-error";
 import { LoadMore } from "@/components/staff/load-more";
 import { PageHeader } from "@/components/staff/page-header";
+import { requireSection } from "@/components/staff/sections";
 import { SortableHeader } from "@/components/staff/sortable-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -531,6 +532,9 @@ const SchedulePage = () => {
 };
 
 export const Route = createFileRoute("/staff/schedule")({
+  beforeLoad: ({ context, location }) => {
+    requireSection(context.session.user.role, location.pathname);
+  },
   loader: async ({ context }) => {
     const { role } = context.session.user;
     // AGENTS.md: loaders use ensureQueryData. TanStack Query 5.104 marks it deprecated (see queryClient.infiniteQuery).

@@ -25,6 +25,7 @@ import { ConfirmDialog } from "@/components/staff/confirm-dialog";
 import { formatDateTime } from "@/components/staff/format";
 import { LoadMore } from "@/components/staff/load-more";
 import { PageHeader } from "@/components/staff/page-header";
+import { requireSection } from "@/components/staff/sections";
 import { SortableHeader } from "@/components/staff/sortable-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -224,6 +225,9 @@ const PaymentsPage = () => {
 };
 
 export const Route = createFileRoute("/staff/payments")({
+  beforeLoad: ({ context, location }) => {
+    requireSection(context.session.user.role, location.pathname);
+  },
   loader: async ({ context }) => {
     // AGENTS.md: loaders use ensureQueryData. TanStack Query 5.104 marks it deprecated (see queryClient.infiniteQuery).
     // oxlint-disable-next-line typescript/no-deprecated

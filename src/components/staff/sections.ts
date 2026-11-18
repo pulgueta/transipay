@@ -7,6 +7,7 @@ import {
 } from "@tabler/icons-react";
 import type { Icon } from "@tabler/icons-react";
 
+import { accessDeniedError } from "@/lib/auth/guards";
 import { canUser } from "@/lib/auth/permissions";
 import type { Permissions } from "@/lib/auth/permissions";
 
@@ -60,3 +61,33 @@ export const sectionsFor = (role: string | null | undefined): StaffSection[] =>
   SECTIONS.filter(({ anyOf }) =>
     anyOf.some((permissions) => canUser(role, permissions))
   ).map(({ to, label, icon }) => ({ to, label, icon }));
+
+/**
+ * False when the path is a staff section (or a page in it) that the role cannot open.
+ * True for a path that is not a section. Use it for navigation only. The server checks permissions.
+ */
+export const canOpenSection = (
+  role: string | null | undefined,
+  pathname: string
+): boolean => {
+  const section = SECTIONS.find(
+    ({ to }) => pathname === to || pathname.startsWith(`${to}/`)
+  );
+  return (
+    section === undefined ||
+    section.anyOf.some((permissions) => canUser(role, permissions))
+  );
+};
+
+/**
+ * Use it in the `beforeLoad` of a staff section route. It stops the route with an access-denied error
+ * before the page loads data or shows controls that the server refuses.
+ */
+export const requireSection = (
+  role: string | null | undefined,
+  pathname: string
+): void => {
+  if (!canOpenSection(role, pathname)) {
+    throw accessDeniedError();
+  }
+};

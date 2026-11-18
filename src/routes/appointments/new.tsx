@@ -11,7 +11,7 @@ import {
 } from "@/components/appointments/queries";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { requireSession } from "@/lib/auth/guards";
+import { requirePermissions, requireSession } from "@/lib/auth/guards";
 import { createAppointmentFn } from "@/server/appointments/functions";
 
 /** `obligationId` preselects a pending procedure. A value that is not a UUID is dropped. */
@@ -84,9 +84,11 @@ const NewAppointmentPage = () => {
 
 export const Route = createFileRoute("/appointments/new")({
   validateSearch: searchSchema,
-  beforeLoad: ({ context, location }) => ({
-    session: requireSession(context.session, location.href),
-  }),
+  beforeLoad: ({ context, location }) => {
+    const session = requireSession(context.session, location.href);
+    requirePermissions(session.user.role, { appointment: ["create"] });
+    return { session };
+  },
   loader: async ({ context }) => {
     // AGENTS.md: loaders use ensureQueryData. TanStack Query 5.104 marks it deprecated (see queryClient.query).
     // oxlint-disable-next-line typescript/no-deprecated

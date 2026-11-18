@@ -26,6 +26,7 @@ import { formatDateTime } from "@/components/staff/format";
 import { InlineError } from "@/components/staff/inline-error";
 import { LoadMore } from "@/components/staff/load-more";
 import { PageHeader } from "@/components/staff/page-header";
+import { requireSection } from "@/components/staff/sections";
 import { SortableHeader } from "@/components/staff/sortable-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -469,6 +470,9 @@ const UsersPage = () => {
 };
 
 export const Route = createFileRoute("/staff/users")({
+  beforeLoad: ({ context, location }) => {
+    requireSection(context.session.user.role, location.pathname);
+  },
   validateSearch: searchSchema,
   loaderDeps: ({ search }) => ({ q: search.q }),
   loader: async ({ context, deps }) => {
