@@ -8,6 +8,7 @@ import type { Icon } from "@tabler/icons-react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
+import { canUser } from "@/lib/auth/permissions";
 
 interface Service {
   icon: Icon;
@@ -67,7 +68,13 @@ const ENTITIES = [
   "Recaudadores",
 ];
 
-const Hero = ({ signedIn }: { signedIn: boolean }) => (
+interface HeroProps {
+  signedIn: boolean;
+  /** False for a role that cannot book (for example, a cashier). */
+  canBook: boolean;
+}
+
+const Hero = ({ signedIn, canBook }: HeroProps) => (
   <section className="grid items-center gap-10 py-8 lg:grid-cols-12 lg:py-16">
     <div className="flex flex-col gap-6 lg:col-span-6">
       <h1 className="text-4xl font-semibold tracking-tight text-balance md:text-5xl">
@@ -87,14 +94,16 @@ const Hero = ({ signedIn }: { signedIn: boolean }) => (
             >
               Consultar mis obligaciones
             </Button>
-            <Button
-              nativeButton={false}
-              render={<Link to="/appointments" />}
-              size="lg"
-              variant="outline"
-            >
-              Agendar una cita
-            </Button>
+            {canBook ? (
+              <Button
+                nativeButton={false}
+                render={<Link to="/appointments" />}
+                size="lg"
+                variant="outline"
+              >
+                Agendar una cita
+              </Button>
+            ) : null}
           </>
         ) : (
           <>
@@ -194,7 +203,10 @@ const Home = () => {
 
   return (
     <>
-      <Hero signedIn={session !== null} />
+      <Hero
+        canBook={canUser(session?.user.role, { appointment: ["create"] })}
+        signedIn={session !== null}
+      />
       <Services />
       <HowPaymentWorks />
       <TrustStrip />
