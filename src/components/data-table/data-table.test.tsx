@@ -1,6 +1,9 @@
 import {
   columnVisibilityFeature,
   createColumnHelper,
+  createSortedRowModel,
+  rowSortingFeature,
+  sortFn_alphanumeric,
   tableFeatures,
   useTable,
 } from "@tanstack/react-table";
@@ -77,5 +80,59 @@ describe("DataTable visibility", () => {
 
     expect(screen.getByRole("cell", { name: "Ada" })).toBeTruthy();
     expect(screen.getByRole("cell", { name: "Public" })).toBeTruthy();
+  });
+});
+
+const sortFeatures = tableFeatures({
+  rowSortingFeature,
+  sortedRowModel: createSortedRowModel(),
+  sortFns: { alphanumeric: sortFn_alphanumeric },
+});
+const sortHelper = createColumnHelper<typeof sortFeatures, RecordRow>();
+const sortColumns = sortHelper.columns([
+  sortHelper.accessor("name", { header: "Name", sortFn: "alphanumeric" }),
+  sortHelper.accessor("secret", { header: "Secret", enableSorting: false }),
+]);
+
+const SortFixture = ({ desc }: { desc?: boolean }) => {
+  const table = useTable({
+    key: "sort-test",
+    features: sortFeatures,
+    columns: sortColumns,
+    data: [{ name: "Ada", secret: "Public" }],
+    initialState: { sorting: desc === undefined ? [] : [{ id: "name", desc }] },
+  });
+
+  return <DataTable table={table} />;
+};
+
+describe("DataTable sorting", () => {
+  afterEach(cleanup);
+
+  it.each([
+    [undefined, "none"],
+    [false, "ascending"],
+    [true, "descending"],
+  ])(
+    "sets aria-sort on a sortable header (desc %s gives %s)",
+    (desc, expected) => {
+      render(<SortFixture desc={desc} />);
+
+      expect(
+        screen
+          .getByRole("columnheader", { name: "Name" })
+          .getAttribute("aria-sort")
+      ).toBe(expected);
+    }
+  );
+
+  it("does not set aria-sort on a header that cannot sort", () => {
+    render(<SortFixture />);
+
+    expect(
+      screen
+        .getByRole("columnheader", { name: "Secret" })
+        .hasAttribute("aria-sort")
+    ).toBeFalsy();
   });
 });
