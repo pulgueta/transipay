@@ -35,6 +35,7 @@ import {
 import {
   createFineFn,
   createProcedureFn,
+  findCitizenFn,
 } from "@/server/obligations/staff-functions";
 import { listStaffEntitiesFn } from "@/server/staff/functions";
 
@@ -109,6 +110,7 @@ const CreatedObligation = ({
 
 const NewFineForm = () => {
   const createFine = useServerFn(createFineFn);
+  const findCitizen = useServerFn(findCitizenFn);
   const [citizen, setCitizen] = useState<FoundCitizen | null>(null);
   const [created, setCreated] = useState<StoredObligation | null>(null);
   const [submitError, setSubmitError] = useState<Error | null>(null);
@@ -195,7 +197,12 @@ const NewFineForm = () => {
         void form.handleSubmit();
       }}
     >
-      <CitizenFinder citizen={citizen} idPrefix="fine" onChange={setCitizen} />
+      <CitizenFinder
+        citizen={citizen}
+        findCitizen={findCitizen}
+        idPrefix="fine"
+        onChange={setCitizen}
+      />
       <Separator />
       {entities.isPending || infractions.isPending ? (
         <Skeleton className="h-40 w-full" />
@@ -274,6 +281,7 @@ const NewFineForm = () => {
 
 const NewProcedureForm = () => {
   const createProcedure = useServerFn(createProcedureFn);
+  const findCitizen = useServerFn(findCitizenFn);
   const [citizen, setCitizen] = useState<FoundCitizen | null>(null);
   const [created, setCreated] = useState<StoredObligation | null>(null);
   const [submitError, setSubmitError] = useState<Error | null>(null);
@@ -353,6 +361,7 @@ const NewProcedureForm = () => {
     >
       <CitizenFinder
         citizen={citizen}
+        findCitizen={findCitizen}
         idPrefix="procedure"
         onChange={setCitizen}
       />
