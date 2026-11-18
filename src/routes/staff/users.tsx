@@ -1,4 +1,4 @@
-import { IconDotsVertical, IconSearch } from "@tabler/icons-react";
+import { IconDotsVertical } from "@tabler/icons-react";
 import {
   infiniteQueryOptions,
   useMutation,
@@ -26,6 +26,7 @@ import { formatDateTime } from "@/components/staff/format";
 import { InlineError } from "@/components/staff/inline-error";
 import { LoadMore } from "@/components/staff/load-more";
 import { PageHeader } from "@/components/staff/page-header";
+import { SearchForm } from "@/components/staff/search-form";
 import { requireSection } from "@/components/staff/sections";
 import { SortableHeader } from "@/components/staff/sortable-header";
 import { Badge } from "@/components/ui/badge";
@@ -403,7 +404,6 @@ const columns = helper.columns([
 const UsersPage = () => {
   const { q } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const [draft, setDraft] = useState(q ?? "");
   const query = useSuspenseInfiniteQuery(usersQueryOptions(q));
   const data = useMemo(
     () => query.data.pages.flatMap((page) => page.users),
@@ -426,30 +426,14 @@ const UsersPage = () => {
         description="Las cuentas de ciudadanos y funcionarios. Cambie un rol, suspenda una cuenta o elimínela."
         title="Usuarios"
       />
-      <search>
-        <form
-          className="flex max-w-md gap-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const value = draft.trim();
-            void navigate({ search: { q: value === "" ? undefined : value } });
-          }}
-        >
-          <Input
-            aria-label="Buscar por nombre o correo"
-            onChange={(event) => {
-              setDraft(event.target.value);
-            }}
-            placeholder="Nombre o correo"
-            type="search"
-            value={draft}
-          />
-          <Button type="submit" variant="outline">
-            <IconSearch data-icon="inline-start" strokeWidth={1.75} />
-            Buscar
-          </Button>
-        </form>
-      </search>
+      <SearchForm
+        label="Buscar por nombre o correo"
+        onSearch={(value) => {
+          void navigate({ search: { q: value } });
+        }}
+        placeholder="Nombre o correo"
+        value={q}
+      />
       <p className="text-muted-foreground text-sm">
         {data.length} de {total} usuarios
       </p>
