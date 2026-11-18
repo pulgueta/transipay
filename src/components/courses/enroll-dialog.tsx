@@ -36,6 +36,13 @@ interface EnrollDialogProps {
   fines: Fine[];
 }
 
+/** The select options. The fine number makes two fines for the same infraction different. */
+export const fineItems = (fines: Fine[]) =>
+  fines.map((item) => ({
+    value: item.id,
+    label: `${item.number} · ${item.description} · ${formatAmount(item.amountInCents, "COP")}`,
+  }));
+
 const schema = z.object({
   obligationId: z.string().min(1, "Seleccione un comparendo."),
 });
@@ -78,10 +85,7 @@ export const EnrollDialog = ({
     },
   });
 
-  const items = fines.map((item) => ({
-    value: item.id,
-    label: `${item.description} · ${formatAmount(item.amountInCents, "COP")}`,
-  }));
+  const items = fineItems(fines);
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
