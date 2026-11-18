@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { documentNumberSchema, normalizeDocumentNumber } from "./document";
+import {
+  documentNumberInputMode,
+  documentNumberSchema,
+  normalizeDocumentNumber,
+} from "./document";
 
 describe(normalizeDocumentNumber, () => {
   it("removes spaces, points, and hyphens, and makes letters uppercase", () => {
@@ -22,5 +26,22 @@ describe("the document number schema", () => {
     expect(documentNumberSchema.safeParse("1.2-3").success).toBeFalsy();
     expect(documentNumberSchema.safeParse("AB_1234").success).toBeFalsy();
     expect(documentNumberSchema.safeParse("1".repeat(21)).success).toBeFalsy();
+  });
+});
+
+describe(documentNumberInputMode, () => {
+  it.each(["CC", "CE", "TI", "NIT", "PEP"])(
+    "shows the number keyboard for %s",
+    (documentType) => {
+      expect(documentNumberInputMode(documentType)).toBe("numeric");
+    }
+  );
+
+  it("shows the text keyboard for a passport, because it can have letters", () => {
+    expect(documentNumberInputMode("PP")).toBe("text");
+  });
+
+  it("shows the text keyboard before a type is selected", () => {
+    expect(documentNumberInputMode("")).toBe("text");
   });
 });

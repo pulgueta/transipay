@@ -5,6 +5,7 @@ import { useAppForm } from "@/components/form/use-app-form";
 import { FieldDescription, FieldGroup } from "@/components/ui/field";
 import {
   DOCUMENT_TYPE_LABELS,
+  documentNumberInputMode,
   documentNumberSchema,
   documentTypeSchema,
 } from "@/lib/citizens/document";
@@ -80,18 +81,29 @@ export const SignUpForm = ({ onSignUp }: SignUpFormProps) => {
           )}
         </form.AppField>
         <form.AppField name="password">
-          {(field) => (
-            <field.TextField
-              aria-describedby="sign-up-password-hint"
-              autoComplete="new-password"
-              label="Contraseña"
-              type="password"
-            />
-          )}
+          {(field) => {
+            // The error has the same text as the hint, so the hint shows only while there is no error.
+            const showHint =
+              !field.state.meta.isTouched || field.state.meta.isValid;
+            return (
+              <>
+                <field.TextField
+                  aria-describedby={
+                    showHint ? "sign-up-password-hint" : undefined
+                  }
+                  autoComplete="new-password"
+                  label="Contraseña"
+                  type="password"
+                />
+                {showHint ? (
+                  <FieldDescription id="sign-up-password-hint">
+                    Use {MIN_PASSWORD_LENGTH} caracteres o más.
+                  </FieldDescription>
+                ) : null}
+              </>
+            );
+          }}
         </form.AppField>
-        <FieldDescription id="sign-up-password-hint">
-          Use {MIN_PASSWORD_LENGTH} caracteres o más.
-        </FieldDescription>
         <form.AppField name="documentType">
           {(field) => (
             <field.SelectField
@@ -101,16 +113,20 @@ export const SignUpForm = ({ onSignUp }: SignUpFormProps) => {
             />
           )}
         </form.AppField>
-        <form.AppField name="documentNumber">
-          {(field) => (
-            <field.TextField
-              aria-describedby="sign-up-document-hint"
-              autoComplete="off"
-              inputMode="numeric"
-              label="Número de documento"
-            />
+        <form.Subscribe selector={(state) => state.values.documentType}>
+          {(documentType) => (
+            <form.AppField name="documentNumber">
+              {(field) => (
+                <field.TextField
+                  aria-describedby="sign-up-document-hint"
+                  autoComplete="off"
+                  inputMode={documentNumberInputMode(documentType)}
+                  label="Número de documento"
+                />
+              )}
+            </form.AppField>
           )}
-        </form.AppField>
+        </form.Subscribe>
         <FieldDescription id="sign-up-document-hint">
           Lo usamos para buscar sus comparendos y trámites.
         </FieldDescription>

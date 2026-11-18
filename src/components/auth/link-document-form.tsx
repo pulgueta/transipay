@@ -3,7 +3,10 @@ import type { z } from "zod";
 
 import { useAppForm } from "@/components/form/use-app-form";
 import { FieldGroup } from "@/components/ui/field";
-import { documentSchema } from "@/lib/citizens/document";
+import {
+  documentNumberInputMode,
+  documentSchema,
+} from "@/lib/citizens/document";
 
 import { FormError } from "./form-error";
 import { DOCUMENT_TYPE_ITEMS } from "./sign-up-form";
@@ -48,15 +51,19 @@ export const LinkDocumentForm = ({ onLink }: LinkDocumentFormProps) => {
             />
           )}
         </form.AppField>
-        <form.AppField name="documentNumber">
-          {(field) => (
-            <field.TextField
-              autoComplete="off"
-              inputMode="numeric"
-              label="Número de documento"
-            />
+        <form.Subscribe selector={(state) => state.values.documentType}>
+          {(documentType) => (
+            <form.AppField name="documentNumber">
+              {(field) => (
+                <field.TextField
+                  autoComplete="off"
+                  inputMode={documentNumberInputMode(documentType)}
+                  label="Número de documento"
+                />
+              )}
+            </form.AppField>
           )}
-        </form.AppField>
+        </form.Subscribe>
       </FieldGroup>
       <form.AppForm>
         <form.SubmitButton>Vincular documento</form.SubmitButton>
