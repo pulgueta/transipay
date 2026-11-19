@@ -69,13 +69,12 @@ describe(CitizenFinder, () => {
   it("ignores the result of a lookup when the document changed before it came back", async () => {
     const onChange = vi.fn<(citizen: FoundCitizen | null) => void>();
     const lookups: ((citizen: FoundCitizen | null) => void)[] = [];
-    const findCitizen = vi.fn<FindCitizen>(
-      async () =>
-        // oxlint-disable-next-line promise/avoid-new -- The test must decide when each lookup comes back.
-        await new Promise((resolve) => {
-          lookups.push(resolve);
-        })
-    );
+    // The test decides when each lookup comes back.
+    const findCitizen = vi.fn<FindCitizen>(async () => {
+      const pending = Promise.withResolvers<FoundCitizen | null>();
+      lookups.push(pending.resolve);
+      return await pending.promise;
+    });
     const input = renderFinder(onChange, findCitizen);
     const search = screen.getByRole("button", { name: "Buscar ciudadano" });
     const other: FoundCitizen = {
@@ -110,13 +109,12 @@ describe(CitizenFinder, () => {
   it("does not select a citizen when the old lookup comes back after the document changed", async () => {
     const onChange = vi.fn<(citizen: FoundCitizen | null) => void>();
     const lookups: ((citizen: FoundCitizen | null) => void)[] = [];
-    const findCitizen = vi.fn<FindCitizen>(
-      async () =>
-        // oxlint-disable-next-line promise/avoid-new -- The test must decide when each lookup comes back.
-        await new Promise((resolve) => {
-          lookups.push(resolve);
-        })
-    );
+    // The test decides when each lookup comes back.
+    const findCitizen = vi.fn<FindCitizen>(async () => {
+      const pending = Promise.withResolvers<FoundCitizen | null>();
+      lookups.push(pending.resolve);
+      return await pending.promise;
+    });
     const input = renderFinder(onChange, findCitizen);
     fireEvent.change(input, { target: { value: found.documentNumber } });
     fireEvent.click(screen.getByRole("button", { name: "Buscar ciudadano" }));
