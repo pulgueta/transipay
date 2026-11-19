@@ -386,7 +386,11 @@ body:has(.lp) {
   .lp-header {
     padding-top: 24px;
   }
+}
 
+/* The full navigation starts where the four staff links fit beside the centered wordmark.
+   Below this width, the menu button holds the links. */
+@media (min-width: 1024px) {
   .lp-header-nav {
     display: flex;
   }
@@ -666,6 +670,12 @@ body:has(.lp) {
   .lp-stack {
     width: 86vw;
     margin-inline: auto;
+  }
+
+  /* The picture of the open folder comes up into the last third of this folder. The actions stay in the first two thirds. */
+  .lp-folder-actions {
+    max-width: calc(32px + (100% - 64px) * 2 / 3 - 24px);
+    flex-wrap: wrap;
   }
 
   .lp-open {
