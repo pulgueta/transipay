@@ -80,7 +80,7 @@ export const CourseCalculator = ({
     caretDigits.current = countDigits(
       value.slice(0, selectionStart ?? value.length)
     );
-    setAmountText(formatPesosInput(value).slice(0, 14));
+    setAmountText(formatPesosInput(value));
   };
 
   // A pasted amount can have cents ("621.600,50"). Read it before the separators go, so the cents do not become pesos.
@@ -96,10 +96,7 @@ export const CourseCalculator = ({
     const digits = String(pasted);
     caretDigits.current = countDigits(value.slice(0, start)) + digits.length;
     setAmountText(
-      formatPesosInput(value.slice(0, start) + digits + value.slice(end)).slice(
-        0,
-        14
-      )
+      formatPesosInput(value.slice(0, start) + digits + value.slice(end))
     );
   };
 

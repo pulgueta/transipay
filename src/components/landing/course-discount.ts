@@ -30,9 +30,12 @@ export const parsePesos = (text: string): number | null => {
   return Number(digits);
 };
 
-/** Shows the digits of the text with a point between each group of three, as Colombia writes pesos. */
+/**
+ * Shows the digits of the text with a point between each group of three, as Colombia writes pesos.
+ * It keeps the first eleven digits only, so the points always mark groups of three.
+ */
 export const formatPesosInput = (text: string) =>
-  digitsOf(text).replaceAll(THOUSANDS_PATTERN, ".");
+  digitsOf(text).slice(0, MAX_PESO_DIGITS).replaceAll(THOUSANDS_PATTERN, ".");
 
 /** Keeps the percent whole and in the limits of a course session. */
 export const clampPercent = (value: number) =>
@@ -58,23 +61,33 @@ export const coursePayment = (
   return { discountInCents, payableInCents: amountInCents - discountInCents };
 };
 
-/** A whole number in the limits. Any other value reads as "not given", so a bad link still opens the page. */
-const wholeNumberIn = (min: number, max: number) => {
-  const valid = z.number().int().min(min).max(max);
-  return z
+const DIGITS_ONLY_PATTERN = /^\d+$/u;
+
+const wholeNumberIn = (min: number, max: number) =>
+  z.number().int().min(min).max(max);
+
+/** Any value that `valid` refuses reads as "not given", so a bad link still opens the page. */
+const optionalValue = (valid: z.ZodType<number>) =>
+  z
     .unknown()
     .transform((value) => {
       const parsed = valid.safeParse(value);
       return parsed.success ? parsed.data : undefined;
     })
     .optional();
-};
 
 /**
  * The values that the calculator form sends when the script does not run
- * (`/?valor=621600&descuento=37`).
+ * (`/?valor=621600&descuento=37`). The router reads `0621600` as text, so the amount also accepts digits as text.
  */
 export const calculatorSearchSchema = z.object({
-  valor: wholeNumberIn(1, MAX_PESOS),
-  descuento: wholeNumberIn(MIN_PERCENT, MAX_PERCENT),
+  valor: optionalValue(
+    z
+      .union([
+        z.number(),
+        z.string().regex(DIGITS_ONLY_PATTERN).transform(Number),
+      ])
+      .pipe(wholeNumberIn(1, MAX_PESOS))
+  ),
+  descuento: optionalValue(wholeNumberIn(MIN_PERCENT, MAX_PERCENT)),
 });

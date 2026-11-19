@@ -57,6 +57,12 @@ describe(formatPesosInput, () => {
     expect(formatPesosInput("$ 0621.6a00")).toBe("621.600");
     expect(formatPesosInput("")).toBe("");
   });
+
+  it("keeps at most eleven digits, so the points stay in groups of three", () => {
+    expect(formatPesosInput("99999999999")).toBe("99.999.999.999");
+    expect(formatPesosInput("123456789012")).toBe("12.345.678.901");
+    expect(parsePesos(formatPesosInput("999999999999"))).toBe(99_999_999_999);
+  });
 });
 
 describe(clampPercent, () => {
@@ -128,6 +134,19 @@ describe("the values of the calculator in the address", () => {
   it("reads the values of a form that was sent without script", () => {
     expect(readSearch({ valor: 621_600, descuento: 37 })).toStrictEqual([
       621_600, 37,
+    ]);
+  });
+
+  it("reads an amount with leading zeros, because the form sends the digits as text", () => {
+    expect(readSearch({ valor: "0621600", descuento: 37 })).toStrictEqual([
+      621_600, 37,
+    ]);
+  });
+
+  it("does not read text that is not only digits", () => {
+    expect(readSearch({ valor: "621.600", descuento: "50%" })).toStrictEqual([
+      undefined,
+      undefined,
     ]);
   });
 
