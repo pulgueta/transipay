@@ -1,0 +1,1515 @@
+/*
+ * The home page ("/"). Every rule is under `.lp`, so no other route changes.
+ * The one motif is the tab of a file folder. It makes the stack, the picture masks,
+ * the buttons, the bullets, the question cards, and the mark in the footer.
+ */
+
+@import "@fontsource-variable/jost";
+
+/* Arial with the width of Jost, so the text does not move when Jost loads. */
+@font-face {
+  font-family: "Jost Fallback";
+  src: local("Arial"), local("Helvetica Neue"), local("Roboto");
+  size-adjust: 96%;
+  ascent-override: 107%;
+  descent-override: 37%;
+  line-gap-override: 0%;
+}
+
+/* The root layout gives `main` a narrow column. The home page uses the full width. */
+main:has(> .lp) {
+  max-width: none;
+  padding: 0;
+}
+
+body:has(.lp) {
+  background-color: #e2e2e2;
+}
+
+.dark body:has(.lp) {
+  background-color: #161012;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.lp) {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ---------- Tokens ---------- */
+
+.lp {
+  /* Oxblood and grey: red ink on grey paper. The red is the "bermeja" of the name of the city. */
+  --lp-bg: #e2e2e2;
+  --lp-surface: #d6d6d6;
+  --lp-ink: #7d0c14;
+  --lp-muted: #7a4a4e;
+  --lp-field: #7d0c14;
+  --lp-field-ink: #e2e2e2;
+  --lp-field-muted: #dcc3c5;
+  --lp-field-deep: #650810;
+
+  /* The layers of the folder stack, from the back to the front. */
+  --lp-layer-1: #d0d0d0;
+  --lp-layer-1-ink: #7d0c14;
+  --lp-layer-2: #c9aaac;
+  --lp-layer-2-ink: #7d0c14;
+  --lp-layer-3: #7a4a4e;
+  --lp-layer-3-ink: #e2e2e2;
+  --lp-layer-4: #a3343b;
+  --lp-layer-4-ink: #e2e2e2;
+
+  /* A button is a red block on the paper, and a grey block on the red field. */
+  --lp-btn-bg: #7d0c14;
+  --lp-btn-ink: #e2e2e2;
+
+  --lp-small: clamp(0.8125rem, 0.79rem + 0.1vw, 0.875rem);
+  --lp-body: clamp(1.0625rem, 1rem + 0.25vw, 1.3125rem);
+  --lp-lead: clamp(1.25rem, 1.1rem + 0.7vw, 1.875rem);
+  --lp-head: clamp(2rem, 1.3rem + 3.2vw, 5rem);
+  --lp-display: clamp(3.25rem, 15.4vw, 10rem);
+  /* The longest name of the poster ("Recaudadores", about 7.9em) must stay on one line. */
+  --lp-poster: min(
+    var(--lp-display),
+    calc((100vw - 2 * var(--lp-gutter)) / 8.1)
+  );
+
+  --lp-gutter: 20px;
+  --lp-gap: 16px;
+  --lp-section: clamp(56px, 7.5vw, 104px);
+
+  /* The tab: a trapezoid. Each side leans by half of the tab height. */
+  --tab-h: 32px;
+  --tab-w: 132px;
+  --tab-x: 0px;
+  --tab-lean: calc(var(--tab-h) * 0.5);
+
+  --lp-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* The shell controls on this page (theme, menu, user menu) take the colours of the page. */
+  --foreground: var(--lp-ink);
+  --muted: var(--lp-surface);
+  --muted-foreground: var(--lp-muted);
+  --ring: var(--lp-ink);
+  --radius: 0px;
+
+  background-color: var(--lp-bg);
+  color: var(--lp-ink);
+  font-family:
+    "Jost Variable", "Jost Fallback", ui-sans-serif, system-ui, sans-serif;
+  font-size: var(--lp-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.dark .lp {
+  --lp-bg: #161012;
+  --lp-surface: #231a1c;
+  --lp-ink: #e2e2e2;
+  --lp-muted: #bcaaac;
+  --lp-field-deep: #650810;
+
+  --lp-layer-1: #2a2022;
+  --lp-layer-1-ink: #e2e2e2;
+  --lp-layer-2: #3d2a2d;
+  --lp-layer-2-ink: #e2e2e2;
+  --lp-layer-3: #57383c;
+  --lp-layer-3-ink: #e2e2e2;
+  --lp-layer-4: #6b1c23;
+  --lp-layer-4-ink: #e2e2e2;
+
+  --lp-btn-bg: #e2e2e2;
+  --lp-btn-ink: #7d0c14;
+}
+
+@media (min-width: 768px) {
+  .lp {
+    --lp-gutter: 32px;
+    --lp-gap: 24px;
+    --lp-display: clamp(6rem, 10vw, 12.5rem);
+    --tab-h: 40px;
+    --tab-w: 200px;
+  }
+}
+
+/* ---------- Base ---------- */
+
+.lp *,
+.lp *::before,
+.lp *::after {
+  box-sizing: border-box;
+}
+
+.lp :where(h1, h2, h3, p, ul, ol, dl, dd, figure) {
+  margin: 0;
+}
+
+.lp :where(ul, ol) {
+  padding: 0;
+  list-style: none;
+}
+
+.lp :where(h1, h2) {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+/* A capital with an accent (Í, Ó) on a second line needs this room below the line above. */
+.lp :where(h2) {
+  font-size: var(--lp-head);
+  line-height: 1;
+}
+
+.lp :where(h3) {
+  font-size: var(--lp-body);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.lp :where(p) {
+  text-wrap: pretty;
+}
+
+.lp :where(a) {
+  color: inherit;
+}
+
+.lp :where(img) {
+  display: block;
+  max-width: 100%;
+}
+
+.lp :where(a, button, summary, input):focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+.lp ::selection {
+  background-color: var(--lp-ink);
+  color: var(--lp-bg);
+}
+
+.lp-wrap {
+  padding-inline: var(--lp-gutter);
+}
+
+.lp-section {
+  padding-block: var(--lp-section);
+}
+
+.lp-muted {
+  color: var(--lp-muted);
+}
+
+/* ---------- The motif ---------- */
+
+/* A filled shape with one tab on its top edge. `--tab-x` moves the tab. */
+.lp-tabbed {
+  clip-path: polygon(
+    0 var(--tab-h),
+    var(--tab-x) var(--tab-h),
+    calc(var(--tab-x) + var(--tab-lean)) 0,
+    calc(var(--tab-x) + var(--tab-w) - var(--tab-lean)) 0,
+    calc(var(--tab-x) + var(--tab-w)) var(--tab-h),
+    100% var(--tab-h),
+    100% 100%,
+    0 100%
+  );
+}
+
+/* The words on a tab. */
+.lp-tab {
+  position: absolute;
+  top: 0;
+  left: var(--tab-x);
+  display: grid;
+  width: var(--tab-w);
+  height: var(--tab-h);
+  place-items: center;
+  padding-inline: var(--tab-lean);
+  font-size: var(--lp-small);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* A small tab in place of a bullet. */
+.lp-mark {
+  display: inline-block;
+  width: 1.15em;
+  height: 0.7em;
+  flex: none;
+  background-color: currentColor;
+  clip-path: polygon(0.35em 0, calc(100% - 0.35em) 0, 100% 100%, 0 100%);
+}
+
+/* ---------- Buttons and links ---------- */
+
+/*
+ * The button is a tab: one filled shape with two cut corners.
+ * A clipped element also cuts its own focus outline, so the wrap draws the outline.
+ */
+.lp-btn-wrap {
+  display: inline-flex;
+}
+
+.lp-btn-wrap:has(.lp-btn:focus-visible) {
+  outline: 3px solid currentColor;
+  outline-offset: 4px;
+}
+
+.lp-btn {
+  display: inline-flex;
+  width: 100%;
+  min-height: 56px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 52px;
+  border: 0;
+  background-color: var(--lp-btn-bg);
+  clip-path: polygon(28px 0, calc(100% - 28px) 0, 100% 100%, 0 100%);
+  color: var(--lp-btn-ink);
+  font: inherit;
+  font-size: var(--lp-body);
+  font-weight: 500;
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
+}
+
+.lp-btn:focus-visible {
+  outline: none;
+}
+
+.lp-on-field {
+  --lp-btn-bg: #e2e2e2;
+  --lp-btn-ink: #7d0c14;
+}
+
+.lp-link {
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.3em;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lp-btn {
+    transition: transform 180ms var(--lp-ease);
+  }
+
+  .lp-btn:hover {
+    transform: translateY(-3px);
+  }
+
+  .lp-btn:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  .lp-link {
+    transition: opacity 160ms var(--lp-ease);
+  }
+
+  .lp-link:hover {
+    opacity: 0.7;
+  }
+}
+
+/* ---------- Header (this page only) ---------- */
+
+.lp-header {
+  padding: 16px var(--lp-gutter) 8px;
+}
+
+.lp-header-row {
+  display: grid;
+  min-height: 48px;
+  align-items: center;
+  gap: 12px;
+  grid-template-columns: 1fr auto 1fr;
+}
+
+.lp-header-side {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.lp-header-end {
+  justify-content: flex-end;
+}
+
+.lp-wordmark {
+  font-size: var(--lp-lead);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.lp-header-nav {
+  display: none;
+  gap: 24px;
+}
+
+.lp-header-nav a,
+.lp-header-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* The user menu and the menu button come from the app shell. Here they take the type of the page. */
+.lp-header [data-slot="button"] {
+  height: 44px;
+  min-width: 44px;
+  font-size: var(--lp-body);
+}
+
+.lp-header [data-slot="avatar-fallback"] {
+  font-size: var(--lp-small);
+}
+
+.lp-desktop {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .lp-header {
+    padding-top: 24px;
+  }
+
+  .lp-header-nav {
+    display: flex;
+  }
+
+  .lp-desktop {
+    display: block;
+  }
+
+  .lp-phone {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lp-header-nav a,
+  .lp-header-link,
+  .lp-wordmark {
+    transition: opacity 160ms var(--lp-ease);
+  }
+
+  .lp-header-nav a:hover,
+  .lp-header-link:hover,
+  .lp-wordmark:hover {
+    opacity: 0.65;
+  }
+}
+
+/* ---------- Hero: the folder stack ---------- */
+
+.lp-hero {
+  --off: 52px;
+  --front: 204px;
+  --header: 72px;
+
+  display: flex;
+  min-height: calc(100svh - var(--header));
+  flex-direction: column;
+}
+
+.lp-hero-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(20px, 5svh, 56px) var(--lp-gutter) 40px;
+  gap: clamp(16px, 2.4svh, 28px);
+  text-align: center;
+}
+
+.lp-hero h1 {
+  font-size: var(--lp-display);
+  white-space: nowrap;
+}
+
+.lp-hero-lead {
+  max-width: 46ch;
+  font-size: var(--lp-lead);
+  line-height: 1.4;
+}
+
+.lp-stack {
+  position: relative;
+  width: 100%;
+  height: max(52svh, calc(4 * var(--off) + var(--front)));
+  margin-top: auto;
+}
+
+.lp-folder {
+  position: absolute;
+  top: calc(var(--i) * var(--off));
+  bottom: 0;
+  display: block;
+  background-color: var(--tone);
+  color: var(--tone-ink);
+  inset-inline: 0;
+  text-decoration: none;
+}
+
+.lp-folder .lp-tab {
+  font-size: var(--lp-body);
+}
+
+.lp-folder[data-layer="1"] {
+  --tone: var(--lp-layer-1);
+  --tone-ink: var(--lp-layer-1-ink);
+  --tab-x: 6%;
+}
+
+.lp-folder[data-layer="2"] {
+  --tone: var(--lp-layer-2);
+  --tone-ink: var(--lp-layer-2-ink);
+  --tab-x: 60%;
+}
+
+.lp-folder[data-layer="3"] {
+  --tone: var(--lp-layer-3);
+  --tone-ink: var(--lp-layer-3-ink);
+  --tab-x: 32%;
+}
+
+.lp-folder[data-layer="4"] {
+  --tone: var(--lp-layer-4);
+  --tone-ink: var(--lp-layer-4-ink);
+  --tab-x: 62%;
+}
+
+.lp-folder-front {
+  --tone: var(--lp-field);
+  --tone-ink: var(--lp-field-ink);
+  --tab-x: 0px;
+}
+
+.lp-folder-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: calc(var(--tab-h) + 24px) var(--lp-gutter) 0;
+  gap: 16px;
+}
+
+.lp-folder-actions .lp-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  align-self: center;
+}
+
+.lp-close-copy .lp-btn-wrap {
+  max-width: 100%;
+}
+
+@media (min-width: 768px) {
+  .lp-hero {
+    --off: 64px;
+    --front: 168px;
+    --header: 80px;
+  }
+
+  .lp-stack {
+    height: max(49svh, calc(4 * var(--off) + var(--front)));
+  }
+
+  .lp-folder[data-layer="1"] {
+    --tab-x: 66%;
+  }
+
+  .lp-folder[data-layer="2"] {
+    --tab-x: 49%;
+  }
+
+  .lp-folder[data-layer="3"] {
+    --tab-x: 32%;
+  }
+
+  .lp-folder[data-layer="4"] {
+    --tab-x: 15%;
+  }
+
+  .lp-folder-actions {
+    flex-direction: row;
+    align-items: center;
+    padding: calc(var(--tab-h) + 32px) 32px 0;
+    gap: 32px;
+  }
+
+  .lp-folder-actions .lp-link {
+    align-self: auto;
+  }
+}
+
+/* Index with preview: the folder under the pointer comes up, and the others go back. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  a.lp-folder {
+    transition:
+      transform 240ms var(--lp-ease),
+      opacity 240ms var(--lp-ease);
+  }
+
+  .lp-stack:has(a.lp-folder:hover) a.lp-folder:not(:hover) {
+    opacity: 0.55;
+  }
+
+  a.lp-folder:hover {
+    transform: translateY(-14px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lp-folder {
+    animation: lp-folder-in 800ms var(--lp-ease) both;
+    animation-delay: calc(var(--i) * 80ms + 80ms);
+  }
+
+  .lp-hero-lead {
+    animation: lp-rise 700ms var(--lp-ease) 120ms both;
+  }
+}
+
+@keyframes lp-folder-in {
+  from {
+    opacity: 0;
+    transform: translateY(72px);
+  }
+}
+
+@keyframes lp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+/* ---------- Comparendos: the open folder with the calculator ---------- */
+
+.lp-open {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 56px var(--lp-gutter) 72px;
+  background-color: var(--lp-field);
+  color: var(--lp-field-ink);
+}
+
+.lp-open-grid {
+  display: grid;
+  gap: 40px var(--lp-gap);
+}
+
+.lp-open-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.lp-open-copy > p {
+  max-width: 44ch;
+}
+
+.lp-open .lp-muted {
+  color: var(--lp-field-muted);
+}
+
+.lp-figure {
+  position: relative;
+  background-color: var(--lp-surface);
+  color: var(--lp-ink);
+}
+
+.lp-figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lp-figure picture {
+  position: absolute;
+  top: var(--tab-h);
+  bottom: 0;
+  overflow: hidden;
+  inset-inline: 0;
+}
+
+.dark .lp-figure img {
+  filter: brightness(0.85) contrast(1.05);
+}
+
+.lp-open-figure {
+  --tab-x: 0px;
+  --tab-w: 216px;
+
+  aspect-ratio: 4 / 5;
+  max-height: 86svh;
+  width: 100%;
+}
+
+/* The stack and the open folder below it have one width, so the folder continues with no step. */
+@media (min-width: 900px) {
+  .lp-stack {
+    width: 86vw;
+    margin-inline: auto;
+  }
+
+  .lp-open {
+    width: 86vw;
+    margin-inline: auto;
+    padding: 24px 32px 96px;
+  }
+
+  .lp-open-grid {
+    align-items: start;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .lp-open-copy {
+    padding-top: 72px;
+    grid-column: 1 / span 7;
+    grid-row: 1;
+  }
+
+  .lp-open .lp-calc {
+    grid-column: 1 / span 7;
+    grid-row: 2;
+  }
+
+  /* The picture comes up into the first screen, so the fold cuts it. */
+  .lp-open-figure {
+    margin-top: -128px;
+    grid-column: 9 / span 4;
+    grid-row: 1;
+  }
+
+  .lp-open .lp-calc-result {
+    align-self: end;
+    grid-column: 8 / span 5;
+    grid-row: 2;
+  }
+}
+
+/* The calculator. */
+.lp-calc {
+  display: grid;
+  max-width: 620px;
+  gap: 28px;
+}
+
+.lp-calc-field {
+  display: grid;
+  gap: 8px;
+}
+
+.lp-calc-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  font-weight: 500;
+}
+
+.lp-calc-label output {
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-calc-money {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  padding-inline: 20px;
+  background-color: var(--lp-field-deep);
+  gap: 10px;
+}
+
+.lp-calc-money:focus-within {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+.lp-calc-money input {
+  width: 100%;
+  min-width: 0;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--lp-lead);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.lp-calc-money input:focus-visible {
+  outline: none;
+}
+
+.lp-calc-money span {
+  font-size: var(--lp-lead);
+  font-weight: 500;
+}
+
+.lp-calc-help {
+  color: var(--lp-field-muted);
+}
+
+/* The bar is the amount of the comparendo. The dark part is the discount. The pale part is the amount to pay. */
+.lp-calc-range {
+  position: relative;
+  height: 56px;
+  background-color: var(--lp-field-deep);
+}
+
+.lp-calc-pay {
+  position: absolute;
+  top: 0;
+  right: 14px;
+  bottom: 0;
+  left: 14px;
+  display: none;
+  background-color: var(--lp-field-ink);
+  transform: scaleX(var(--pay, 0.5));
+  transform-origin: right;
+}
+
+.lp-calc-range::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: none;
+  width: 14px;
+  background-color: var(--lp-field-ink);
+  content: "";
+}
+
+.lp-calc[data-live] .lp-calc-pay,
+.lp-calc[data-live] .lp-calc-range::after {
+  display: block;
+}
+
+.lp-calc-range input {
+  position: absolute;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  appearance: none;
+  background: none;
+  cursor: ew-resize;
+  inset: 0;
+  touch-action: pan-y;
+}
+
+.lp-calc-range input::-webkit-slider-runnable-track {
+  height: 56px;
+  background: none;
+}
+
+.lp-calc-range input::-moz-range-track {
+  height: 56px;
+  background: none;
+}
+
+/* The handle is a tab. */
+.lp-calc-range input::-webkit-slider-thumb {
+  width: 28px;
+  height: 72px;
+  margin-top: -8px;
+  appearance: none;
+  background-color: #a3343b;
+  clip-path: polygon(8px 0, 20px 0, 28px 100%, 0 100%);
+}
+
+.lp-calc-range input::-moz-range-thumb {
+  width: 28px;
+  height: 72px;
+  border: 0;
+  border-radius: 0;
+  background-color: #a3343b;
+  clip-path: polygon(8px 0, 20px 0, 28px 100%, 0 100%);
+}
+
+.lp-calc-result {
+  display: grid;
+  gap: 10px;
+  container-type: inline-size;
+}
+
+.lp-calc-figure {
+  font-size: min(var(--lp-display), calc(100cqi / (var(--chars, 9) * 0.6)));
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  white-space: nowrap;
+}
+
+/* ---------- Servicios: small points beside one large picture ---------- */
+
+.lp-services-grid {
+  display: grid;
+  gap: 56px var(--lp-gap);
+}
+
+.lp-services-figure {
+  --tab-x: 28%;
+  --tab-w: 190px;
+
+  width: 82vw;
+  height: min(60svh, 103vw);
+  margin-left: calc(-1 * var(--lp-gutter) - 10vw);
+}
+
+.lp-points {
+  display: grid;
+  margin-top: 40px;
+  gap: 28px;
+}
+
+.lp-point {
+  display: grid;
+  align-content: start;
+  align-items: baseline;
+  gap: 4px 12px;
+  grid-template-columns: auto 1fr;
+}
+
+.lp-point p {
+  color: var(--lp-muted);
+  grid-column: 2;
+}
+
+.lp-point:nth-child(3n + 2) .lp-mark {
+  color: var(--lp-layer-4);
+}
+
+.lp-point:nth-child(3n) .lp-mark {
+  color: var(--lp-muted);
+}
+
+@media (min-width: 900px) {
+  .lp-services-grid {
+    align-items: center;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .lp-services-figure {
+    width: calc(100% + var(--lp-gutter) + 6vw);
+    height: min(78svh, 820px);
+    margin-left: calc(-1 * var(--lp-gutter) - 6vw);
+    grid-column: 1 / span 4;
+  }
+
+  .lp-services-copy {
+    grid-column: 6 / span 7;
+  }
+
+  .lp-points {
+    margin-top: 56px;
+    gap: 44px 40px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .lp-points {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Pagos: tiles that grow ---------- */
+
+.lp-steps {
+  display: grid;
+  margin-top: 40px;
+  gap: 28px;
+}
+
+.lp-step {
+  display: grid;
+  gap: 16px;
+}
+
+.lp-tile {
+  --tab-x: 0px;
+
+  position: relative;
+  display: flex;
+  height: var(--tile-h);
+  align-items: flex-end;
+  padding: 0 20px 18px;
+  background-color: var(--tone);
+  color: var(--tone-ink);
+  container-type: inline-size;
+}
+
+/* The word never gets wider than its tile: `cqi` is a part of the tile width. */
+.lp-tile-word {
+  font-size: min(var(--word, var(--lp-head)), var(--word-fit, 100cqi));
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.lp-step:nth-child(1) .lp-tile {
+  --tone: var(--lp-layer-1);
+  --tone-ink: var(--lp-layer-1-ink);
+  --tile-h: 34vw;
+  --word: var(--lp-lead);
+}
+
+.lp-step:nth-child(2) .lp-tile {
+  --tone: var(--lp-layer-2);
+  --tone-ink: var(--lp-layer-2-ink);
+  --tile-h: 46vw;
+}
+
+.lp-step:nth-child(3) .lp-tile {
+  --tone: var(--lp-field);
+  --tone-ink: var(--lp-field-ink);
+  --tile-h: 62vw;
+  --word: var(--lp-display);
+  --word-fit: 23.5cqi;
+}
+
+.lp-step-copy {
+  display: grid;
+  max-width: 40ch;
+  gap: 6px;
+}
+
+.lp-step-copy p {
+  color: var(--lp-muted);
+}
+
+@media (min-width: 900px) {
+  .lp-pay {
+    position: relative;
+  }
+
+  .lp-pay h2 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+  }
+
+  .lp-steps {
+    align-items: end;
+    margin-top: 0;
+    gap: 10px;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .lp-step {
+    display: contents;
+  }
+
+  .lp-tile {
+    padding: 0 24px 22px;
+    grid-row: 1;
+  }
+
+  .lp-step-copy {
+    align-self: start;
+    padding-right: 24px;
+    margin-top: 14px;
+    grid-row: 2;
+  }
+
+  .lp-step:nth-child(1) > * {
+    grid-column: 1 / span 2;
+  }
+
+  .lp-step:nth-child(2) > * {
+    grid-column: 3 / span 4;
+  }
+
+  .lp-step:nth-child(3) > * {
+    grid-column: 7 / span 6;
+  }
+
+  .lp-step:nth-child(1) .lp-tile {
+    --tile-h: 30svh;
+  }
+
+  .lp-step:nth-child(2) .lp-tile {
+    --tile-h: 44svh;
+  }
+
+  .lp-step:nth-child(3) .lp-tile {
+    --tile-h: 60svh;
+  }
+}
+
+/* ---------- The band: the refinery and the river ---------- */
+
+.lp-band {
+  --tab-x: var(--lp-gutter);
+  --tab-w: 268px;
+
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background-color: var(--lp-surface);
+  color: var(--lp-ink);
+}
+
+@media (min-width: 768px) {
+  .lp-band {
+    --tab-w: 330px;
+
+    aspect-ratio: 21 / 9;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .lp-band img,
+    .lp-services-figure img,
+    .lp-open-figure img {
+      animation: lp-drift linear both;
+      animation-timeline: view();
+    }
+  }
+}
+
+@keyframes lp-drift {
+  from {
+    transform: scale(1.12) translateY(-3.5%);
+  }
+
+  to {
+    transform: scale(1.12) translateY(3.5%);
+  }
+}
+
+/* ---------- Entidades: one name per poster line ---------- */
+
+.lp-poster {
+  padding-block: 80px;
+}
+
+.lp-poster-row {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 24px;
+}
+
+/* The capitals are inside the line box, so `clip` cuts no ink. It keeps each name off the name above. */
+.lp-poster-name {
+  overflow: clip;
+  font-size: var(--lp-poster);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.92;
+  text-transform: uppercase;
+}
+
+.lp-poster-detail {
+  max-width: 34ch;
+}
+
+/* Two alignments only: the names at the left margin, the facts at the right margin. */
+@media (min-width: 1200px) {
+  .lp-poster-row {
+    align-items: end;
+    align-items: last baseline;
+    padding-bottom: 0;
+    gap: var(--lp-gap);
+    grid-template-columns: auto 1fr;
+  }
+
+  .lp-poster-detail {
+    max-width: 17rem;
+    justify-self: end;
+    line-height: 1.35;
+    text-align: right;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .lp-poster-row {
+    transition: opacity 240ms var(--lp-ease);
+  }
+
+  .lp-poster:has(.lp-poster-row:hover) .lp-poster-row:not(:hover) {
+    opacity: 0.35;
+  }
+}
+
+/* ---------- Preguntas: index cards with tabs ---------- */
+
+.lp-faq {
+  padding-block: calc(var(--lp-section) * 1.6);
+  margin-top: var(--lp-section);
+  background-color: var(--lp-surface);
+}
+
+.lp-faq-inner {
+  display: grid;
+  gap: 48px;
+}
+
+.lp-cards {
+  --tab-w: 120px;
+  --step: 44px;
+
+  display: grid;
+  padding-top: var(--tab-h);
+}
+
+/*
+ * The tab of a card comes up over the card above it. Each card keeps an empty zone
+ * of the tab height at its bottom, so a tab never covers a question or an answer.
+ */
+.lp-card {
+  --tab-x: calc(var(--n) * var(--step));
+
+  position: relative;
+  padding-bottom: var(--tab-h);
+  margin-top: calc(-1 * var(--tab-h));
+  background-color: var(--tone);
+  color: var(--tone-ink);
+}
+
+.lp-card:last-child {
+  padding-bottom: 0;
+}
+
+.lp-card:nth-child(3n + 1) {
+  --tone: var(--lp-field);
+  --tone-ink: var(--lp-field-ink);
+}
+
+.lp-card:nth-child(3n + 2) {
+  --tone: var(--lp-layer-2);
+  --tone-ink: var(--lp-layer-2-ink);
+}
+
+.lp-card:nth-child(3n) {
+  --tone: var(--lp-layer-3);
+  --tone-ink: var(--lp-layer-3-ink);
+}
+
+.lp-card summary {
+  display: block;
+  padding: calc(var(--tab-h) + 16px) 20px 20px;
+  cursor: pointer;
+  font-size: var(--lp-lead);
+  font-weight: 500;
+  line-height: 1.25;
+  list-style: none;
+}
+
+.lp-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.lp-card summary:focus-visible {
+  outline-offset: -6px;
+}
+
+.lp-card-answer {
+  max-width: 50ch;
+  padding: 0 20px 28px;
+}
+
+@media (min-width: 900px) {
+  .lp-faq-inner {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .lp-faq-inner > * {
+    grid-column: 3 / span 8;
+  }
+
+  .lp-cards {
+    --tab-w: 200px;
+    --step: 120px;
+  }
+
+  .lp-card summary {
+    padding: calc(var(--tab-h) + 18px) 32px 22px;
+  }
+
+  .lp-card-answer {
+    padding: 0 32px 36px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lp-card[open] .lp-card-answer {
+    animation: lp-rise 420ms var(--lp-ease) both;
+  }
+}
+
+/* ---------- Close: the folder comes back ---------- */
+
+.lp-close {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  padding: var(--lp-section) var(--lp-gutter) 0;
+  gap: 56px;
+}
+
+.lp-close-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.lp-close-copy p {
+  max-width: 34ch;
+}
+
+.lp-close-fact {
+  font-size: var(--lp-lead);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.lp-close-figure {
+  --tab-x: 18%;
+  --tab-w: 250px;
+
+  width: 130vw;
+  height: 55svh;
+  margin-left: calc(-1 * var(--lp-gutter));
+}
+
+@media (min-width: 1100px) {
+  .lp-close {
+    min-height: 90svh;
+    align-items: center;
+    padding-top: 0;
+    gap: var(--lp-gap);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  /* Larger than its place: the left edge and the bottom edge of the section cut it. */
+  .lp-close-figure {
+    --tab-x: 46%;
+
+    width: calc(100% + var(--lp-gutter) + 9vw);
+    height: 88svh;
+    align-self: end;
+    margin-bottom: -9svh;
+    margin-left: calc(-1 * var(--lp-gutter) - 9vw);
+    grid-column: 1 / span 8;
+    grid-row: 1;
+  }
+
+  .lp-close-copy {
+    grid-column: 9 / span 4;
+    grid-row: 1;
+  }
+
+  .lp-close-copy .lp-btn {
+    padding-inline: 40px;
+    white-space: nowrap;
+  }
+}
+
+/* On a wide screen the text stands one column in, so the picture has more air. */
+@media (min-width: 1400px) {
+  .lp-close-copy {
+    padding-left: calc(100% / 4 - var(--lp-gap));
+    /* Whole pixels keep the slanted edges of the button sharp. */
+    padding-left: round(down, calc(100% / 4 - var(--lp-gap)), 1px);
+  }
+}
+
+/* ---------- Footer (this page only): the mark made of tabs ---------- */
+
+.lp-footer {
+  --lp-btn-bg: #e2e2e2;
+  --lp-btn-ink: #7d0c14;
+
+  padding: 64px var(--lp-gutter) 40px;
+  background-color: var(--lp-field);
+  color: var(--lp-field-ink);
+}
+
+.lp-mark-row {
+  display: grid;
+  height: 22svh;
+  min-height: 150px;
+  align-items: end;
+  gap: 4px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.lp-mark-row + .lp-mark-row {
+  margin-top: 4px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.lp-letter {
+  --cut: clamp(14px, 2.2vw, 30px);
+
+  display: flex;
+  height: var(--h);
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 0.08em;
+  background-color: var(--tone);
+  clip-path: polygon(
+    0 var(--cut),
+    calc(var(--cut) * 0.5) 0,
+    calc(62% - var(--cut) * 0.5) 0,
+    62% var(--cut),
+    100% var(--cut),
+    100% 100%,
+    0 100%
+  );
+  color: var(--lp-field);
+  font-size: var(--lp-display);
+  font-weight: 700;
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.lp-letter:nth-child(3n + 1) {
+  --tone: #e2e2e2;
+}
+
+.lp-letter:nth-child(3n + 2) {
+  --tone: #c9aaac;
+}
+
+.lp-letter:nth-child(3n) {
+  --tone: #dcc3c5;
+}
+
+.lp-footer-grid {
+  display: grid;
+  margin-top: 56px;
+  gap: 40px var(--lp-gap);
+}
+
+.lp-footer-links {
+  display: grid;
+  align-content: start;
+  gap: 4px 24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lp-footer-links a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.lp-footer-lines {
+  display: grid;
+  max-width: 44ch;
+  align-content: start;
+  gap: 10px;
+}
+
+.lp-credits {
+  max-width: 78ch;
+}
+
+.lp-credits a {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.lp-footer-last {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 48px;
+  gap: 20px;
+}
+
+@media (min-width: 900px) {
+  .lp-mark-rows {
+    display: grid;
+    gap: 4px;
+    grid-template-columns: 4fr 5fr;
+  }
+
+  .lp-mark-row {
+    height: 34svh;
+  }
+
+  .lp-mark-row + .lp-mark-row {
+    margin-top: 0;
+  }
+
+  .lp-footer-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .lp-footer-links {
+    grid-column: 1 / span 4;
+  }
+
+  .lp-footer-lines {
+    grid-column: 5 / span 4;
+  }
+
+  .lp-credits {
+    grid-column: 9 / span 4;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lp-footer-links a,
+  .lp-credits a {
+    transition: opacity 160ms var(--lp-ease);
+  }
+
+  .lp-footer-links a:hover,
+  .lp-credits a:hover {
+    opacity: 0.7;
+  }
+}
+
+/* ---------- Entrances ---------- */
+
+/*
+ * The script arms only the parts that are below the screen, then shows each part when it comes in.
+ * Without the script, no part is hidden.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .lp [data-reveal="armed"] {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+
+  .lp [data-reveal="in"] {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 700ms var(--lp-ease),
+      transform 900ms var(--lp-ease);
+    transition-delay: calc(var(--d, 0) * 80ms);
+  }
+}
