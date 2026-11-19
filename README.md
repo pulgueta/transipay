@@ -79,10 +79,12 @@ Set these variables on the app service:
 
 | Variable | Value |
 | --- | --- |
-| `DATABASE_URL` | The URL of the Postgres service. |
-| `DATABASE_OWNER_URL` | The URL of the role that owns the tables. The pre-deploy command uses it. It can be the same as `DATABASE_URL`. |
+| `DATABASE_URL` | The URL of a login role that is a member of `transipay_app` and does not own the tables (see [Database roles](#database-roles)). The app uses it. |
+| `DATABASE_OWNER_URL` | The URL of the role that owns the tables. Only the pre-deploy command uses it. |
 | `BETTER_AUTH_URL` | The public HTTPS URL of the app. better-auth trusts only this origin, so sign-in does not work with another URL. |
 | `WOMPI_SANDBOX` | `true` when the Wompi keys are test keys (`pub_test_…`). |
+
+The public demo on Railway connects with the owner URL in both variables, so the protections of migration 0005 do not apply to it. Use a separate login role for a real deployment.
 
 Also set the variables of `.env.example` (`BETTER_AUTH_SECRET` and the Wompi keys). Railway sets `PORT`.
 
