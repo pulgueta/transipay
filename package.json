@@ -18,7 +18,8 @@
     "db:studio": "drizzle-kit studio",
     "db:check": "drizzle-kit check",
     "db:app-role": "node src/server/db/app-login-role.ts",
-    "deploy:prepare": "pnpm db:migrate && pnpm db:app-role",
+    "db:demo-seed": "node src/server/demo/seed.ts",
+    "deploy:prepare": "pnpm db:migrate && pnpm db:app-role && pnpm db:demo-seed",
     "intent": "node ./node_modules/@tanstack/intent/dist/cli.mjs",
     "test:db": "vitest run --project db"
   },
