@@ -237,6 +237,14 @@ body:has(.lp) {
   white-space: nowrap;
 }
 
+/* The clip-path of a folder cuts the focus outline away, so a focused folder link underlines its tab words. */
+.lp-folder:focus-visible .lp-tab,
+a.lp-tab:focus-visible {
+  text-decoration-line: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 4px;
+}
+
 /* A small tab in place of a bullet. */
 .lp-mark {
   display: inline-block;
