@@ -41,19 +41,16 @@ export const requireSession = <TSession>(
   return session;
 };
 
-/** The message of a 403 from a server function (see `requirePermission`). The guards use the same message. */
+/** The message of a 403 from a server function (see `requirePermission`). */
 const ACCESS_DENIED_MESSAGE = "No tiene permiso para hacer esta operación.";
 
-/** True when the error is a permission denial from a guard or from a server function. */
+/** True when the error is a permission denial from a server function. */
 export const isAccessDenied = (error: Error): boolean =>
   error.message === ACCESS_DENIED_MESSAGE;
 
-/** The error that a guard throws for a permission denial. The error page shows the access-denied screen for it. */
-export const accessDeniedError = (): Error => new Error(ACCESS_DENIED_MESSAGE);
-
 /**
- * Use it in a route `beforeLoad` after `requireSession`. It stops the route with an access-denied error
- * when the role does not have the permissions, so the page does not show controls that the server refuses.
+ * Use it in a route `beforeLoad` after `requireSession`. When the role does not have the permissions,
+ * it sends the user to the home page, so the page does not show controls that the server refuses.
  * This is navigation only. A server function must check the permissions again.
  */
 export const requirePermissions = (
@@ -61,6 +58,6 @@ export const requirePermissions = (
   permissions: Permissions
 ): void => {
   if (!canUser(role, permissions)) {
-    throw accessDeniedError();
+    redirect({ to: "/", replace: true, throw: true });
   }
 };

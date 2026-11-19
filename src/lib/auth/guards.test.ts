@@ -2,7 +2,6 @@ import { isRedirect } from "@tanstack/react-router";
 import { describe, expect, it } from "vitest";
 
 import {
-  accessDeniedError,
   isAccessDenied,
   requirePermissions,
   requireSession,
@@ -74,16 +73,17 @@ describe(requirePermissions, () => {
     }).not.toThrow();
   });
 
-  it("throws an access-denied error when the role does not have the permissions", () => {
-    expect(() => {
+  it("redirects to the home page when the role does not have the permissions", () => {
+    const thrown = catchRedirect(() => {
       requirePermissions("cashier", { course: ["read"] });
-    }).toThrow(accessDeniedError());
+    });
+
+    expect(thrown.options).toMatchObject({ to: "/", replace: true });
   });
 });
 
 describe(isAccessDenied, () => {
-  it("is true for the guard error and for the 403 message of a server function", () => {
-    expect(isAccessDenied(accessDeniedError())).toBeTruthy();
+  it("is true for the 403 message of a server function", () => {
     expect(
       isAccessDenied(new Error("No tiene permiso para hacer esta operación."))
     ).toBeTruthy();
