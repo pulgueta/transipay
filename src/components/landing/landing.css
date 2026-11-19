@@ -680,12 +680,6 @@ a.lp-tab:focus-visible {
     margin-inline: auto;
   }
 
-  /* The picture of the open folder comes up into the last third of this folder. The actions stay in the first two thirds. */
-  .lp-folder-actions {
-    max-width: calc(32px + (100% - 64px) * 2 / 3 - 24px);
-    flex-wrap: wrap;
-  }
-
   .lp-open {
     width: 86vw;
     margin-inline: auto;
@@ -719,6 +713,13 @@ a.lp-tab:focus-visible {
     align-self: end;
     grid-column: 8 / span 5;
     grid-row: 2;
+  }
+}
+
+/* Below this width, the hero actions need the full row. The picture stays in its own folder, so it does not cover them. */
+@media (min-width: 900px) and (max-width: 1023.98px) {
+  .lp-open-figure {
+    margin-top: 0;
   }
 }
 
