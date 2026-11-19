@@ -84,16 +84,14 @@ export const CourseCalculator = ({
   };
 
   // A pasted amount can have cents ("621.600,50"). Read it before the separators go, so the cents do not become pesos.
+  // A paste with no whole pesos ("0,50") adds no digits.
   const onAmountPaste = (event: ClipboardEvent<HTMLInputElement>) => {
-    const pasted = parsePesos(event.clipboardData.getData("text"));
-    if (pasted === null) {
-      return;
-    }
     event.preventDefault();
+    const pasted = parsePesos(event.clipboardData.getData("text"));
     const { value, selectionStart, selectionEnd } = event.currentTarget;
     const start = selectionStart ?? value.length;
     const end = selectionEnd ?? value.length;
-    const digits = String(pasted);
+    const digits = pasted === null ? "" : String(pasted);
     caretDigits.current = countDigits(value.slice(0, start)) + digits.length;
     setAmountText(
       formatPesosInput(value.slice(0, start) + digits + value.slice(end))

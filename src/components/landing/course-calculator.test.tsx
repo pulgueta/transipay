@@ -34,6 +34,22 @@ describe(CourseCalculator, () => {
     }
   );
 
+  it.each(["0,50", "0.5", "abc"])(
+    "adds no pesos when a person pastes %s",
+    (pasted) => {
+      render(<CourseCalculator />);
+      const input = screen.getByLabelText("Valor del comparendo");
+
+      // False when the calculator stops the browser from pasting the text as it is.
+      const pastedAsItIs = fireEvent.paste(input, {
+        clipboardData: { getData: () => pasted },
+      });
+
+      expect(pastedAsItIs).toBeFalsy();
+      expect(input).toHaveProperty("value", "");
+    }
+  );
+
   it("renders the sent amount without points, so the form can send it again without script", () => {
     const input = serverAmountInput(621_600);
 
