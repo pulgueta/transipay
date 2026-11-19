@@ -1,5 +1,10 @@
 import { isFunction } from "@tanstack/react-table";
-import type { ReactTable, RowData, TableFeatures } from "@tanstack/react-table";
+import type {
+  Header,
+  ReactTable,
+  RowData,
+  TableFeatures,
+} from "@tanstack/react-table";
 
 import {
   Table,
@@ -18,6 +23,34 @@ interface DataTableProps<
   emptyMessage?: string;
 }
 
+const ARIA_SORT = {
+  asc: "ascending",
+  desc: "descending",
+  false: "none",
+} as const;
+
+/**
+ * The row actions stay at the right edge while the table scrolls, so they show on a phone.
+ * The left border shows that the other columns scroll under them.
+ */
+const PINNED_ACTIONS_CLASS =
+  "bg-background sticky right-0 z-10 shadow-[inset_1px_0_0_var(--color-border)]";
+
+const pinnedClass = (columnId: string) =>
+  columnId === "actions" ? PINNED_ACTIONS_CLASS : undefined;
+
+/** The `aria-sort` of a header. A column that cannot sort, or a table without sorting, gets none. */
+const ariaSort = <TFeatures extends TableFeatures, TData extends RowData>(
+  header: Header<TFeatures, TData>
+) => {
+  const { column } = header;
+  const canSort =
+    "getCanSort" in column &&
+    isFunction<() => boolean>(column.getCanSort) &&
+    column.getCanSort();
+  return canSort ? ARIA_SORT[`${column.getIsSorted()}`] : undefined;
+};
+
 /**
  * Renders a v9 table instance. It owns markup only, not state.
  * Visibility APIs require `columnVisibilityFeature`. A core-only table shows all columns.
@@ -32,6 +65,8 @@ interface DataTableProps<
  *   const table = useTable({ key: "citizen-payments", features, columns, data, getRowId: (row) => row.id });
  *   useTanStackTableDevtools(table);
  *   return <DataTable table={table} />;
+ *
+ * Give the row actions column the id "actions". It stays visible at the right edge on a small screen.
  *
  * Server-side keyset pagination: a server function returns `toPage(rows, limit)`
  * (`src/server/db/pagination.ts`). Pass `page.items` as `data`, and send `page.nextCursor`
@@ -58,7 +93,12 @@ export const DataTable = <
         {headerGroups.map((group) => (
           <TableRow key={group.id}>
             {group.headers.map((header) => (
-              <TableHead colSpan={header.colSpan} key={header.id}>
+              <TableHead
+                aria-sort={ariaSort(header)}
+                className={pinnedClass(header.column.id)}
+                colSpan={header.colSpan}
+                key={header.id}
+              >
                 {header.isPlaceholder ? null : (
                   <table.FlexRender header={header} />
                 )}
@@ -75,7 +115,10 @@ export const DataTable = <
                 ? row.getVisibleCells()
                 : row.getAllCells()
               ).map((cell) => (
-                <TableCell key={cell.id}>
+                <TableCell
+                  className={pinnedClass(cell.column.id)}
+                  key={cell.id}
+                >
                   <table.FlexRender cell={cell} />
                 </TableCell>
               ))}

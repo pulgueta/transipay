@@ -11,7 +11,7 @@ import {
 } from "@/components/appointments/queries";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { requireSession } from "@/lib/auth/guards";
+import { requirePermissions, requireSession } from "@/lib/auth/guards";
 import { createAppointmentFn } from "@/server/appointments/functions";
 
 /** `obligationId` preselects a pending procedure. A value that is not a UUID is dropped. */
@@ -25,13 +25,7 @@ const searchSchema = z.object({
 });
 
 const PageHeader = () => (
-  <div className="flex flex-col gap-1">
-    <h1 className="text-2xl font-semibold tracking-tight">Agendar cita</h1>
-    <p className="text-muted-foreground">
-      Seleccione la entidad, la sede, el trámite y la hora. La confirmación
-      aparece en este sitio.
-    </p>
-  </div>
+  <h1 className="text-2xl font-semibold tracking-tight">Agendar cita</h1>
 );
 
 const NewAppointmentPage = () => {
@@ -84,9 +78,11 @@ const NewAppointmentPage = () => {
 
 export const Route = createFileRoute("/appointments/new")({
   validateSearch: searchSchema,
-  beforeLoad: ({ context, location }) => ({
-    session: requireSession(context.session, location.href),
-  }),
+  beforeLoad: ({ context, location }) => {
+    const session = requireSession(context.session, location.href);
+    requirePermissions(session.user.role, { appointment: ["create"] });
+    return { session };
+  },
   loader: async ({ context }) => {
     // AGENTS.md: loaders use ensureQueryData. TanStack Query 5.104 marks it deprecated (see queryClient.query).
     // oxlint-disable-next-line typescript/no-deprecated

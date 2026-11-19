@@ -1,5 +1,5 @@
 import { IconLogout, IconMenu2, IconUserCircle } from "@tabler/icons-react";
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -135,7 +135,7 @@ const MobileMenu = ({ session }: { session: AppSession | null }) => {
             </SheetClose>
           ))}
         </nav>
-        <div className="mt-auto flex flex-col gap-2 border-t p-4">
+        <div className="mt-auto flex flex-col gap-2 border-t p-4" data-ui>
           {session ? (
             <>
               <p className="text-muted-foreground truncate text-sm">
@@ -196,9 +196,9 @@ const MobileMenu = ({ session }: { session: AppSession | null }) => {
   );
 };
 
-/** The top bar of every page. It is 64px high and stays on one line on desktop. */
-export const AppHeader = ({ session }: { session: AppSession | null }) => (
-  <header className="bg-background border-b">
+/** The top bar of the app pages. It is 64px high and stays on one line on desktop. */
+const AppBar = ({ session }: { session: AppSession | null }) => (
+  <header className="bg-background border-b" data-ui>
     <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4">
       <Link className="shrink-0 text-base font-semibold tracking-tight" to="/">
         Transipay
@@ -226,3 +226,58 @@ export const AppHeader = ({ session }: { session: AppSession | null }) => (
     </div>
   </header>
 );
+
+/**
+ * The top row of the home page: the name in the centre, and one link at the right.
+ * It has the same links as the app bar: a signed-in user gets the pages of their role and the user menu.
+ */
+const HomeBar = ({ session }: { session: AppSession | null }) => (
+  <header className="lp lp-header">
+    <div className="lp-header-row">
+      <div className="lp-header-side">
+        {session ? (
+          <>
+            <div className="lp-phone">
+              <MobileMenu session={session} />
+            </div>
+            <nav aria-label="Principal" className="lp-header-nav">
+              {navLinksFor(session).map((link) => (
+                <Link key={link.to} to={link.to}>
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </>
+        ) : (
+          <ThemeToggle />
+        )}
+      </div>
+      <Link className="lp-wordmark" to="/">
+        Transipay
+      </Link>
+      <div className="lp-header-side lp-header-end">
+        {session ? (
+          <>
+            <ThemeToggle />
+            <div className="lp-desktop">
+              <UserMenu session={session} />
+            </div>
+          </>
+        ) : (
+          <Link className="lp-header-link" to="/sign-in">
+            Iniciar sesión
+          </Link>
+        )}
+      </div>
+    </div>
+  </header>
+);
+
+/** The top of every page. The home page has its own row. All other pages have the app bar. */
+export const AppHeader = ({ session }: { session: AppSession | null }) => {
+  const isHome = useLocation({
+    select: (location) => location.pathname === "/",
+  });
+
+  return isHome ? <HomeBar session={session} /> : <AppBar session={session} />;
+};

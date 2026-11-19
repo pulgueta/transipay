@@ -17,12 +17,7 @@ import {
 import { requireSession } from "@/lib/auth/guards";
 
 const PageHeader = () => (
-  <div className="flex flex-col gap-1">
-    <h1 className="text-2xl font-semibold tracking-tight">Obligaciones</h1>
-    <p className="text-muted-foreground">
-      Sus comparendos y trámites, con el valor a pagar y el estado de cada uno.
-    </p>
-  </div>
+  <h1 className="text-2xl font-semibold tracking-tight">Obligaciones</h1>
 );
 
 const NoDocument = () => (

@@ -14,7 +14,6 @@ import type { SignUpValues } from "@/components/auth/sign-up-form";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -63,10 +62,9 @@ const SignUpPage = () => {
   return (
     <Card className="mx-auto w-full max-w-sm">
       <CardHeader>
-        <CardTitle>Crear cuenta</CardTitle>
-        <CardDescription>
-          Su documento une la cuenta con sus comparendos y trámites.
-        </CardDescription>
+        <CardTitle>
+          <h1>Crear cuenta</h1>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <SignUpForm onSignUp={signUp} />

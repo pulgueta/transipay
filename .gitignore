@@ -15,3 +15,6 @@ todos.json
 
 # typescript
 *.tsbuildinfo
+
+# taste-skill inspector output
+.taste-skill/

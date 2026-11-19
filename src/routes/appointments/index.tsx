@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireSession } from "@/lib/auth/guards";
+import { canUser } from "@/lib/auth/permissions";
 
 const PageHeader = ({ canBook }: { canBook: boolean }) => (
   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -53,7 +54,7 @@ const NoDocument = () => (
   </Empty>
 );
 
-const NoAppointments = () => (
+const NoAppointments = ({ canBook }: { canBook: boolean }) => (
   <Empty className="border">
     <EmptyHeader>
       <EmptyMedia variant="icon">
@@ -61,20 +62,26 @@ const NoAppointments = () => (
       </EmptyMedia>
       <EmptyTitle>No tiene citas</EmptyTitle>
       <EmptyDescription>
-        No tiene citas próximas. Agende una para un trámite en la entidad que
-        prefiera.
+        {canBook
+          ? "No tiene citas próximas. Agende una para un trámite en la entidad que prefiera."
+          : "No tiene citas próximas."}
       </EmptyDescription>
     </EmptyHeader>
-    <EmptyContent>
-      <Button nativeButton={false} render={<Link to="/appointments/new" />}>
-        Agendar cita
-      </Button>
-    </EmptyContent>
+    {canBook ? (
+      <EmptyContent>
+        <Button nativeButton={false} render={<Link to="/appointments/new" />}>
+          Agendar cita
+        </Button>
+      </EmptyContent>
+    ) : null}
   </Empty>
 );
 
 const AppointmentsPage = () => {
+  const { session } = Route.useRouteContext();
   const { data } = useSuspenseQuery(appointmentsQueryOptions);
+  // A role with read access only (for example, a cashier) sees the list without booking actions.
+  const canBook = canUser(session.user.role, { appointment: ["create"] });
 
   if (!data.hasCitizen) {
     return (
@@ -87,11 +94,11 @@ const AppointmentsPage = () => {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader canBook />
+      <PageHeader canBook={canBook} />
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold">Próximas</h2>
         {data.upcoming.length === 0 ? (
-          <NoAppointments />
+          <NoAppointments canBook={canBook} />
         ) : (
           <AppointmentsList items={data.upcoming} />
         )}

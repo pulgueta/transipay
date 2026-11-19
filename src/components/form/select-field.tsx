@@ -23,6 +23,8 @@ interface SelectFieldProps {
   items: readonly SelectFieldItem[];
   /** Shows while no item is selected. */
   placeholder: string;
+  /** True while the field cannot be used, for example before the field that it depends on has a value. */
+  disabled?: boolean;
 }
 
 /** Select for `form.AppField`. The field value is the item value, or "" while nothing is selected. */
@@ -30,6 +32,7 @@ export const SelectField = ({
   label,
   items,
   placeholder,
+  disabled = false,
 }: SelectFieldProps) => {
   const field = useFieldContext<string>();
   const id = useId();
@@ -40,6 +43,7 @@ export const SelectField = ({
     <Field data-invalid={isInvalid}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Select
+        disabled={disabled}
         items={items}
         name={field.name}
         onValueChange={(value) => {

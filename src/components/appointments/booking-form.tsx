@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { z } from "zod";
 
 import { FormError } from "@/components/auth/form-error";
@@ -47,6 +47,7 @@ export const BookingForm = ({
   onBook,
 }: BookingFormProps) => {
   const [formError, setFormError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const prefilled = options.obligations.find(
     (item) => item.id === obligationId
   );
@@ -65,6 +66,14 @@ export const BookingForm = ({
       scheduledAt: "",
     },
     validators: { onChange: formSchema },
+    onSubmitInvalid: () => {
+      // The fields show their errors after the next render. Then the focus goes to the first one.
+      requestAnimationFrame(() => {
+        formRef.current
+          ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+          ?.focus();
+      });
+    },
     onSubmit: async ({ value }) => {
       setFormError(null);
       setFormError(
@@ -93,6 +102,7 @@ export const BookingForm = ({
     <form
       className="flex flex-col gap-6"
       noValidate
+      ref={formRef}
       onSubmit={(event) => {
         event.preventDefault();
         void form.handleSubmit();
@@ -140,6 +150,7 @@ export const BookingForm = ({
                 <form.AppField name="branchId">
                   {(field) => (
                     <field.SelectField
+                      disabled={!selected}
                       items={branchItems}
                       label="Sede"
                       placeholder={
@@ -161,6 +172,7 @@ export const BookingForm = ({
                 >
                   {(field) => (
                     <field.SelectField
+                      disabled={!selected}
                       items={typeItems}
                       label="Trámite"
                       placeholder={

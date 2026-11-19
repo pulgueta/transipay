@@ -24,10 +24,12 @@ import { z } from "zod";
 
 import { DataTable } from "@/components/data-table/data-table";
 import { useAppForm } from "@/components/form/use-app-form";
+import { FilterSelect } from "@/components/staff/filter-select";
 import { formatDateTime } from "@/components/staff/format";
 import { InlineError } from "@/components/staff/inline-error";
 import { LoadMore } from "@/components/staff/load-more";
 import { PageHeader } from "@/components/staff/page-header";
+import { requireSection } from "@/components/staff/sections";
 import { SortableHeader } from "@/components/staff/sortable-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -43,15 +45,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { FieldDescription, FieldGroup } from "@/components/ui/field";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { canUser } from "@/lib/auth/permissions";
@@ -108,6 +101,11 @@ const REVIEW_REASON_LABELS: Record<PayoutReviewReason, string> = {
 };
 
 const ALL = "all";
+
+const STATUS_FILTER_ITEMS = [
+  { value: ALL, label: "Todos los estados" },
+  ...STATUS_VALUES.map((value) => ({ value, label: STATUS_LABELS[value] })),
+];
 
 /** The first page has no cursor. A function keeps the `string | undefined` type of the page param. */
 const noCursor = (): string | undefined => undefined;
@@ -422,36 +420,22 @@ const PayoutsPage = () => {
         description="Dinero enviado a las entidades de tránsito a través de Wompi. Una dispersión incierta espera la conciliación o la revisión del personal."
         title="Dispersiones"
       />
-      <div className="flex items-center gap-2">
-        <Label htmlFor="payout-status">Estado</Label>
-        <Select
-          onValueChange={(value) => {
-            void navigate({
-              search: {
-                status:
-                  value === ALL || value === null
-                    ? undefined
-                    : searchSchema.shape.status.parse(value),
-              },
-            });
-          }}
-          value={status ?? ALL}
-        >
-          <SelectTrigger className="w-44" id="payout-status" size="sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value={ALL}>Todos los estados</SelectItem>
-              {STATUS_VALUES.map((value) => (
-                <SelectItem key={value} value={value}>
-                  {STATUS_LABELS[value]}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
+      <FilterSelect
+        id="payout-status"
+        items={STATUS_FILTER_ITEMS}
+        label="Estado"
+        onValueChange={(value) => {
+          void navigate({
+            search: {
+              status:
+                value === ALL
+                  ? undefined
+                  : searchSchema.shape.status.parse(value),
+            },
+          });
+        }}
+        value={status ?? ALL}
+      />
       <DataTable
         emptyMessage="No hay dispersiones con este estado."
         table={table}
@@ -469,6 +453,9 @@ const PayoutsPage = () => {
 };
 
 export const Route = createFileRoute("/staff/payouts")({
+  beforeLoad: ({ context, location }) => {
+    requireSection(context.session.user.role, location.pathname);
+  },
   validateSearch: searchSchema,
   loaderDeps: ({ search }) => ({ status: search.status }),
   loader: async ({ context, deps }) => {

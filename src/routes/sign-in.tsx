@@ -13,7 +13,6 @@ import type { SignInValues } from "@/components/auth/sign-in-form";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -51,10 +50,9 @@ const SignInPage = () => {
   return (
     <Card className="mx-auto w-full max-w-sm">
       <CardHeader>
-        <CardTitle>Iniciar sesión</CardTitle>
-        <CardDescription>
-          Use el correo y la contraseña de su cuenta de Transipay.
-        </CardDescription>
+        <CardTitle>
+          <h1>Iniciar sesión</h1>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <SignInForm onSignIn={signIn} />

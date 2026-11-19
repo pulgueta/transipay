@@ -1,5 +1,7 @@
 import { redirect } from "@tanstack/react-router";
 
+import { canUser } from "@/lib/auth/permissions";
+import type { Permissions } from "@/lib/auth/permissions";
 import type { getSessionFn } from "@/server/session";
 
 /** The session that the root route puts in the router context. Null when the user is signed out. */
@@ -37,4 +39,25 @@ export const requireSession = <TSession>(
     throw new Error("You must sign in to open this page.");
   }
   return session;
+};
+
+/** The message of a 403 from a server function (see `requirePermission`). */
+const ACCESS_DENIED_MESSAGE = "No tiene permiso para hacer esta operación.";
+
+/** True when the error is a permission denial from a server function. */
+export const isAccessDenied = (error: Error): boolean =>
+  error.message === ACCESS_DENIED_MESSAGE;
+
+/**
+ * Use it in a route `beforeLoad` after `requireSession`. When the role does not have the permissions,
+ * it sends the user to the home page, so the page does not show controls that the server refuses.
+ * This is navigation only. A server function must check the permissions again.
+ */
+export const requirePermissions = (
+  role: string | null | undefined,
+  permissions: Permissions
+): void => {
+  if (!canUser(role, permissions)) {
+    redirect({ to: "/", replace: true, throw: true });
+  }
 };

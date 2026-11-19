@@ -46,6 +46,19 @@ export const documentNumberSchema = z
     z.string().regex(/^[A-Z0-9]{4,20}$/u, "Escriba de 4 a 20 letras o números.")
   );
 
+/** The types that have only digits. A passport number can have letters. */
+const NUMERIC_DOCUMENT_TYPES = new Set<string>([
+  "CC",
+  "CE",
+  "TI",
+  "NIT",
+  "PEP",
+] satisfies DocumentType[]);
+
+/** The keyboard for the document number input on a phone. A type that can have letters gets the text keyboard. */
+export const documentNumberInputMode = (documentType: string) =>
+  NUMERIC_DOCUMENT_TYPES.has(documentType) ? "numeric" : "text";
+
 export const documentSchema = z.object({
   documentType: documentTypeSchema,
   documentNumber: documentNumberSchema,

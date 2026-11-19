@@ -12,6 +12,7 @@ import type { FoundCitizen } from "@/components/staff/citizen-finder";
 import { formatDay } from "@/components/staff/format";
 import { InlineError } from "@/components/staff/inline-error";
 import { PageHeader } from "@/components/staff/page-header";
+import { requireSection } from "@/components/staff/sections";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,6 +35,7 @@ import {
 import {
   createFineFn,
   createProcedureFn,
+  findCitizenFn,
 } from "@/server/obligations/staff-functions";
 import { listStaffEntitiesFn } from "@/server/staff/functions";
 
@@ -108,6 +110,7 @@ const CreatedObligation = ({
 
 const NewFineForm = () => {
   const createFine = useServerFn(createFineFn);
+  const findCitizen = useServerFn(findCitizenFn);
   const [citizen, setCitizen] = useState<FoundCitizen | null>(null);
   const [created, setCreated] = useState<StoredObligation | null>(null);
   const [submitError, setSubmitError] = useState<Error | null>(null);
@@ -194,7 +197,12 @@ const NewFineForm = () => {
         void form.handleSubmit();
       }}
     >
-      <CitizenFinder citizen={citizen} idPrefix="fine" onChange={setCitizen} />
+      <CitizenFinder
+        citizen={citizen}
+        findCitizen={findCitizen}
+        idPrefix="fine"
+        onChange={setCitizen}
+      />
       <Separator />
       {entities.isPending || infractions.isPending ? (
         <Skeleton className="h-40 w-full" />
@@ -273,6 +281,7 @@ const NewFineForm = () => {
 
 const NewProcedureForm = () => {
   const createProcedure = useServerFn(createProcedureFn);
+  const findCitizen = useServerFn(findCitizenFn);
   const [citizen, setCitizen] = useState<FoundCitizen | null>(null);
   const [created, setCreated] = useState<StoredObligation | null>(null);
   const [submitError, setSubmitError] = useState<Error | null>(null);
@@ -352,6 +361,7 @@ const NewProcedureForm = () => {
     >
       <CitizenFinder
         citizen={citizen}
+        findCitizen={findCitizen}
         idPrefix="procedure"
         onChange={setCitizen}
       />
@@ -416,7 +426,7 @@ const NewProcedureForm = () => {
 const ObligationsPage = () => (
   <>
     <PageHeader
-      description="Registre un comparendo o un trámite para un ciudadano. El valor viene del catálogo."
+      description="Registre un comparendo o un trámite para un ciudadano."
       title="Obligaciones"
     />
     <Tabs defaultValue="fine">
@@ -457,6 +467,9 @@ const ObligationsPage = () => (
 );
 
 export const Route = createFileRoute("/staff/obligations")({
+  beforeLoad: ({ context, location }) => {
+    requireSection(context.session.user.role, location.pathname);
+  },
   head: () => ({
     meta: [{ title: "Obligaciones | Funcionarios | Transipay" }],
   }),
