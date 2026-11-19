@@ -64,7 +64,16 @@ You need Node.js 26, pnpm 12, and Docker or Podman.
 
 ## Deploy on Railway
 
-`railway.json` sets the build (`pnpm run build`), the start command (`pnpm start`), the pre-deploy command, and the healthcheck (`/`). `pnpm start` serves `dist/server/server.js` and `dist/client` with srvx on the port in `PORT`.
+Set these values in the settings of the app service. Railway no longer reads new `railway.json` files (Config as Code is deprecated).
+
+| Setting | Value |
+| --- | --- |
+| Build command | `pnpm run build` |
+| Start command | `pnpm start` |
+| Pre-deploy command | `pnpm run deploy:prepare` |
+| Healthcheck path | `/` |
+
+`pnpm start` serves `dist/server/server.js` and `dist/client` with srvx on the port in `PORT`.
 
 Set these variables on the app service:
 
