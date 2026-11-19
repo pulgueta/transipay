@@ -62,6 +62,31 @@ You need Node.js 26, pnpm 12, and Docker or Podman.
    pnpm dev
    ```
 
+## Deploy on Railway
+
+`railway.json` sets the build (`pnpm run build`), the start command (`pnpm start`), the pre-deploy command, and the healthcheck (`/`). `pnpm start` serves `dist/server/server.js` and `dist/client` with srvx on the port in `PORT`.
+
+Set these variables on the app service:
+
+| Variable | Value |
+| --- | --- |
+| `DATABASE_OWNER_URL` | The URL of the role that owns the tables. The pre-deploy command uses it. |
+| `DATABASE_URL` | The URL of the app login role `transipay_web`, not the owner. |
+| `TRANSIPAY_WEB_PASSWORD` | The password of `transipay_web`. It must be the same as the password in `DATABASE_URL`. |
+| `BETTER_AUTH_URL` | The public HTTPS URL of the app. |
+| `DEMO_SEED` | `true` adds the demo data. Any other value adds nothing. |
+| `DEMO_PASSWORD` | The password of all demo accounts (12 characters or more). It is necessary when `DEMO_SEED` is `true`. |
+
+Also set the variables of `.env.example` (`BETTER_AUTH_SECRET` and the Wompi keys).
+
+The pre-deploy command (`pnpm run deploy:prepare`) runs these steps in this order. When a step fails, the deployment stops.
+
+1. `pnpm db:migrate` applies the migrations as the owner.
+2. `pnpm db:app-role` makes `transipay_app` and `transipay_web` when they do not exist, sets the password of `transipay_web`, and makes it a member of `transipay_app`.
+3. `pnpm db:demo-seed` adds the demo data when `DEMO_SEED` is `true`.
+
+The demo seed makes accounts on `transipay.test` with the password in `DEMO_PASSWORD`: `admin@`, `supervisor@`, `cajero@`, `agendador@`, and one account for each demo citizen. It makes the demo data (entities, citizens, fines, procedures, appointments, and courses) one time only. On each deployment, it sets the password, the role, and the ban of the demo accounts again, so that a shared demo stays usable. It makes no payments or payouts. Do not set `DEMO_SEED` on a production database with real users.
+
 ## Wompi webhooks
 
 Set these URLs in the Wompi dashboard:
@@ -98,6 +123,7 @@ A missing or wrong secret gets `401`. The response gives the counts: `payouts.se
 | ------------------ | ------------------------------------------------- |
 | `pnpm dev`         | Starts the app on port 3000.                      |
 | `pnpm build`       | Builds the app.                                   |
+| `pnpm start`       | Serves the build on the port in `PORT`.           |
 | `pnpm check`       | Lints and checks the format.                      |
 | `pnpm fix`         | Applies the safe lint and format fixes.           |
 | `pnpm typecheck`   | Checks the types.                                 |
