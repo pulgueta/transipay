@@ -31,6 +31,13 @@ export const parsePesos = (text: string): number | null => {
 };
 
 /**
+ * The digits of the whole pesos in a pasted text, zeros included ("621.600,50" gives "621600", "0" gives "0").
+ * The cents go first, so they do not become pesos.
+ */
+export const wholePesoDigits = (text: string) =>
+  text.trim().replace(CENTS_PATTERN, "").replaceAll(NOT_A_DIGIT_PATTERN, "");
+
+/**
  * Shows the digits of the text with a point between each group of three, as Colombia writes pesos.
  * It keeps the first eleven digits only, so the points always mark groups of three.
  */

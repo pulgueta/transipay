@@ -50,6 +50,24 @@ describe(CourseCalculator, () => {
     }
   );
 
+  it.each([
+    [6, 7, "621.600"],
+    [7, 7, "6.216.000"],
+  ])(
+    "keeps a pasted zero in an amount (selection %i to %i)",
+    (start, end, expected) => {
+      render(<CourseCalculator initialPesos={621_600} />);
+      const input = screen.getByLabelText<HTMLInputElement>(
+        "Valor del comparendo"
+      );
+      input.setSelectionRange(start, end);
+
+      fireEvent.paste(input, { clipboardData: { getData: () => "0" } });
+
+      expect(input).toHaveProperty("value", expected);
+    }
+  );
+
   it("renders the sent amount without points, so the form can send it again without script", () => {
     const input = serverAmountInput(621_600);
 

@@ -16,6 +16,7 @@ import {
   coursePayment,
   formatPesosInput,
   parsePesos,
+  wholePesoDigits,
 } from "./course-discount";
 
 describe(parsePesos, () => {
@@ -43,6 +44,19 @@ describe(parsePesos, () => {
 
   it("gives null for an amount with too many digits", () => {
     expect(parsePesos("1".repeat(12))).toBeNull();
+  });
+});
+
+describe(wholePesoDigits, () => {
+  it.each([
+    ["0", "0"],
+    ["00", "00"],
+    ["0,50", "0"],
+    ["621.600,50", "621600"],
+    ["$ 621.600", "621600"],
+    ["abc", ""],
+  ])("keeps the whole-peso digits of %j, zeros included", (text, digits) => {
+    expect(wholePesoDigits(text)).toBe(digits);
   });
 });
 
