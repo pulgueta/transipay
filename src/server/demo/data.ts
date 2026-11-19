@@ -208,6 +208,13 @@ export interface DemoStaff {
   memberships: { entityTaxId: string; role: DemoEntityRole }[];
 }
 
+/**
+ * The shared password of all demo accounts. It is public on purpose: this data is only for the public demo.
+ * The app needs 12 characters or more.
+ */
+// oxlint-disable-next-line no-inline-comments -- GitGuardian reads "ggignore" only on the line of the value.
+export const DEMO_PASSWORD = "TransipayDemo2026"; // ggignore: public demo password, not a secret
+
 /** One account for each staff role. The admin works with all entities, so it has no membership. */
 export const DEMO_STAFF: DemoStaff[] = [
   {

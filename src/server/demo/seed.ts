@@ -1,7 +1,8 @@
 /**
  * Seeds a public demo: demo accounts with one shared password, and sample data for Barrancabermeja.
- * It runs only when DEMO_SEED is "true". Run it after the migrations, as the table owner:
- *   DATABASE_OWNER_URL=... DEMO_SEED=true DEMO_PASSWORD=... node src/server/demo/seed.ts
+ * The pre-deploy command runs it after the migrations, as the table owner:
+ *   DATABASE_OWNER_URL=... node src/server/demo/seed.ts
+ * All demo accounts use DEMO_PASSWORD (see data.ts).
  * Node runs this file without a build step, so it imports only packages and plain relative files.
  *
  * On each run it restores the demo accounts (password, role, ban, entity roles, citizen link).
@@ -19,12 +20,11 @@ import {
   DEMO_ENTITIES,
   DEMO_INFRACTIONS,
   DEMO_MARKER,
+  DEMO_PASSWORD,
   DEMO_PROCEDURE_TYPES,
   DEMO_STAFF,
   buildDemoDomain,
 } from "./data.ts";
-
-const MIN_PASSWORD_LENGTH = 12;
 
 export interface DemoSeedSummary {
   domainCreated: boolean;
@@ -485,8 +485,7 @@ const countRows = async (client: PoolClient) => {
 /** Seeds the demo in one transaction. `now` sets the dates of the domain data. */
 export const seedDemo = async (
   pool: Pick<PgPool, "connect">,
-  password: string,
-  now: Date
+  now = new Date()
 ): Promise<DemoSeedSummary> => {
   const client = await pool.connect();
   try {
@@ -496,7 +495,7 @@ export const seedDemo = async (
       adminId,
     ]);
     const users = await ensureUsers(client);
-    const passwordsSet = await ensurePasswords(client, password);
+    const passwordsSet = await ensurePasswords(client, DEMO_PASSWORD);
 
     const marker = await client.query(
       "select 1 from citizen where document_type = $1 and document_number = $2",
@@ -531,48 +530,24 @@ export const seedDemo = async (
   }
 };
 
-/** Reads DEMO_SEED and DEMO_PASSWORD. Returns null and writes nothing when DEMO_SEED is not "true". */
-export const runDemoSeed = async (
-  pool: Pick<PgPool, "connect">,
-  env: Record<string, string | undefined>,
-  now = new Date()
-) => {
-  if (env.DEMO_SEED !== "true") {
-    return null;
-  }
-  const password = env.DEMO_PASSWORD ?? "";
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    throw new Error(
-      `Set DEMO_PASSWORD to ${String(MIN_PASSWORD_LENGTH)} characters or more.`
-    );
-  }
-  return await seedDemo(pool, password, now);
-};
-
 const main = async () => {
-  if (process.env.DEMO_SEED !== "true") {
-    console.log("DEMO_SEED is not true. The demo seed did nothing.");
-    return;
-  }
   const ownerUrl = process.env.DATABASE_OWNER_URL ?? "";
   if (ownerUrl === "") {
     throw new Error("Set DATABASE_OWNER_URL to the URL of the table owner.");
   }
   const pool = new Pool({ connectionString: ownerUrl, max: 1 });
   try {
-    const summary = await runDemoSeed(pool, process.env);
-    if (summary !== null) {
-      console.log(
-        summary.domainCreated
-          ? "The demo seed created the domain data."
-          : "The domain data exists. The demo seed did not change it."
-      );
-      console.log(
-        `Users: ${String(summary.usersCreated)} created, ${String(summary.usersRestored)} restored. Passwords set: ${String(summary.passwordsSet)}.`
-      );
-      console.log("Rows:", summary.counts);
-      console.log("Staff accounts:", summary.staffEmails);
-    }
+    const summary = await seedDemo(pool);
+    console.log(
+      summary.domainCreated
+        ? "The demo seed created the domain data."
+        : "The domain data exists. The demo seed did not change it."
+    );
+    console.log(
+      `Users: ${String(summary.usersCreated)} created, ${String(summary.usersRestored)} restored. Passwords set: ${String(summary.passwordsSet)}.`
+    );
+    console.log("Rows:", summary.counts);
+    console.log("Staff accounts:", summary.staffEmails);
   } finally {
     await pool.end();
   }

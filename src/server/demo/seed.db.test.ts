@@ -4,11 +4,9 @@ import { serverEnv } from "@/env/server";
 import { createAuth } from "@/server/auth";
 import { createIsolatedDatabase } from "@/server/db/testing";
 
-import { DEMO_CITIZENS, DEMO_STAFF } from "./data";
-import { runDemoSeed } from "./seed";
+import { DEMO_CITIZENS, DEMO_PASSWORD, DEMO_STAFF } from "./data";
+import { seedDemo } from "./seed";
 
-const PASSWORD = "demo-password-2026";
-const env = { DEMO_SEED: "true", DEMO_PASSWORD: PASSWORD };
 const NOW = new Date("2026-11-18T15:00:00Z");
 
 const TABLES = [
@@ -71,7 +69,7 @@ const userState = async (email: string) => {
   return result.rows.at(0);
 };
 
-describe(runDemoSeed, () => {
+describe(seedDemo, () => {
   beforeAll(async () => {
     database = await createIsolatedDatabase(inject("testDatabaseUrl"));
   });
@@ -80,30 +78,12 @@ describe(runDemoSeed, () => {
     await database.drop();
   });
 
-  it("does nothing when DEMO_SEED is not true", async () => {
-    await expect(
-      runDemoSeed(database.pool, { DEMO_PASSWORD: PASSWORD }, NOW)
-    ).resolves.toBeNull();
-    const counts = await countRows();
-    expect(counts['auth."user"']).toBe(0);
-    expect(counts.citizen).toBe(0);
-  });
-
-  it("needs a password of 12 characters or more", async () => {
-    await expect(
-      runDemoSeed(database.pool, { DEMO_SEED: "true" }, NOW)
-    ).rejects.toThrow("DEMO_PASSWORD");
-    await expect(
-      runDemoSeed(
-        database.pool,
-        { DEMO_SEED: "true", DEMO_PASSWORD: "too-short" },
-        NOW
-      )
-    ).rejects.toThrow("DEMO_PASSWORD");
+  it("has a shared password that the app accepts (12 characters or more)", () => {
+    expect(DEMO_PASSWORD.length).toBeGreaterThanOrEqual(12);
   });
 
   it("creates one account for each demo citizen and staff member", async () => {
-    const summary = await runDemoSeed(database.pool, env, NOW);
+    const summary = await seedDemo(database.pool, NOW);
 
     expect(summary?.domainCreated).toBeTruthy();
     const counts = await countRows();
@@ -197,7 +177,7 @@ describe(runDemoSeed, () => {
   it("lets a demo citizen and each staff account sign in with the password", async () => {
     const emails = [DEMO_CITIZENS[0].email, ...DEMO_STAFF.map((s) => s.email)];
     const statuses = await Promise.all(
-      emails.map(async (email) => await signIn(email, PASSWORD))
+      emails.map(async (email) => await signIn(email, DEMO_PASSWORD))
     );
     expect(statuses).toStrictEqual(emails.map(() => 200));
     await expect(
@@ -207,7 +187,7 @@ describe(runDemoSeed, () => {
 
   it("adds no rows on a second run", async () => {
     const before = await countRows();
-    const summary = await runDemoSeed(database.pool, env, NOW);
+    const summary = await seedDemo(database.pool, NOW);
     expect(summary?.domainCreated).toBeFalsy();
     await expect(countRows()).resolves.toStrictEqual(before);
   });
@@ -244,7 +224,7 @@ describe(runDemoSeed, () => {
       client.release();
     }
 
-    await runDemoSeed(database.pool, env, NOW);
+    await seedDemo(database.pool, NOW);
 
     await expect(userState(cashier.email)).resolves.toStrictEqual({
       role: "cashier",
@@ -254,6 +234,6 @@ describe(runDemoSeed, () => {
       role: "citizen",
       banned: false,
     });
-    await expect(signIn(citizenEmail, PASSWORD)).resolves.toBe(200);
+    await expect(signIn(citizenEmail, DEMO_PASSWORD)).resolves.toBe(200);
   });
 });

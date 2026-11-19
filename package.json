@@ -18,7 +18,7 @@
     "db:studio": "drizzle-kit studio",
     "db:check": "drizzle-kit check",
     "db:demo-seed": "node src/server/demo/seed.ts",
-    "deploy:prepare": "node src/server/db/migrate.ts",
+    "deploy:prepare": "node src/server/db/migrate.ts && pnpm db:demo-seed",
     "intent": "node ./node_modules/@tanstack/intent/dist/cli.mjs",
     "test:db": "vitest run --project db"
   },
