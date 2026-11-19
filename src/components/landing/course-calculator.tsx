@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
-import type { ChangeEvent, ComponentProps } from "react";
+import type { ChangeEvent, ClipboardEvent, ComponentProps } from "react";
 
 import { formatAmount } from "@/lib/format-amount";
 
@@ -83,6 +83,26 @@ export const CourseCalculator = ({
     setAmountText(formatPesosInput(value).slice(0, 14));
   };
 
+  // A pasted amount can have cents ("621.600,50"). Read it before the separators go, so the cents do not become pesos.
+  const onAmountPaste = (event: ClipboardEvent<HTMLInputElement>) => {
+    const pasted = parsePesos(event.clipboardData.getData("text"));
+    if (pasted === null) {
+      return;
+    }
+    event.preventDefault();
+    const { value, selectionStart, selectionEnd } = event.currentTarget;
+    const start = selectionStart ?? value.length;
+    const end = selectionEnd ?? value.length;
+    const digits = String(pasted);
+    caretDigits.current = countDigits(value.slice(0, start)) + digits.length;
+    setAmountText(
+      formatPesosInput(value.slice(0, start) + digits + value.slice(end)).slice(
+        0,
+        14
+      )
+    );
+  };
+
   const pesos = parsePesos(amountText);
   const payment = pesos === null ? null : coursePayment(pesos, percent);
   const payPercent = 100 - percent;
@@ -115,6 +135,7 @@ export const CourseCalculator = ({
               inputMode="numeric"
               name="valor"
               onChange={onAmountChange}
+              onPaste={onAmountPaste}
               pattern={live ? undefined : "[0-9]*"}
               ref={amountInput}
               title="Escriba solo números."
