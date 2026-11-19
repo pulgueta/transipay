@@ -62,6 +62,39 @@ You need Node.js 26, pnpm 12, and Docker or Podman.
    pnpm dev
    ```
 
+## Deploy on Railway
+
+Set these values in the settings of the app service. Railway no longer reads new `railway.json` files (Config as Code is deprecated).
+
+| Setting            | Value                     |
+| ------------------ | ------------------------- |
+| Build command      | `pnpm run build`          |
+| Start command      | `pnpm start`              |
+| Pre-deploy command | `pnpm run deploy:prepare` |
+| Healthcheck path   | `/`                       |
+
+`pnpm start` serves `dist/server/server.js` and `dist/client` with srvx on the port in `PORT`.
+
+Set these variables on the app service:
+
+| Variable | Value |
+| --- | --- |
+| `DATABASE_URL` | The URL of a login role that is a member of `transipay_app` and does not own the tables (see [Database roles](#database-roles)). The app uses it. |
+| `DATABASE_OWNER_URL` | The URL of the role that owns the tables. Only the pre-deploy command uses it. |
+| `BETTER_AUTH_URL` | The public HTTPS URL of the app. better-auth trusts only this origin, so sign-in does not work with another URL. |
+| `WOMPI_SANDBOX` | `true` when the Wompi keys are test keys (`pub_test_…`). |
+
+The public demo on Railway connects with the owner URL in both variables, so the protections of migration 0005 do not apply to it. Use a separate login role for a real deployment.
+
+Also set the variables of `.env.example` (`BETTER_AUTH_SECRET` and the Wompi keys). Railway sets `PORT`.
+
+The pre-deploy command (`pnpm run deploy:prepare`) runs these steps in this order. When a step fails, the deployment stops.
+
+1. `node src/server/db/migrate.ts` applies the migrations as the owner. When a migration fails, it prints the database error.
+2. `pnpm db:demo-seed` adds the demo data.
+
+The demo seed makes accounts on `transipay.test` with the shared password `DEMO_PASSWORD` in `src/server/demo/data.ts`: `admin@`, `supervisor@`, `cajero@`, `agendador@`, and one account for each demo citizen. It makes the demo data (entities, citizens, fines, procedures, appointments, and courses) one time only. On each deployment, it sets the password, the role, and the ban of the demo accounts again, so that a shared demo stays usable. It makes no payments or payouts. Do not run it on a database with real users: remove it from `deploy:prepare` for a real deployment.
+
 ## Wompi webhooks
 
 Set these URLs in the Wompi dashboard:
@@ -98,6 +131,7 @@ A missing or wrong secret gets `401`. The response gives the counts: `payouts.se
 | ------------------ | ------------------------------------------------- |
 | `pnpm dev`         | Starts the app on port 3000.                      |
 | `pnpm build`       | Builds the app.                                   |
+| `pnpm start`       | Serves the build on the port in `PORT`.           |
 | `pnpm check`       | Lints and checks the format.                      |
 | `pnpm fix`         | Applies the safe lint and format fixes.           |
 | `pnpm typecheck`   | Checks the types.                                 |
