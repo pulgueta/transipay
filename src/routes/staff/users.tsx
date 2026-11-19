@@ -423,7 +423,7 @@ const UsersPage = () => {
   return (
     <>
       <PageHeader
-        description="Las cuentas de ciudadanos y funcionarios. Cambie un rol, suspenda una cuenta o elimínela."
+        description="Las cuentas de ciudadanos y funcionarios."
         title="Usuarios"
       />
       <SearchForm

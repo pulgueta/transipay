@@ -14,7 +14,6 @@ import type { SignUpValues } from "@/components/auth/sign-up-form";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -66,9 +65,6 @@ const SignUpPage = () => {
         <CardTitle>
           <h1>Crear cuenta</h1>
         </CardTitle>
-        <CardDescription>
-          Su documento une la cuenta con sus comparendos y trámites.
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <SignUpForm onSignUp={signUp} />

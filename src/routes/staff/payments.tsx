@@ -205,7 +205,7 @@ const PaymentsPage = () => {
   return (
     <>
       <PageHeader
-        description="Intentos de pago aprobados que la pasarela marcó. Revise cada uno y luego márquelo como revisado."
+        description="Intentos de pago aprobados que la pasarela marcó."
         title="Pagos en revisión"
       />
       <DataTable

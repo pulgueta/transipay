@@ -426,7 +426,7 @@ const NewProcedureForm = () => {
 const ObligationsPage = () => (
   <>
     <PageHeader
-      description="Registre un comparendo o un trámite para un ciudadano. El valor viene del catálogo."
+      description="Registre un comparendo o un trámite para un ciudadano."
       title="Obligaciones"
     />
     <Tabs defaultValue="fine">

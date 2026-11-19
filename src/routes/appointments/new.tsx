@@ -25,13 +25,7 @@ const searchSchema = z.object({
 });
 
 const PageHeader = () => (
-  <div className="flex flex-col gap-1">
-    <h1 className="text-2xl font-semibold tracking-tight">Agendar cita</h1>
-    <p className="text-muted-foreground">
-      Seleccione la entidad, la sede, el trámite y la hora. La confirmación
-      aparece en este sitio.
-    </p>
-  </div>
+  <h1 className="text-2xl font-semibold tracking-tight">Agendar cita</h1>
 );
 
 const NewAppointmentPage = () => {
