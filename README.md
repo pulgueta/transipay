@@ -66,12 +66,12 @@ You need Node.js 26, pnpm 12, and Docker or Podman.
 
 Set these values in the settings of the app service. Railway no longer reads new `railway.json` files (Config as Code is deprecated).
 
-| Setting | Value |
-| --- | --- |
-| Build command | `pnpm run build` |
-| Start command | `pnpm start` |
+| Setting            | Value                     |
+| ------------------ | ------------------------- |
+| Build command      | `pnpm run build`          |
+| Start command      | `pnpm start`              |
 | Pre-deploy command | `pnpm run deploy:prepare` |
-| Healthcheck path | `/` |
+| Healthcheck path   | `/`                       |
 
 `pnpm start` serves `dist/server/server.js` and `dist/client` with srvx on the port in `PORT`.
 
@@ -79,22 +79,19 @@ Set these variables on the app service:
 
 | Variable | Value |
 | --- | --- |
-| `DATABASE_OWNER_URL` | The URL of the role that owns the tables. The pre-deploy command uses it. |
-| `DATABASE_URL` | The URL of the app login role `transipay_web`, not the owner. |
-| `TRANSIPAY_WEB_PASSWORD` | The password of `transipay_web`. It must be the same as the password in `DATABASE_URL`. |
-| `BETTER_AUTH_URL` | The public HTTPS URL of the app. |
-| `DEMO_SEED` | `true` adds the demo data. Any other value adds nothing. |
-| `DEMO_PASSWORD` | The password of all demo accounts (12 characters or more). It is necessary when `DEMO_SEED` is `true`. |
+| `DATABASE_URL` | The URL of the Postgres service. |
+| `DATABASE_OWNER_URL` | The URL of the role that owns the tables. The pre-deploy command uses it. It can be the same as `DATABASE_URL`. |
+| `BETTER_AUTH_URL` | The public HTTPS URL of the app. better-auth trusts only this origin, so sign-in does not work with another URL. |
+| `WOMPI_SANDBOX` | `true` when the Wompi keys are test keys (`pub_test_…`). |
 
-Also set the variables of `.env.example` (`BETTER_AUTH_SECRET` and the Wompi keys).
+Also set the variables of `.env.example` (`BETTER_AUTH_SECRET` and the Wompi keys). Railway sets `PORT`.
 
 The pre-deploy command (`pnpm run deploy:prepare`) runs these steps in this order. When a step fails, the deployment stops.
 
-1. `pnpm db:migrate` applies the migrations as the owner.
-2. `pnpm db:app-role` makes `transipay_app` and `transipay_web` when they do not exist, sets the password of `transipay_web`, and makes it a member of `transipay_app`.
-3. `pnpm db:demo-seed` adds the demo data when `DEMO_SEED` is `true`.
+1. `node src/server/db/migrate.ts` applies the migrations as the owner. When a migration fails, it prints the database error.
+2. `pnpm db:demo-seed` adds the demo data.
 
-The demo seed makes accounts on `transipay.test` with the password in `DEMO_PASSWORD`: `admin@`, `supervisor@`, `cajero@`, `agendador@`, and one account for each demo citizen. It makes the demo data (entities, citizens, fines, procedures, appointments, and courses) one time only. On each deployment, it sets the password, the role, and the ban of the demo accounts again, so that a shared demo stays usable. It makes no payments or payouts. Do not set `DEMO_SEED` on a production database with real users.
+The demo seed makes accounts on `transipay.test` with the shared password `DEMO_PASSWORD` in `src/server/demo/data.ts`: `admin@`, `supervisor@`, `cajero@`, `agendador@`, and one account for each demo citizen. It makes the demo data (entities, citizens, fines, procedures, appointments, and courses) one time only. On each deployment, it sets the password, the role, and the ban of the demo accounts again, so that a shared demo stays usable. It makes no payments or payouts. Do not run it on a database with real users: remove it from `deploy:prepare` for a real deployment.
 
 ## Wompi webhooks
 
