@@ -48,8 +48,9 @@ export const CourseCalculator = ({
   initialPesos,
   initialPercent,
 }: CourseCalculatorProps) => {
+  // The digits only. Without script the input must match its pattern, so the form can send it again.
   const [amountText, setAmountText] = useState(
-    initialPesos === undefined ? "" : formatPesosInput(String(initialPesos))
+    initialPesos === undefined ? "" : String(initialPesos)
   );
   const [percent, setPercent] = useState(
     clampPercent(initialPercent ?? DEFAULT_PERCENT)
@@ -118,7 +119,7 @@ export const CourseCalculator = ({
               ref={amountInput}
               title="Escriba solo números."
               type="text"
-              value={amountText}
+              value={live ? formatPesosInput(amountText) : amountText}
             />
           </div>
           <p className="lp-calc-help" id="lp-valor-help">
