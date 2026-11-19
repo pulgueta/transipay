@@ -19,9 +19,9 @@ interface Service {
 const SERVICES: Service[] = [
   {
     icon: IconReceipt,
-    title: "Pague comparendos y trámites",
+    title: "Pague con tarjeta, PSE o Nequi",
     description:
-      "Vea cada obligación con su valor y estado. Páguela en línea con tarjeta, PSE o Nequi a través de Wompi.",
+      "Vea cada comparendo y trámite con su valor y su estado. Wompi procesa el pago.",
   },
   {
     icon: IconCalendarEvent,
@@ -78,11 +78,12 @@ const Hero = ({ signedIn, canBook }: HeroProps) => (
   <section className="grid items-center gap-10 py-8 lg:grid-cols-12 lg:py-16">
     <div className="flex flex-col gap-6 lg:col-span-6">
       <h1 className="text-4xl font-semibold tracking-tight text-balance md:text-5xl">
-        Pague en línea sus obligaciones de tránsito en Barrancabermeja
+        Pague comparendos y trámites
       </h1>
       <p className="text-muted-foreground max-w-[50ch] text-lg">
-        Consulte sus comparendos y trámites, agende una cita y pague desde un
-        solo lugar. Un portal para todas las entidades de tránsito.
+        Consulte sus obligaciones de tránsito en Barrancabermeja, agende una
+        cita y pague en línea. Un solo portal para el ITTB, los CDA, los CEA y
+        los recaudadores.
       </p>
       <div className="flex flex-wrap gap-3">
         {signedIn ? (
@@ -128,17 +129,34 @@ const Hero = ({ signedIn, canBook }: HeroProps) => (
         )}
       </div>
     </div>
-    <div className="lg:col-span-6">
-      {/* Placeholder photo until the ITTB gives one. 4:3 keeps the space while it loads. */}
+    {/* A photo of Barrancabermeja from Wikimedia Commons until the ITTB gives its own. The licence needs the credit below the photo. */}
+    <figure className="flex flex-col gap-2 lg:col-span-6">
       <img
-        alt="Una vía con vehículos"
-        className="aspect-4/3 w-full rounded-lg border object-cover"
+        alt="La Avenida del Ferrocarril en Barrancabermeja, con motos parqueadas junto al Parque Camilo Torres"
+        className="aspect-4/3 w-full rounded-lg object-cover"
         fetchPriority="high"
-        height={900}
-        src="https://picsum.photos/seed/transipay-road-traffic-07/1200/900"
-        width={1200}
+        height={1036}
+        src="/images/avenida-del-ferrocarril-barrancabermeja.jpg"
+        width={1280}
       />
-    </div>
+      <figcaption className="text-muted-foreground text-sm">
+        Foto:{" "}
+        <a
+          className="hover:text-foreground underline underline-offset-4"
+          href="https://commons.wikimedia.org/wiki/File:Avenida_del_Ferrocarril_y_Parque_Camilo_Torres.jpg"
+        >
+          Avenida del Ferrocarril y Parque Camilo Torres
+        </a>
+        , de Miguel9201,{" "}
+        <a
+          className="hover:text-foreground underline underline-offset-4"
+          href="https://creativecommons.org/licenses/by-sa/4.0/deed.es"
+        >
+          CC BY-SA 4.0
+        </a>
+        , en Wikimedia Commons.
+      </figcaption>
+    </figure>
   </section>
 );
 
@@ -157,7 +175,7 @@ const Services = () => (
           />
           <div className="flex flex-col gap-1">
             <h3 className="font-medium">{service.title}</h3>
-            <p className="text-muted-foreground text-sm leading-relaxed">
+            <p className="text-muted-foreground leading-relaxed">
               {service.description}
             </p>
           </div>
@@ -168,15 +186,15 @@ const Services = () => (
 );
 
 const HowPaymentWorks = () => (
-  <section className="grid gap-8 border-t py-16 lg:grid-cols-12">
+  <section className="grid gap-8 py-16 lg:grid-cols-12">
     <h2 className="text-2xl font-semibold tracking-tight md:text-3xl lg:col-span-4">
       Cómo funciona un pago
     </h2>
-    <ol className="flex flex-col divide-y lg:col-span-8">
+    <ol className="flex flex-col gap-8 lg:col-span-8">
       {PAYMENT_STEPS.map((step) => (
-        <li className="flex flex-col gap-1 py-5 first:pt-0" key={step.title}>
+        <li className="flex flex-col gap-1" key={step.title}>
           <h3 className="font-medium">{step.title}</h3>
-          <p className="text-muted-foreground text-sm leading-relaxed">
+          <p className="text-muted-foreground leading-relaxed">
             {step.description}
           </p>
         </li>
@@ -186,11 +204,9 @@ const HowPaymentWorks = () => (
 );
 
 const TrustStrip = () => (
-  <section className="flex flex-col gap-4 border-t py-10">
-    <p className="text-sm font-medium">
-      Las entidades que trabajan en Transipay
-    </p>
-    <ul className="text-muted-foreground flex flex-wrap gap-x-8 gap-y-2 text-sm">
+  <section className="flex flex-col gap-4 py-10">
+    <p className="font-medium">Las entidades que trabajan en Transipay</p>
+    <ul className="text-muted-foreground flex flex-wrap gap-x-8 gap-y-2">
       {ENTITIES.map((entity) => (
         <li key={entity}>{entity}</li>
       ))}
