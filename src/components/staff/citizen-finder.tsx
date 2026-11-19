@@ -1,6 +1,6 @@
 import { IconSearch } from "@tabler/icons-react";
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { z } from "zod";
 
 import { DOCUMENT_TYPE_ITEMS } from "@/components/auth/sign-up-form";
@@ -51,8 +51,11 @@ export const CitizenFinder = ({
   const [documentType, setDocumentType] = useState("CC");
   const [documentNumber, setDocumentNumber] = useState("");
   const [inputError, setInputError] = useState<Error | null>(null);
+  // The number of the current lookup. A change to the document starts a new number, so the result
+  // of an earlier lookup cannot change the selection. `reset` does not stop the callbacks of a running lookup.
+  const lookup = useRef(0);
   const find = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (_lookupNumber: number) => {
       const parsed = documentSchema.safeParse({ documentType, documentNumber });
       if (!parsed.success) {
         throw new Error(
@@ -61,15 +64,22 @@ export const CitizenFinder = ({
       }
       return await findCitizen({ data: parsed.data });
     },
-    onSuccess: onChange,
+    onSuccess: (result, lookupNumber) => {
+      if (lookupNumber === lookup.current) {
+        onChange(result);
+      }
+    },
     // A failed lookup must not keep the citizen of an earlier lookup.
-    onError: () => {
-      onChange(null);
+    onError: (_error, lookupNumber) => {
+      if (lookupNumber === lookup.current) {
+        onChange(null);
+      }
     },
   });
 
   /** The document changed, so the selected citizen and the last result are not correct now. */
   const clearCitizen = () => {
+    lookup.current += 1;
     find.reset();
     if (citizen !== null) {
       onChange(null);
@@ -126,7 +136,7 @@ export const CitizenFinder = ({
           disabled={find.isPending}
           onClick={() => {
             setInputError(null);
-            find.mutate();
+            find.mutate(lookup.current);
           }}
           type="button"
           variant="outline"
